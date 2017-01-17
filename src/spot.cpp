@@ -1,0 +1,46 @@
+#include "spot.hpp"
+
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
+
+
+Spot_t::Spot_t()
+{
+}
+
+Spot_t::~Spot_t()
+{
+}
+
+Spot_t::Spot_t(double e_, double w_, double x_, double y_)
+{
+    e = e_;
+    w = w_;
+    x = x_;
+    y = y_;
+}
+
+Spot_t::Spot_t(std::string line)
+{
+    std::istringstream ss(line);
+    try {
+        ss >> e >> x >> y >> w;
+    }
+    catch (const std::exception &exc)
+    {
+        std::cerr << "ERROR! while parsing spot: \n";
+        std::cerr << line << std::endl;
+        std::cerr << exc.what();
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+std::ostream& operator<<(std::ostream& os, const Spot_t& s)
+{
+    os << s.e << " " << s.x << " " << s.y << " " << s.w;
+    return os;  
+}
+
