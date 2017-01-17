@@ -31,6 +31,8 @@ void Parser::process_command_line(int argc, char** argv)
         // Common parameters
         ("tramp_in", po::value<std::string>(&tramp_in_file)->required(),
                      "Input tramp file")
+        ("patient",  po::value<std::string>(&patient)->required(),
+                     "Topas MCAUTO_DICOM.txt file with the plan parameters")
         ("layer",    po::value<bool>(&if_per_layer)->default_value(false),
                      "If the energy should be adapted layer by layer instead of with individual spots")
         ;
