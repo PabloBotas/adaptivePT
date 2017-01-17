@@ -10,6 +10,8 @@
 #include <string>
 #include <iomanip>
 #include <math.h>
+#include <assert.h>
+#include <algorithm>
 
 Tramp_t::Tramp_t()
 {
