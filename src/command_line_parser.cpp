@@ -29,10 +29,12 @@ void Parser::process_command_line(int argc, char** argv)
         desc.add_options()
         ("help", "Produce this help message.")
         // Common parameters
-        ("patient",  po::value<std::string>(&patient)->required(),
-                     "Topas MCAUTO_DICOM.txt file with the plan parameters")
-        ("layer",    po::value<bool>(&if_per_layer)->default_value(false),
-                     "If the energy should be adapted layer by layer instead of with individual spots")
+        ("patient", po::value<std::string>(&patient)->required(),
+                    "Topas MCAUTO_DICOM.txt file with the plan parameters")
+        ("cbct",    po::value<std::string>(&cbct_file)->required(),
+                    "CBCT to adapt the plan to")
+        ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
+                    "If the energy should be adapted layer by layer instead of with individual spots")
         ;
 
         po::variables_map vm;        
@@ -86,7 +88,7 @@ void Parser::process_command_line(int argc, char** argv)
 void Parser::print_parameters()
 {
     std::cout << "Parsed parameters:\n";
-    std::cout << "    - tramp_in_file: " << tramp_in_file << '\n';
+    // std::cout << "    - tramp_in_file: " << tramp_in_file << '\n';
     // std::cout << "    - dvh_file:      " << dvh_file << '\n';
     // std::cout << "    - target_dose:   " << target_dose << " Gy" << '\n';
     // if(perform_Bwf_scaling)

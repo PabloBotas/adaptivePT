@@ -15,6 +15,7 @@ public:
     ~Parser();
 
     std::string patient;
+    std::string cbct_file;
     bool if_per_layer;
 
     void print_parameters();

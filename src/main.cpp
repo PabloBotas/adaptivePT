@@ -3,18 +3,19 @@
 
 #include "command_line_parser.hpp"
 #include "plan_parameters.hpp"
-#include "tramp.hpp"
+#include "mha_volumes.hpp"
 
 int main(int argc, char** argv)
 {
     Parser parser(argc, argv);
     parser.print_parameters();
 
-    // Read input tramp
-    // Tramp_t plan_in(parser.tramp_in_file);
     // Read input patient
-    Plan_Parameters_t patient(parser.patient);
-    patient.print();
+    Plan_Parameters_t patient_data(parser.patient);
+    patient_data.print();
+
+    // Read CBCT
+    Mha_t cbct(parser.cbct_file);
 
 
     // Calculate WEPL from energies
