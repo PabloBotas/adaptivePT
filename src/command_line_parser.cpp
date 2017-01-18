@@ -29,8 +29,6 @@ void Parser::process_command_line(int argc, char** argv)
         desc.add_options()
         ("help", "Produce this help message.")
         // Common parameters
-        ("tramp_in", po::value<std::string>(&tramp_in_file)->required(),
-                     "Input tramp file")
         ("patient",  po::value<std::string>(&patient)->required(),
                      "Topas MCAUTO_DICOM.txt file with the plan parameters")
         ("layer",    po::value<bool>(&if_per_layer)->default_value(false),

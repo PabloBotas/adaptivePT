@@ -14,7 +14,6 @@ public:
     Parser(int argc, char** argv);
     ~Parser();
 
-    std::string tramp_in_file;
     std::string patient;
     bool if_per_layer;
 
