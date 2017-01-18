@@ -125,7 +125,7 @@ void Patient_Parameters_t::getTopasBeamParameters()
 
         // Angles
         angle.gantry = (270.0 * (M_PI/180.0)) - pars.readReal<double>("Rt/beam/Gantry");
-        angle.couch  = pars.readReal<double>("Rt/beam/PatientSupportAngle");
+        angle.couch  = - pars.readReal<double>("Rt/beam/PatientSupportAngle");
 
         // Distance from isocenter to phase space plane
         // Downstream edge of range shifter - gets moved upstream later
