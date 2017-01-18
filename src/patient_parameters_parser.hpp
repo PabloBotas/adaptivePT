@@ -1,5 +1,5 @@
-#ifndef __PLAN_PARAMETERS_PARSER_HPP__
-#define __PLAN_PARAMETERS_PARSER_HPP__
+#ifndef __PATIENT_PARAMETERS_PARSER_HPP__
+#define __PATIENT_PARAMETERS_PARSER_HPP__
 
 #include <vector>
 #include <string>
@@ -8,11 +8,11 @@
 #include <limits>
 
 
-class Plan_Parameters_Parser_t
+class Patient_Parameters_Parser_t
 {
 public:
-    Plan_Parameters_Parser_t();
-    Plan_Parameters_Parser_t(std::string file);
+    Patient_Parameters_Parser_t();
+    Patient_Parameters_Parser_t(std::string file);
 
     void readFromFile(std::string fileName);
 

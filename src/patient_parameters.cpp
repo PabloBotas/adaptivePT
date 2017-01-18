@@ -1,5 +1,5 @@
-#include "plan_parameters.hpp"
-#include "plan_parameters_parser.hpp"
+#include "patient_parameters.hpp"
+#include "patient_parameters_parser.hpp"
 
 #include <iostream>
 #include <string>
@@ -10,7 +10,7 @@
 #include <sstream>
 #include <math.h>
 
-Plan_Parameters_t::Plan_Parameters_t(std::string dir) : patient_dir(dir),
+Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
                                                         input_dir(dir+"/input"),
                                                         tramp_dir(input_dir+"/tramps")
 {
@@ -18,7 +18,7 @@ Plan_Parameters_t::Plan_Parameters_t(std::string dir) : patient_dir(dir),
     parseTopasFiles();
 }
 
-void Plan_Parameters_t::exploreBeamDirectories()
+void Patient_Parameters_t::exploreBeamDirectories()
 {
     beam_dirs = getFoldersWithFile(input_dir, "run/MCAUTO_DICOM.txt");
     nbeams    = beam_dirs.size();
@@ -61,13 +61,13 @@ void Plan_Parameters_t::exploreBeamDirectories()
     }
 }
 
-void Plan_Parameters_t::parseTopasFiles()
+void Patient_Parameters_t::parseTopasFiles()
 {
     getTopasGlobalParameters();
     getTopasBeamParameters();
 }
 
-void Plan_Parameters_t::getTopasGlobalParameters()
+void Patient_Parameters_t::getTopasGlobalParameters()
 {
     Plan_Parameters_Parser_t pars(topas_files.front());
 
@@ -87,7 +87,7 @@ void Plan_Parameters_t::getTopasGlobalParameters()
     ct.n.z = pars.readVectorInts<unsigned int>("Rt/CT/SliceThicknessSections", true);
 }
 
-void Plan_Parameters_t::getTopasBeamParameters()
+void Patient_Parameters_t::getTopasBeamParameters()
 {
     // Resize containers
     apertures.resize(nbeams);
@@ -137,7 +137,7 @@ void Plan_Parameters_t::getTopasBeamParameters()
 }
 
 
-void Plan_Parameters_t::print()
+void Patient_Parameters_t::print()
 {
     std::cout << "Directories:" << std::endl;
     std::cout << "    - Patient:     " << patient_dir << std::endl;

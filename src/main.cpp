@@ -2,7 +2,7 @@
 #include <string>
 
 #include "command_line_parser.hpp"
-#include "plan_parameters.hpp"
+#include "patient_parameters.hpp"
 #include "mha_volumes.hpp"
 
 int main(int argc, char** argv)
@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     parser.print_parameters();
 
     // Read input patient
-    Plan_Parameters_t patient_data(parser.patient);
+    Patient_parameters_t patient_data(parser.patient);
     patient_data.print();
 
     // Read CBCT

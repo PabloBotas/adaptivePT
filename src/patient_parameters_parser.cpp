@@ -1,4 +1,4 @@
-#include "plan_parameters_parser.hpp"
+#include "patient_parameters_parser.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -6,19 +6,19 @@
 #include <math.h>
 
 // Explicit Instantiation
-template double Plan_Parameters_Parser_t::readReal<double>(std::string, double);
-template std::vector<double> Plan_Parameters_Parser_t::readVector(std::string, double, bool);
-template std::vector<unsigned int> Plan_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
+template double Patient_Parameters_Parser_t::readReal<double>(std::string, double);
+template std::vector<double> Patient_Parameters_Parser_t::readVector(std::string, double, bool);
+template std::vector<unsigned int> Patient_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
 
 
-Plan_Parameters_Parser_t::Plan_Parameters_Parser_t()
+Patient_Parameters_Parser_t::Patient_Parameters_Parser_t()
     : separator ("=")
     , verbose (false)
     , convertUnits (true)
 {
 }
 
-Plan_Parameters_Parser_t::Plan_Parameters_Parser_t(std::string file)
+Patient_Parameters_Parser_t::Patient_Parameters_Parser_t(std::string file)
     : separator ("=")
     , verbose (false)
     , convertUnits (true)
@@ -26,7 +26,7 @@ Plan_Parameters_Parser_t::Plan_Parameters_Parser_t(std::string file)
     readFromFile(file);
 }
 
-void Plan_Parameters_Parser_t::readFromFile(std::string fileName) {
+void Patient_Parameters_Parser_t::readFromFile(std::string fileName) {
     input.clear();
 
     std::ifstream inputFile(fileName.c_str());
@@ -47,13 +47,13 @@ void Plan_Parameters_Parser_t::readFromFile(std::string fileName) {
 // Readers ---------------------------------------------------
 //------------------------------------------------------------
 template<class T>
-T Plan_Parameters_Parser_t::readReal(std::string quantity, T defaultValue)
+T Patient_Parameters_Parser_t::readReal(std::string quantity, T defaultValue)
 {
     std::vector<T> returnValues = readVector<T>(quantity, defaultValue, false);
     return returnValues[0];
 }
 
-int Plan_Parameters_Parser_t::readInteger(std::string quantity, int defaultValue)
+int Patient_Parameters_Parser_t::readInteger(std::string quantity, int defaultValue)
 {
     float defaultFloat = defaultValue;
     if (defaultValue == std::numeric_limits<int>::max()) defaultFloat = NAN;
@@ -62,7 +62,7 @@ int Plan_Parameters_Parser_t::readInteger(std::string quantity, int defaultValue
 }
 
 template<class T>
-std::vector<T> Plan_Parameters_Parser_t::readVector(std::string quantity, T defaultValue, bool firstIsSize)
+std::vector<T> Patient_Parameters_Parser_t::readVector(std::string quantity, T defaultValue, bool firstIsSize)
 {
     // Parameter format: <Type>:<Quantity> = <Values> <Unit>
     std::string quantityLower = trim(toLower(quantity));
@@ -175,7 +175,7 @@ std::vector<T> Plan_Parameters_Parser_t::readVector(std::string quantity, T defa
 
 }
 
-std::string Plan_Parameters_Parser_t::readString(std::string quantity, std::string defaultValue)
+std::string Patient_Parameters_Parser_t::readString(std::string quantity, std::string defaultValue)
 {
     // Parameter format: <Type>:<Quantity> = <String>
     std::string quantityLower = trim(toLower(quantity));
@@ -224,7 +224,7 @@ std::string Plan_Parameters_Parser_t::readString(std::string quantity, std::stri
     }
 }
 
-bool Plan_Parameters_Parser_t::readBool(std::string quantity, bool defaultValue)
+bool Patient_Parameters_Parser_t::readBool(std::string quantity, bool defaultValue)
 {
     // Parameter format: <Type>:<Quantity> = <String>
     std::string defaultString = "false";
@@ -240,7 +240,7 @@ bool Plan_Parameters_Parser_t::readBool(std::string quantity, bool defaultValue)
 }
 
 template<class T>
-std::vector<T> Plan_Parameters_Parser_t::readVectorInts(std::string quantity, T defaultValue, bool firstIsSize)
+std::vector<T> Patient_Parameters_Parser_t::readVectorInts(std::string quantity, T defaultValue, bool firstIsSize)
 {
     float defaultFloat = defaultValue;
     if (defaultValue == std::numeric_limits<T>::max()) defaultFloat = NAN;
@@ -258,32 +258,32 @@ std::vector<T> Plan_Parameters_Parser_t::readVectorInts(std::string quantity, T 
 // Getters, setters: Query from class ------------------------
 //------------------------------------------------------------
 
-std::string Plan_Parameters_Parser_t::getSeparator()
+std::string Patient_Parameters_Parser_t::getSeparator()
 {
     return separator;
 }
 
-bool Plan_Parameters_Parser_t::getVerbose()
+bool Patient_Parameters_Parser_t::getVerbose()
 {
     return verbose;
 }
 
-bool Plan_Parameters_Parser_t::getConvertUnits()
+bool Patient_Parameters_Parser_t::getConvertUnits()
 {
     return convertUnits;
 }
 
-void Plan_Parameters_Parser_t::setSeparator(std::string newValue)
+void Patient_Parameters_Parser_t::setSeparator(std::string newValue)
 {
     separator = newValue;
 }
 
-void Plan_Parameters_Parser_t::setVerbose(bool newValue)
+void Patient_Parameters_Parser_t::setVerbose(bool newValue)
 {
     verbose = newValue;
 }
 
-void Plan_Parameters_Parser_t::setConvertUnits(bool newValue)
+void Patient_Parameters_Parser_t::setConvertUnits(bool newValue)
 {
     convertUnits = newValue;
 }

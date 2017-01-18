@@ -1,7 +1,7 @@
-#ifndef __PLAN_PARAMETERS_HPP__
-#define __PLAN_PARAMETERS_HPP__
+#ifndef __PATIENT_PARAMETERS_HPP__
+#define __PATIENT_PARAMETERS_HPP__
 
-#include "plan_parameters_parser.hpp"
+#include "patient_parameters_parser.hpp"
 
 #include <string>
 #include <vector>
@@ -63,10 +63,10 @@ std::vector<std::string> getFilesWithSuffix(std::string folderpath,
                                             std::string contains="");
 std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string name);
 
-class Plan_Parameters_t
+class Patient_Parameters_t
 {
 public:
-    Plan_Parameters_t(std::string directory);
+    Patient_Parameters_t(std::string directory);
     void print();
     
     std::string patient_dir;
