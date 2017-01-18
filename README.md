@@ -11,6 +11,9 @@ Patient geometry may change due to positioning or weight loss. Adaptive therapy 
 - [ ] Read ctvolume.dat
 - [ ] Create internal volume representation (float)
 - [ ] Function to get distal coordinates for each spot in tramp file
+  * [ ] Read physical data
+  * [ ] Copy data to GPU
+  * [ ] Create CUDA kernel
 - [ ] Apply function to planning CT (a) and CBCT (b)
 - [ ] Apply vector field to coordinates extracted from CBCT
 - [ ] Get distance (geometrical and energy) between a and b and correct
