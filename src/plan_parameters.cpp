@@ -82,8 +82,8 @@ void Plan_Parameters_t::getTopasGlobalParameters()
     ct.d.z = pars.readVector<double>("Rt/CT/SliceThicknessSpacing", true);
 
     // CT grid number of voxels
-    ct.n.x = pars.readReal<double>("Rt/CT/Columns");
-    ct.n.y = pars.readReal<double>("Rt/CT/Rows");
+    ct.n.x = pars.readReal<unsigned int>("Rt/CT/Columns");
+    ct.n.y = pars.readReal<unsigned int>("Rt/CT/Rows");
     ct.n.z = pars.readVectorInts<unsigned int>("Rt/CT/SliceThicknessSections", true);
 }
 
