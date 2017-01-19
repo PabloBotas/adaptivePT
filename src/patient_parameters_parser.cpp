@@ -5,12 +5,6 @@
 #include <limits>
 #include <math.h>
 
-// Explicit Instantiation
-template double Patient_Parameters_Parser_t::readReal<double>(std::string, double);
-template std::vector<double> Patient_Parameters_Parser_t::readVector(std::string, double, bool);
-template std::vector<unsigned int> Patient_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
-
-
 Patient_Parameters_Parser_t::Patient_Parameters_Parser_t()
     : separator ("=")
     , verbose (false)
@@ -288,4 +282,10 @@ void Patient_Parameters_Parser_t::setConvertUnits(bool newValue)
     convertUnits = newValue;
 }
 
+
+// Explicit Instantiation
+template double Patient_Parameters_Parser_t::readReal<double>(std::string, double);
+template unsigned int Patient_Parameters_Parser_t::readReal<unsigned int>(std::string, unsigned int);
+template std::vector<double> Patient_Parameters_Parser_t::readVector(std::string, double, bool);
+template std::vector<unsigned int> Patient_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
 
