@@ -1,52 +1,25 @@
 #ifndef __MHA_VOLUMES_HPP__
 #define __MHA_VOLUMES_HPP__
 
+#include "special_types.hpp"
+
 #include <string>
 #include <vector>
 #include <fstream>
 
-template<class T>
-struct Vector_t
-{
-    Vector_t()
-    {
-        x = 0;
-        y = 0;
-        z = 0;
-    }
-
-    Vector_t(const std::vector<T> &v)
-    {
-        x = v.at(0);
-        y = v.at(1);
-        z = v.at(2);
-    }
-
-    Vector_t(const Vector_t &obj)
-    {
-        x = obj.x;
-        y = obj.y;
-        z = obj.z;
-    }
-
-    T x;
-    T y;
-    T z;
-};
-
-
-class Mha_t
+class Mha_reader_t
 {
 public:
-    Mha_t();
-    Mha_t(std::string file);
+    Mha_reader_t();
+    Mha_reader_t(std::string file);
+    void calibrate(double a, double m);
 
     std::string file;
     Vector_t<unsigned int> dim;
     unsigned int nElements;
-    Vector_t<double> spacing;
-    Vector_t<double> origin;
-    std::vector<double> transform_matrix;
+    Vector_t<float> spacing;
+    Vector_t<float> origin;
+    std::vector<float> transform_matrix;
     unsigned short nb;
     unsigned short type_id;
 

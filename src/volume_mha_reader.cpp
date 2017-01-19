@@ -1,4 +1,5 @@
-#include "mha_volumes.hpp"
+#include "volume_mha_reader.hpp"
+#include "special_types.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -7,21 +8,30 @@
 #include <vector>
 #include <algorithm>
 #include <cstdio>
+#include <limits>
 
-
-Mha_t::Mha_t(std::string f) : file(f)
+Mha_reader_t::Mha_reader_t(std::string f) : file(f)
 {
     read_file();
 }
 
-void Mha_t::read_file()
+void Mha_reader_t::read_file()
 {
     read_header();
+    read_body();
 
+    short m=std::numeric_limits<short>::min(), n=std::numeric_limits<short>::max();
+    for (size_t i = 0; i < nElements; i++)
+    {
+        m = data.at(i) > m ? data.at(i) : m;
+        n = data.at(i) < n ? data.at(i) : n;
+    }
+    std::cout << "Maximum: " << m << std::endl;
+    std::cout << "Minimum: " << n << std::endl;
 }
 
 
-void Mha_t::read_header()
+void Mha_reader_t::read_header()
 {
     std::ifstream stream(file);
     if (!stream.is_open()) {
@@ -35,12 +45,12 @@ void Mha_t::read_header()
     BinaryData             = getHeaderValue<bool>(stream);
     BinaryDataByteOrderMSB = getHeaderValue<bool>(stream);
     CompressedData         = getHeaderValue<bool>(stream);
-    std::vector<double> TransformMatrix = getHeaderVector<double>(stream, 9);
-    std::vector<double> Offset          = getHeaderVector<double>(stream, 3);
+    std::vector<float> TransformMatrix = getHeaderVector<float>(stream, 9);
+    std::vector<float> Offset          = getHeaderVector<float>(stream, 3);
     CenterOfRotation       = getHeaderVector<int>(stream, 9);
     AnatomicalOrientation  = getHeaderValue<std::string>(stream);
-    std::vector<double> ElementSpacing = getHeaderVector<double>(stream, 3);
-    std::vector<unsigned int> DimSize  = getHeaderVector<unsigned int>(stream, 3);
+    std::vector<float> ElementSpacing = getHeaderVector<float>(stream, 3);
+    std::vector<unsigned int> DimSize = getHeaderVector<unsigned int>(stream, 3);
     std::string ElementType = getHeaderValue<std::string>(stream);
     ElementDataFile         = getHeaderValue<std::string>(stream);
 
@@ -76,7 +86,7 @@ void Mha_t::read_header()
 }
 
 
-void Mha_t::read_body()
+void Mha_reader_t::read_body()
 {
     unsigned int bytes_to_read = nElements*nb;
     std::ifstream stream(file, std::ios::binary);
@@ -85,27 +95,57 @@ void Mha_t::read_body()
     switch (type_id)
     {
         case 1:
+        {
+            // std::cout << "INPUT IMAGE FORMAT IS SHORT" << std::endl;
+            std::vector<short> temp(nElements);
+            stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
+
+            float MIN = std::numeric_limits<short>::min();
+            float MAX = std::numeric_limits<short>::max();
+            float RANGE = MAX+std::abs(MIN);
+            float USHORT_MAX = std::numeric_limits<unsigned short>::max();
+            std::cout << MIN << std::endl;
+            std::cout << MAX << std::endl;
+            std::cout << RANGE << std::endl;
+            std::cout << USHORT_MAX << std::endl;
+
+            for (size_t i = 0; i < nElements; i++)
             {
-                // std::cout << "INPUT IMAGE FORMAT IS SHORT" << std::endl;
-                stream.read(reinterpret_cast<char*>(&data[0]), bytes_to_read);
-                break;
+                float t  = (float)temp.at(i);
+                // float I  = (t+std::abs(MIN))/RANGE;
+                // float hu = I*USHORT_MAX - 1024;
+                float I = t-32678;
+                float hu = I;
+                if(i<25)
+                    std::cout << temp.at(i) << " " << t << " " << I << " " << hu << " ";
+                // hu = std::max(hu, (float)-1000.);
+                // hu = std::min(hu, (float)2995.0);
+                if(i<25)
+                    std::cout << hu << "\n";
+                data.at(i) = (short)hu;
             }
+
+            std::ofstream fout("data.dat", std::ios::out | std::ios::binary);
+            fout.write((char*)&data[0], data.size()*sizeof(short));
+            fout.close();
+            break;
+        }
         case 2:
-            {
-                // std::cout << "INPUT IMAGE FORMAT IS UNSIGNED SHORT" << std::endl;
-                std::vector<unsigned short> temp(nElements);
-                stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
-                data.assign(temp.begin(), temp.end());
-                break;
-            }
+        {
+            // std::cout << "INPUT IMAGE FORMAT IS UNSIGNED SHORT" << std::endl;
+            std::vector<unsigned short> temp(nElements);
+            stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
+            data.assign(temp.begin(), temp.end());
+            break;
+        }
         case 3:
-            {
-                // std::cout << "INPUT IMAGE FORMAT IS FLOAT" << std::endl;
-                std::vector<float> temp(nElements);
-                stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
-                data.assign(temp.begin(), temp.end());
-                break;
-            }
+        {
+            // std::cout << "INPUT IMAGE FORMAT IS FLOAT" << std::endl;
+            std::vector<float> temp(nElements);
+            stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
+            data.assign(temp.begin(), temp.end());
+            break;
+        }
         default:
             break;
     }
@@ -114,9 +154,30 @@ void Mha_t::read_body()
     std::cout << bytes_to_read << std::endl;
 }
 
+void Mha_reader_t::calibrate(double a, double m)
+{
+    // class Calibrate
+    // {
+    // public:
+    //     Calibrate(double a_, double m_):a(a_),m(m_){};
+    //     short operator()(short x) const
+    //     {
+    //         return m*x + a;
+    //     }
+    // private:
+    //     double a;
+    //     double m;
+    // };
+    // std::transform(data.begin(), data.end(), data.begin(), Calibrate(a, m));
+    for (size_t i = 0; i < nElements; i++)
+    {
+        data[i] = data[i] - 32678;
+    }
+}
+
 
 template<class T>
-T Mha_t::getHeaderValue(std::ifstream &stream)
+T Mha_reader_t::getHeaderValue(std::ifstream &stream)
 {
     std::string line;
     std::getline(stream, line);
@@ -138,7 +199,7 @@ T Mha_t::getHeaderValue(std::ifstream &stream)
 
 
 template<class T>
-std::vector<T> Mha_t::getHeaderVector(std::ifstream &stream, const int n)
+std::vector<T> Mha_reader_t::getHeaderVector(std::ifstream &stream, const int n)
 {
     std::string line;
     std::getline(stream, line);
