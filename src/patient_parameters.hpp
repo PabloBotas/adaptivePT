@@ -21,7 +21,7 @@ Patient dir:
 */
 
 template<class T=double, class D=T>
-struct Vector_t
+struct Topas_Vector_t
 {
     T x;
     T y;
@@ -36,9 +36,9 @@ struct BeamAngles_t
 
 struct CT_Dims_t
 {
-    Vector_t<> offset;
-    Vector_t<double, std::vector<double> > d;
-    Vector_t<unsigned int, std::vector<unsigned int> > n;
+    Topas_Vector_t<> offset;
+    Topas_Vector_t<double, std::vector<double> > d;
+    Topas_Vector_t<unsigned int, std::vector<unsigned int> > n;
 };
 
 struct Aperture_Dims_t
