@@ -69,7 +69,7 @@ void Patient_Parameters_t::parseTopasFiles()
 
 void Patient_Parameters_t::getTopasGlobalParameters()
 {
-    Plan_Parameters_Parser_t pars(topas_files.front());
+    Patient_Parameters_Parser_t pars(topas_files.front());
 
     // CT grid shift
     ct.offset.x = pars.readReal<double>("Rt/CT/ImgCenterX") - pars.readReal<double>("Rt/beam/IsoCenter0");
@@ -98,7 +98,7 @@ void Patient_Parameters_t::getTopasBeamParameters()
     for(size_t i = 0; i < nbeams; i++)
     {
         // Beam data from MCAUTO_DICOM.txt
-        Plan_Parameters_Parser_t pars(topas_files.at(i));
+        Patient_Parameters_Parser_t pars(topas_files.at(i));
 
         // Create shortcuts
         Aperture_Dims_t&     ap        = apertures.at(i);
