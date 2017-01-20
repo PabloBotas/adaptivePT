@@ -10,14 +10,14 @@ Patient geometry may change due to positioning or weight loss. Adaptive therapy 
 - [x] Read MHA files
 - [ ] Read ctvolume.dat
 - [ ] Create internal volume representation (float)
-- [ ] Function to get distal coordinates for each spot in tramp file
+- [ ] Translate spot map to mha. Warp it with vf and read it in associating it with given tramp files.
+- [ ] Get distal coordinates for each spot in tramp file
   * [ ] Read physical data
   * [ ] Copy data to GPU
   * [ ] Create CUDA kernel
-- [ ] Apply function to planning CT (a) and CBCT (b)
-- [ ] Apply vector field to coordinates extracted from CBCT
-- [ ] Get distance (geometrical and energy) between a and b and correct
-- [ ] Write new tramp
+- [ ] Get physical distance between warped (plan) spot map (3D) and CBCT's spot map (3D)
+- [ ] Save changes to log file for further study
+- [ ] Write new tramps
 
 ## Additional tasks
 - [ ] Study distribution of changes to spots and collapse them to meaningfull averages
