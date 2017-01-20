@@ -19,14 +19,14 @@ Vector_t<T>::Vector_t(const std::vector<T> &v)
 }
 
 template<class T>
-Vector_t<T>::Vector_t(const Vector_t &obj)
+Vector_t<T>::Vector_t(const Vector_t<T> &obj)
 {
     x = obj.x;
     y = obj.y;
     z = obj.z;
 }
 
-template class Vector_t<unsigned int>;
 template class Vector_t<int>;
-template class Vector_t<double>;
+template class Vector_t<unsigned int>;
 template class Vector_t<float>;
+template class Vector_t<double>;

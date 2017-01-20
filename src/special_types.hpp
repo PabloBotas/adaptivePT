@@ -3,29 +3,13 @@
 
 #include <vector>
 
-template<class T>
-struct Vector_t
+template <class T>
+class Vector_t
 {
-    Vector_t()
-    {
-        x = 0;
-        y = 0;
-        z = 0;
-    }
-
-    Vector_t(const std::vector<T> &v)
-    {
-        x = v.at(0);
-        y = v.at(1);
-        z = v.at(2);
-    }
-
-    Vector_t(const Vector_t &obj)
-    {
-        x = obj.x;
-        y = obj.y;
-        z = obj.z;
-    }
+public:
+    Vector_t();
+    Vector_t(const std::vector<T> &v);
+    Vector_t(const Vector_t<T> &obj);
 
     T x;
     T y;
