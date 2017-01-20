@@ -19,15 +19,6 @@ void Mha_reader_t::read_file()
 {
     read_header();
     read_body();
-
-    short m=std::numeric_limits<short>::min(), n=std::numeric_limits<short>::max();
-    for (size_t i = 0; i < nElements; i++)
-    {
-        m = data.at(i) > m ? data.at(i) : m;
-        n = data.at(i) < n ? data.at(i) : n;
-    }
-    std::cout << "Maximum: " << m << std::endl;
-    std::cout << "Minimum: " << n << std::endl;
 }
 
 
@@ -89,8 +80,11 @@ void Mha_reader_t::read_header()
 void Mha_reader_t::read_body()
 {
     unsigned int bytes_to_read = nElements*nb;
-    std::ifstream stream(file, std::ios::binary);
-    
+    std::ifstream stream(file, std::ios::binary | std::ios::in | std::ios::ate);
+    unsigned int end = stream.tellg();
+    unsigned int header_size = end - bytes_to_read;
+    stream.seekg(header_size);
+
     data.resize(nElements);
     switch (type_id)
     {
@@ -98,36 +92,7 @@ void Mha_reader_t::read_body()
         {
             // std::cout << "INPUT IMAGE FORMAT IS SHORT" << std::endl;
             std::vector<short> temp(nElements);
-            stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
-
-            float MIN = std::numeric_limits<short>::min();
-            float MAX = std::numeric_limits<short>::max();
-            float RANGE = MAX+std::abs(MIN);
-            float USHORT_MAX = std::numeric_limits<unsigned short>::max();
-            std::cout << MIN << std::endl;
-            std::cout << MAX << std::endl;
-            std::cout << RANGE << std::endl;
-            std::cout << USHORT_MAX << std::endl;
-
-            for (size_t i = 0; i < nElements; i++)
-            {
-                float t  = (float)temp.at(i);
-                // float I  = (t+std::abs(MIN))/RANGE;
-                // float hu = I*USHORT_MAX - 1024;
-                float I = t-32678;
-                float hu = I;
-                if(i<25)
-                    std::cout << temp.at(i) << " " << t << " " << I << " " << hu << " ";
-                // hu = std::max(hu, (float)-1000.);
-                // hu = std::min(hu, (float)2995.0);
-                if(i<25)
-                    std::cout << hu << "\n";
-                data.at(i) = (short)hu;
-            }
-
-            std::ofstream fout("data.dat", std::ios::out | std::ios::binary);
-            fout.write((char*)&data[0], data.size()*sizeof(short));
-            fout.close();
+            stream.read(reinterpret_cast<char*>(&data[0]), bytes_to_read);
             break;
         }
         case 2:
@@ -152,27 +117,6 @@ void Mha_reader_t::read_body()
 
     std::cout << "Bytes read: ";
     std::cout << bytes_to_read << std::endl;
-}
-
-void Mha_reader_t::calibrate(double a, double m)
-{
-    // class Calibrate
-    // {
-    // public:
-    //     Calibrate(double a_, double m_):a(a_),m(m_){};
-    //     short operator()(short x) const
-    //     {
-    //         return m*x + a;
-    //     }
-    // private:
-    //     double a;
-    //     double m;
-    // };
-    // std::transform(data.begin(), data.end(), data.begin(), Calibrate(a, m));
-    for (size_t i = 0; i < nElements; i++)
-    {
-        data[i] = data[i] - 32678;
-    }
 }
 
 

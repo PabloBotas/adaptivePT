@@ -12,8 +12,7 @@ public:
     enum Source_type
     {
         CTVOLUME,
-        MHA,
-        MHA_CALIBRATION
+        MHA
     };
 
     Patient_Volume_t();

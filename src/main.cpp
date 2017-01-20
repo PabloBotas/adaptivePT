@@ -15,15 +15,7 @@ int main(int argc, char** argv)
     patient_data.print();
 
     // Read CBCT
-    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA_CALIBRATION);
-    std::cout << cbct.file << std::endl;
-    std::cout << cbct.n.x << std::endl;
-    std::cout << cbct.n.y << std::endl;
-    std::cout << cbct.n.z << std::endl;
-    std::cout << cbct.d.x << std::endl;
-    std::cout << cbct.d.y << std::endl;
-    std::cout << cbct.d.z << std::endl;
-    std::cout << cbct.nElements << std::endl;
+    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
     float m=0;
     for (size_t i = 0; i < cbct.nElements; i++)
     {

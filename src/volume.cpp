@@ -59,19 +59,6 @@ void Patient_Volume_t::read_volume()
             // hu = new std::vector<float>(reader.data.begin(), reader.data.end());
             break;
         }
-        case Source_type::MHA_CALIBRATION:
-        {
-            Mha_reader_t reader(file);
-            reader.calibrate(-32678.0, 1);
-
-            nElements = reader.nElements;
-            n = reader.dim;
-            d = reader.spacing;
-            hu.resize(nElements);
-            std::copy(reader.data.begin(), reader.data.end(), hu.begin());
-            // hu = new std::vector<float>(reader.data.begin(), reader.data.end());
-            break;
-        }
     }
 }
 

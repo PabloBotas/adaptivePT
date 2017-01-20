@@ -12,7 +12,6 @@ class Mha_reader_t
 public:
     Mha_reader_t();
     Mha_reader_t(std::string file);
-    void calibrate(double a, double m);
 
     std::string file;
     Vector_t<unsigned int> dim;
