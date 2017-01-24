@@ -118,14 +118,13 @@ unsigned int rays_to_device(std::vector<float4>& xbuffer,
                             const float3& ct_offsets)
 {
     unsigned int total_rays = xbuffer.size();
-
-    unsigned int num = min(NRAYS, total_rays);
+    unsigned int num = total_rays;
 
     // prepare GPU
     size_t bytes = sizeof(float4)*num;
     gpuErrchk( cudaMalloc((void **) &xdata, bytes) );
     gpuErrchk( cudaMalloc((void **) &vxdata, bytes) );
-    gpuErrchk( cudaMemcpyToSymbol(xdata, xbuffer.data(), bytes, 0, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpyToSymbol(xdata, &(xbuffer[0]), bytes, 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(vxdata, vxbuffer.data(), bytes, 0, cudaMemcpyHostToDevice) );
 
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
@@ -140,11 +139,6 @@ unsigned int rays_to_device(std::vector<float4>& xbuffer,
 void clearScorer(void *s, size_t sz)
 {
     cudaMemset(s, 0, sz);
-}
-
-void clearScorer()
-{
-    cudaMemset(scorer, 0, sizeof(float3)*nspots);
 }
 
 void freeMemory()

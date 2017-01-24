@@ -17,11 +17,11 @@
 #include <vector>
 
 
-void gpu_main(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
+void gpu_launch(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
 {
     int device = 0;
     cudaSetDevice(device);
-    printDevProp(device);
+    printDevProp(device, false);
 
     runCalculation(pat, ct);
 }
@@ -33,17 +33,14 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
-    float dt_ms;
 
     gpu_ct_to_device::setDimensions(ct);
     gpu_ct_to_device::setDensities(ct);
-
 
     // the simulation is initialized once, but the calculation is launched nbeams_h times
     for(size_t i=0; i < pat.nbeams; i++)
     {
         // Create tramp object
-        std::cout << "Read " << pat.tramp_files.at(i) << std::endl;
         Tramp_t tramp(pat.tramp_files.at(i));
         // Create scorer array
         gpuErrchk( cudaMemcpyToSymbol(nspots, &tramp.nspots, sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
@@ -56,7 +53,7 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
         float3 ct_offsets = make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z);
         calculateRays(xbuffer, vxbuffer, pat.angles.at(i), ct_offsets);
         // outputScorerResults(i);
-        clearScorer();
+        clearScorer(scorer, sizeof(float3)*tramp.nspots);
         std::cout << std::endl;
     }
 
@@ -65,6 +62,7 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
+    float dt_ms;
     cudaEventElapsedTime(&dt_ms, start, stop);
     cudaThreadExit();
     cudaDeviceReset();
@@ -75,25 +73,32 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
 }
 
 
-void printDevProp(int device)
+void printDevProp(const int device, bool verbose)
 {
     cudaDeviceProp devProp;
     cudaGetDeviceProperties(&devProp, device);
-    std::cout << "Using device #:        " << device << std::endl;
-    std::cout << "Name:                  " << devProp.name << std::endl;
-    std::cout << "Compute capability:    " << devProp.major << "." << devProp.minor << std::endl;
-    std::cout << "Global memory:         " << devProp.totalGlobalMem/1024.0/1024.0 << " MB" << std::endl;
-    std::cout << "Shared memory /block:  " << devProp.sharedMemPerBlock/1024.0 << std::endl;
-    std::cout << "Registers /block:      " << devProp.regsPerBlock << std::endl;
-    std::cout << "Warp size:             " << devProp.warpSize << std::endl;
-    std::cout << "Memory pitch:          " << devProp.memPitch << std::endl;
-    std::cout << "Threads /block:        " << devProp.maxThreadsPerBlock << std::endl;
-    std::cout << "Maximum dim of block:  " << devProp.maxThreadsDim[0] << "," << devProp.maxThreadsDim[1] << "," << devProp.maxThreadsDim[2] << std::endl;
-    std::cout << "Maximum dim of grid:   " << devProp.maxGridSize[0] << "," << devProp.maxGridSize[1] << "," << devProp.maxGridSize[2] << std::endl;
-    std::cout << "Clock rate:            " << devProp.clockRate/1000000.0 << " GHz" << std::endl;
-    std::cout << "Total constant memory: " << devProp.totalConstMem/1024.0 << std::endl;
-    std::cout << "Texture alignment:     " << devProp.textureAlignment << std::endl;
-    std::cout << "Concurrent copy/exec:  " << (devProp.deviceOverlap ? "Yes" : "No") << std::endl;
-    std::cout << "Multiprocessors:       " << devProp.multiProcessorCount << std::endl;
-    std::cout << "Kernel timeout:        " << (devProp.kernelExecTimeoutEnabled ? "Yes" : "No") << std::endl;
+    if(verbose)
+    {
+        std::cout << "Using device #:        " << device << std::endl;
+        std::cout << "Name:                  " << devProp.name << std::endl;
+        std::cout << "Compute capability:    " << devProp.major << "." << devProp.minor << std::endl;
+        std::cout << "Global memory:         " << devProp.totalGlobalMem/1024.0/1024.0 << " MB" << std::endl;
+        std::cout << "Shared memory /block:  " << devProp.sharedMemPerBlock/1024.0 << std::endl;
+        std::cout << "Registers /block:      " << devProp.regsPerBlock << std::endl;
+        std::cout << "Warp size:             " << devProp.warpSize << std::endl;
+        std::cout << "Memory pitch:          " << devProp.memPitch << std::endl;
+        std::cout << "Threads /block:        " << devProp.maxThreadsPerBlock << std::endl;
+        std::cout << "Maximum dim of block:  " << devProp.maxThreadsDim[0] << "," << devProp.maxThreadsDim[1] << "," << devProp.maxThreadsDim[2] << std::endl;
+        std::cout << "Maximum dim of grid:   " << devProp.maxGridSize[0] << "," << devProp.maxGridSize[1] << "," << devProp.maxGridSize[2] << std::endl;
+        std::cout << "Clock rate:            " << devProp.clockRate/1000000.0 << " GHz" << std::endl;
+        std::cout << "Total constant memory: " << devProp.totalConstMem/1024.0 << std::endl;
+        std::cout << "Texture alignment:     " << devProp.textureAlignment << std::endl;
+        std::cout << "Concurrent copy/exec:  " << (devProp.deviceOverlap ? "Yes" : "No") << std::endl;
+        std::cout << "Multiprocessors:       " << devProp.multiProcessorCount << std::endl;
+        std::cout << "Kernel timeout:        " << (devProp.kernelExecTimeoutEnabled ? "Yes" : "No") << std::endl;
+    }
+    else
+    {
+        std::cout << "Using card (" << device << "): " << devProp.name << std::endl;
+    }
 }

@@ -19,18 +19,38 @@ Tramp_t::Tramp_t()
 
 Tramp_t::Tramp_t(std::string f, std::string machine_) : machine(machine_), internal_energy_set(false), file(f)
 {
+    defaults();
     read_();
     setEnergies();
 }
 
 Tramp_t::Tramp_t(std::string f) : internal_energy_set(false), file(f)
 {
+    defaults();
     read_();
     setEnergies();
 }
 
 Tramp_t::~Tramp_t()
 {
+}
+
+void Tramp_t::defaults()
+{
+    machine = "";
+    gigaprotons = 0;
+    nspots = 0;
+    patient_id = "";
+    patient_first_name = "";
+    patient_middle_initial = "";
+    patient_last_name = "";
+    astroid_id = "";
+    course_name = "";
+    beam_name = "";
+    gantry = "";
+    couch_rotation = "";
+    z = 0;
+    zeff = 0;
 }
 
 template<class T>
@@ -54,7 +74,7 @@ T Tramp_t::getHeaderValue(std::ifstream &stream)
 
 void Tramp_t::read_()
 {
-    std::cout << "Reading file " << file << std::endl;
+    // std::cout << "Reading file " << file << std::endl;
     std::ifstream stream(file);
     if (!stream.is_open()) {
         std::cerr << "Can't open file: " << file << std::endl;
@@ -70,7 +90,7 @@ void Tramp_t::read_()
     beam_name                  = getHeaderValue<std::string>(stream);
     gantry                     = getHeaderValue<std::string>(stream);
     couch_rotation             = getHeaderValue<std::string>(stream);
-    double gigaprotons_header  = getHeaderValue<double>(stream);
+    float gigaprotons_header   = getHeaderValue<float>(stream);
     unsigned int nspots_header = getHeaderValue<unsigned int>(stream);
 
     std::string line;
@@ -89,7 +109,7 @@ void Tramp_t::read_()
     if( round(1000.*gigaprotons) != round(1000.*gigaprotons_header) )
     {
         std::cerr << "WARNING! Inconsistent tramp file." << std::endl;
-        std::cerr << "GigaProtons in the header (" << gigaprotons << ") differs ";
+        std::cerr << "GigaProtons in the header (" << gigaprotons_header << ") differs ";
         std::cerr << "from the summed gigaprotons (" << gigaprotons << ")" << std::endl;
     }
     if( nspots != nspots_header )

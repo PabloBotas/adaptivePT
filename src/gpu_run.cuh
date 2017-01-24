@@ -24,7 +24,6 @@ unsigned int rays_to_device(std::vector<float4>& xbuffer,
 
 __global__ void rays_to_device_kernel(int num, float2 angles, float3 ct_offsets);
 
-void clearScorer();
 void clearScorer(void *s, size_t sz);
 
 // void outputData(void *src, const size_t size, string outputfilename, const char *mode);

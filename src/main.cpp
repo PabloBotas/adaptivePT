@@ -4,6 +4,7 @@
 #include "command_line_parser.hpp"
 #include "patient_parameters.hpp"
 #include "volume.hpp"
+#include "gpu_main.cuh"
 
 int main(int argc, char** argv)
 {
@@ -16,12 +17,7 @@ int main(int argc, char** argv)
 
     // Read CBCT
     Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
-    float m=0;
-    for (size_t i = 0; i < cbct.nElements; i++)
-    {
-        m = cbct.hu.at(i) > m ? cbct.hu.at(i) : m;
-    }
-    std::cout << "Maximum: " << m << std::endl;
+    gpu_launch(patient_data, cbct);
 
 
     // Calculate WEPL from energies
@@ -39,9 +35,5 @@ int main(int argc, char** argv)
     
     exit(EXIT_SUCCESS);
 }
-
-
-
-
 
 

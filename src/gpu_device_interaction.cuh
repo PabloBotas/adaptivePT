@@ -32,9 +32,9 @@
 //==========================================================
 #define NRAYS 131072 // number of rays calculated simultaneously
 
-extern __device__ float4* xdata;  // x y z wepl (in cm)
-extern __device__ float4* vxdata; // vx vy vz (normalized) energy (eV)
-extern unsigned int nspots;
+extern __device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
+extern __device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
+extern __device__ unsigned int nspots;
 extern float3 *scorer;
 
 // CT variables

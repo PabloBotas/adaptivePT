@@ -22,6 +22,7 @@ public:
     void shiftEnergies(std::vector<float> ds);
     void print(unsigned int n);
     void print(unsigned int n0, unsigned int n1);
+    void defaults();
 
     std::vector<Spot_t> spots;
     std::vector<float> energies;

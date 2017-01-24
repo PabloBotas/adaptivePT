@@ -9,8 +9,8 @@
 #include <vector>
 
 
-void gpu_main(const Patient_Parameters_t& pat, const Patient_Volume_t &ct);
+void gpu_launch(const Patient_Parameters_t& pat, const Patient_Volume_t &ct);
 void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct);
-void printDevProp(const int device);
+void printDevProp(const int device, bool verbose);
 
 #endif

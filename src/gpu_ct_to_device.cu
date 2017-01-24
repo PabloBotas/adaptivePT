@@ -8,6 +8,7 @@
 #include "special_types.hpp"
 #include "gpu_geometry_operations.cuh"
 #include "gpu_material.cuh"
+#include "gpu_errorcheck.cuh"
 
 void gpu_ct_to_device::setDimensions(const Patient_Volume_t& ct)
 //  convert external to internal geometry
@@ -20,9 +21,9 @@ void gpu_ct_to_device::setDimensions(const Patient_Volume_t& ct)
     std::swap(ct_d.x, ct_d.z);
     std::swap(ct_n.x, ct_n.z);
 
-    cudaMemcpyToSymbol(ctTotalVoxN, &ct.nElements, sizeof(unsigned int), 0, cudaMemcpyHostToDevice);
-    cudaMemcpyToSymbol(ctVoxSize, &ct_d, sizeof(float3), 0, cudaMemcpyHostToDevice);
-    cudaMemcpyToSymbol(ctVox, &ct_n, sizeof(int3), 0, cudaMemcpyHostToDevice);
+    gpuErrchk( cudaMemcpyToSymbol(ctTotalVoxN, &ct.nElements, sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpyToSymbol(ctVoxSize, &ct_d, sizeof(float3), 0, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpyToSymbol(ctVox, &ct_n, sizeof(int3), 0, cudaMemcpyHostToDevice) );
 }
 
 
@@ -52,7 +53,7 @@ void gpu_ct_to_device::setDensities(const Patient_Volume_t &ct,
 
     //  create a 3d array on device
     cudaExtent volumeSize = make_cudaExtent(ct.n.z, ct.n.y, ct.n.x);
-    cudaMalloc3DArray(&dens, &dens_tex.channelDesc, volumeSize);
+    gpuErrchk( cudaMalloc3DArray(&dens, &dens_tex.channelDesc, volumeSize) );
 
     //  copy denstiy data to GPU
     cudaMemcpy3DParms copyParams = {0};
@@ -61,11 +62,11 @@ void gpu_ct_to_device::setDensities(const Patient_Volume_t &ct,
     copyParams.dstArray = dens;
     copyParams.extent   = volumeSize;
     copyParams.kind     = cudaMemcpyHostToDevice;
-    cudaMemcpy3D(&copyParams);
+    gpuErrchk( cudaMemcpy3D(&copyParams) );
     //  copy data from host to device
     dens_tex.normalized = false;
     dens_tex.filterMode = cudaFilterModePoint;
-    cudaBindTextureToArray(dens_tex, dens, dens_tex.channelDesc);
+    gpuErrchk( cudaBindTextureToArray(dens_tex, dens, dens_tex.channelDesc) );
     //  bind to texture memory
 }
 

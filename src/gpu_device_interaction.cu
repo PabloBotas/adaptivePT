@@ -1,7 +1,7 @@
 #include "gpu_device_interaction.cuh"
 
-__device__ float4* xdata;  // x y z wepl (in cm)
-__device__ float4* vxdata; // vx vy vz (normalized) energy (eV)
+__device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
+__device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
 unsigned int nspots;
 float3 *scorer;
 
