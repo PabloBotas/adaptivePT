@@ -12,13 +12,13 @@ void init_rays(const Patient_Parameters_t& pat,
                std::vector<float4>& xbuffer,
                std::vector<float4>& vxbuffer);
 
-void calculateRays(std::vector<float4>& xbuffer,
-                   std::vector<float4>& vxbuffer,
+void calculateRays(const std::vector<float4>& xbuffer,
+                   const std::vector<float4>& vxbuffer,
                    const BeamAngles_t& ang,
                    const float3& ct_offsets);
 
-unsigned int rays_to_device(std::vector<float4>& xbuffer,
-                            std::vector<float4>& vxbuffer,
+unsigned int rays_to_device(const std::vector<float4>& xbuffer,
+                            const std::vector<float4>& vxbuffer,
                             const float2& angles,
                             const float3& ct_offsets);
 

@@ -94,8 +94,8 @@ void init_rays(const Patient_Parameters_t& pat,
 }
 
 
-void calculateRays(std::vector<float4>& xbuffer,
-                   std::vector<float4>& vxbuffer,
+void calculateRays(const std::vector<float4>& xbuffer,
+                   const std::vector<float4>& vxbuffer,
                    const BeamAngles_t& ang,
                    const float3& ct_offsets)
 {
@@ -112,19 +112,18 @@ void calculateRays(std::vector<float4>& xbuffer,
 }
 
 
-unsigned int rays_to_device(std::vector<float4>& xbuffer,
-                            std::vector<float4>& vxbuffer,
+unsigned int rays_to_device(const std::vector<float4>& xbuffer,
+                            const std::vector<float4>& vxbuffer,
                             const float2& angles,
                             const float3& ct_offsets)
 {
-    unsigned int total_rays = xbuffer.size();
-    unsigned int num = total_rays;
+    unsigned int num = xbuffer.size();
 
     // prepare GPU
     size_t bytes = sizeof(float4)*num;
     gpuErrchk( cudaMalloc((void **) &xdata, bytes) );
     gpuErrchk( cudaMalloc((void **) &vxdata, bytes) );
-    gpuErrchk( cudaMemcpyToSymbol(xdata, &(xbuffer[0]), bytes, 0, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpyToSymbol(xdata,  xbuffer.data(), bytes, 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(vxdata, vxbuffer.data(), bytes, 0, cudaMemcpyHostToDevice) );
 
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
