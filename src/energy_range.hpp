@@ -12,8 +12,8 @@ public:
     enum Dir_t {FromEtoR, FromRtoE};
     Dir_t dir;
     Energy_Range_Calculator_t(Dir_t dir=FromEtoR);
-    double calculate(double x, Dir_t dir=FromEtoR);
-    double operator()(double& x);
+    float calculate(float x, Dir_t dir=FromEtoR);
+    float operator()(float& x);
 private:
     DataTable_t table;
 };

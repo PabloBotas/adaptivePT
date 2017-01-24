@@ -1,7 +1,10 @@
 #include "special_types.hpp"
+#include "utils.hpp"
 
 #include <vector>
+#include <algorithm>
 
+// Vector_t ---------------------------------------
 template<class T>
 Vector_t<T>::Vector_t()
 {
@@ -30,3 +33,50 @@ template class Vector_t<int>;
 template class Vector_t<unsigned int>;
 template class Vector_t<float>;
 template class Vector_t<double>;
+
+// Topas_Vector_t ---------------------------------------
+template struct Topas_Vector_t<double, double>;
+template struct Topas_Vector_t<double, std::vector<double> >;
+template struct Topas_Vector_t<unsigned int, std::vector<unsigned int> >;
+
+
+// Aperture_Dims_t ---------------------------------------
+Aperture_Dims_t::Aperture_Dims_t():
+                 exists(false),
+                 thick(0),
+                 zdown(0)
+{
+}
+
+// RangeShifter_Dims_t ---------------------------------------
+RangeShifter_Dims_t::RangeShifter_Dims_t():
+                     exists(false),
+                     thick(0),
+                     zdown(0),
+                     zup(0)
+{
+}
+
+// SAD_t ---------------------------------------
+SAD_t::SAD_t()
+{
+}
+
+SAD_t::SAD_t(std::string machine)
+{
+    if(machine.compare(utils::toLower("TopasSmallSpots"))      == 0 ||
+       machine.compare(utils::toLower("Topas_a5_SmallSpots"))  == 0 ||
+       machine.compare(utils::toLower("TopasMediumSpots"))     == 0 ||
+       machine.compare(utils::toLower("Topas_a5_MediumSpots")) == 0)
+    {
+        a = 1940.f;
+        b = 2340.f;
+    }
+    else if(machine.compare(utils::toLower("TopasMGHR4")) == 0)
+    {
+        a = 2340.f;
+        b = 1940.f;
+    }
+}
+
+

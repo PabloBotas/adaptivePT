@@ -2,6 +2,7 @@
 #define __PATIENT_PARAMETERS_HPP__
 
 #include "patient_parameters_parser.hpp"
+#include "special_types.hpp"
 
 #include <string>
 #include <vector>
@@ -20,48 +21,7 @@ Patient dir:
     -...
 */
 
-template<class T=double, class D=T>
-struct Topas_Vector_t
-{
-    T x;
-    T y;
-    D z;
-};
 
-struct BeamAngles_t
-{
-    double gantry;
-    double couch;
-};
-
-struct CT_Dims_t
-{
-    Topas_Vector_t<> offset;
-    Topas_Vector_t<double, std::vector<double> > d;
-    Topas_Vector_t<unsigned int, std::vector<unsigned int> > n;
-};
-
-struct Aperture_Dims_t
-{
-    bool   exists;
-    double thick;
-    double zdown;
-    Aperture_Dims_t() : exists(false), thick(0), zdown(0) {}
-};
-
-struct RangeShifter_Dims_t
-{
-    bool   exists;
-    double thick;
-    double zdown;
-    double zup;
-    RangeShifter_Dims_t() : exists(false), thick(0), zdown(0), zup(0) {}
-};
-
-std::vector<std::string> getFilesWithSuffix(std::string folderpath,
-                                            std::string suffix,
-                                            std::string contains="");
-std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string name);
 
 class Patient_Parameters_t
 {
@@ -72,6 +32,8 @@ public:
     std::string patient_dir;
     std::string input_dir;
     std::string tramp_dir;
+    std::string machine;
+    SAD_t virtualSAD;
 
     size_t nbeams;
     std::vector<std::string> beam_dirs;
@@ -85,7 +47,7 @@ public:
     std::vector<RangeShifter_Dims_t> range_shifters;
 
     std::vector<BeamAngles_t> angles;
-    std::vector<double>       isocenter_to_beam_distance;
+    std::vector<float>        isocenter_to_beam_distance;
 
 private:
     void exploreBeamDirectories();

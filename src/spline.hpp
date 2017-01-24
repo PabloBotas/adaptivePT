@@ -38,8 +38,8 @@
 class band_matrix
 {
 private:
-    std::vector< std::vector<double> > m_upper;  // upper band
-    std::vector< std::vector<double> > m_lower;  // lower band
+    std::vector< std::vector<float> > m_upper;  // upper band
+    std::vector< std::vector<float> > m_lower;  // lower band
 public:
     band_matrix() {};                             // constructor
     band_matrix(int dim, int n_u, int n_l);       // constructor
@@ -55,15 +55,15 @@ public:
         return m_lower.size()-1;
     }
     // access operator
-    double& operator () (int i, int j);        // write
-    double  operator () (int i, int j) const;  // read
+    float& operator () (int i, int j);        // write
+    float  operator () (int i, int j) const;  // read
     // we can store an additional diogonal (in m_lower)
-    double& saved_diag(int i);
-    double  saved_diag(int i) const;
+    float& saved_diag(int i);
+    float  saved_diag(int i) const;
     void    lu_decompose();
-    std::vector<double> r_solve(const std::vector<double>& b) const;
-    std::vector<double> l_solve(const std::vector<double>& b) const;
-    std::vector<double> lu_solve(const std::vector<double>& b,
+    std::vector<float> r_solve(const std::vector<float>& b) const;
+    std::vector<float> l_solve(const std::vector<float>& b) const;
+    std::vector<float> lu_solve(const std::vector<float>& b,
                                  bool is_lu_decomposed=false);
 
 };
@@ -79,27 +79,27 @@ public:
     };
 
 private:
-    std::vector<double> m_x,m_y;            // x,y coordinates of points
+    std::vector<float> m_x,m_y;            // x,y coordinates of points
     // interpolation parameters
     // f(x) = a*(x-x_i)^3 + b*(x-x_i)^2 + c*(x-x_i) + y_i
-    std::vector<double> m_a, m_b, m_c;      // spline coefficients
-    double  m_b0, m_c0;                     // for left extrapolation
+    std::vector<float> m_a, m_b, m_c;      // spline coefficients
+    float  m_b0, m_c0;                     // for left extrapolation
     bd_type m_left, m_right;
-    double  m_left_value, m_right_value;
+    float  m_left_value, m_right_value;
     bool    m_force_linear_extrapolation;
 
 public:
     Spline_t();
 
     // optional, but if called it has to come before set_points()
-    void set_boundary(bd_type left, double left_value,
-                      bd_type right, double right_value,
+    void set_boundary(bd_type left, float left_value,
+                      bd_type right, float right_value,
                       bool force_linear_extrapolation=false);
-    void set_points(const std::vector<double>& x,
-                    const std::vector<double>& y, bool cubic_spline=true);
-    void set_points(const std::valarray<double>& x,
-                    const std::valarray<double>& y, bool cubic_spline=true);
-    double operator() (double x) const;
+    void set_points(const std::vector<float>& x,
+                    const std::vector<float>& y, bool cubic_spline=true);
+    void set_points(const std::valarray<float>& x,
+                    const std::valarray<float>& y, bool cubic_spline=true);
+    float operator() (float x) const;
 };
 
 

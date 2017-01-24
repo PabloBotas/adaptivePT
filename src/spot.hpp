@@ -8,14 +8,14 @@ struct Spot_t
 {
     Spot_t();
     Spot_t(std::string line);
-    Spot_t(double e, double w, double x, double y);
+    Spot_t(float e, float w, float x, float y);
     ~Spot_t();
-    std::string x;
-    std::string y;
-    double e;
-    double w;
+    float x;
+    float y;
+    float e;
+    float w;
 
-    void ShiftEnergy(double d);
+    void ShiftEnergy(float d);
     friend std::ostream& operator<<(std::ostream& os, const Spot_t& s);
 };
 

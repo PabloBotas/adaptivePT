@@ -61,10 +61,10 @@ private:
 
 };
 
-// convert to lower case
-static inline std::string toLower(std::string s) {
-    transform(s.begin(), s.end(), s.begin(), ::tolower);
-    return s;
-}
+std::vector<std::string> getFilesWithSuffix(std::string folderpath,
+                                            std::string suffix,
+                                            std::string contains="");
+std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string name);
+
 
 #endif

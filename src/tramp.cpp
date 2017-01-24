@@ -17,7 +17,13 @@ Tramp_t::Tramp_t()
 {
 }
 
-Tramp_t::Tramp_t(std::string f) : file(f)
+Tramp_t::Tramp_t(std::string f, std::string machine_) : machine(machine_), internal_energy_set(false), file(f)
+{
+    read_();
+    setEnergies();
+}
+
+Tramp_t::Tramp_t(std::string f) : internal_energy_set(false), file(f)
 {
     read_();
     setEnergies();
@@ -143,16 +149,101 @@ void Tramp_t::setEnergies()
     {
         energies[i] = spots[i].e;
     }
+
+    if(!machine.empty())
+    {
+        energy_to_internal();
+    }
+    setWEPLs();
 }
 
-std::vector<double> Tramp_t::getWEPLs()
+void Tramp_t::setWEPLs()
 {
-    std::vector<double> wepls(nspots);
+    std::vector<float> temp;
+    if(internal_energy_set)
+        temp = energies_internal;
+    else
+        temp = energies;
+
+    wepls.resize(nspots);
     Energy_Range_Calculator_t calculator;
-    std::transform(energies.begin(), energies.end(), wepls.begin(), calculator);
+    std::transform(temp.begin(), temp.end(), wepls.begin(), calculator);
+}
+
+std::vector<float> Tramp_t::getWEPLs()
+{
+    if(wepls.empty())
+        setWEPLs();
     return wepls;
 }
 
+float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
+{
+    float result;
+    int order = 4; // order of the poly
+    // Allocate enough space for any table we'd like to read.
+    std::vector<float> lambda(npoints);
+    // check order of interpolation
+    if (order > npoints) order = npoints;
+    // if x is ouside the vector_X[] interval
+    if (x <= vector_X[0]) return result = vector_Y[0];
+    if (x >= vector_X[npoints-1]) return result = vector_Y[npoints-1];
+    // loop to find j so that x[j-1] < x < x[j]
+    int j=0;
+    while (j < npoints)
+    {
+        if (vector_X[j] >= x) break;
+        j++;
+    }
+    // shift j to correspond to (npoint-1)th interpolation
+    j = j - order/2;
+    // if j is ouside of the range [0, ... npoints-1]
+    if (j < 0) j=0;
+    if (j+order > npoints ) j=npoints-order;
+    result = 0.0;
+    for (int is = j; is < j+order; is++)
+    {
+        lambda[is] = 1.0;
+        for (int il=j; il < j+order; il++)
+        {
+            if(il != is) lambda[is] = lambda[is]*(x-vector_X[il])/(vector_X[is]-vector_X[il]);
+        }
+        result += vector_Y[is]*lambda[is];
+    }
+    return result;
+}
+
+void Tramp_t::energy_to_internal()
+{
+    if(machine.compare(toLower("TopasMGHR4")) == 0)
+    {
+        float R80AstroidTopasb8[3][27] =
+        {
+            // Energy [MeV]
+            { 91.015, 95.489, 101.50, 109.36, 117.30, 122.69, 127.81, 134.27, 139.28, 146.68, 152.35, 156.37, 161.56, 166.79, 171.42, 176.88, 181.97, 186.06, 190.47, 195.37, 199.13, 204.11, 208.37, 212.67, 216.58, 221.15, 223.58 },
+            // R80 astroid [mm]
+            { 65.420, 71.310, 79.590, 91.020, 103.06, 111.54, 119.84, 130.77, 139.50, 152.79, 163.30, 170.89, 180.91, 191.30, 200.60, 211.82, 222.48, 231.22, 240.77, 251.57, 259.96, 271.24, 281.02, 291.04, 300.26, 311.14, 317.04 },
+            // R80 TOPASb8 [mm]
+            { 65.040, 70.850, 78.980, 90.170, 102.08, 110.52, 118.77, 129.54, 138.14, 151.25, 161.62, 169.13, 179.04, 189.24, 198.44, 209.53, 220.06, 228.67, 238.09, 248.74, 257.02, 268.16, 277.82, 287.70, 296.79, 307.55, 313.34 }
+        };
+
+        energies_internal.reserve(energies.size());
+        for (size_t i = 0; i < energies.size(); i++)
+        {
+            // converts energy from MGHR4 machine to the one used by the virtual machines
+            float range = InterpTable(&(R80AstroidTopasb8[0][0]), &(R80AstroidTopasb8[1][0]), energies.at(i), 27);
+            float ECorr = InterpTable(&(R80AstroidTopasb8[2][0]), &(R80AstroidTopasb8[0][0]), range, 27);
+            energies_internal.push_back(ECorr);
+        }
+    }
+    else
+        energies_internal = energies;
+}
+
+std::string toLower(std::string s) {
+    transform(s.begin(), s.end(), s.begin(), ::tolower);
+    return s;
+}
 
 // void Tramp_t::scale(double ratio)
 // {

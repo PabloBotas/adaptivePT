@@ -1,9 +1,14 @@
 #include "patient_parameters_parser.hpp"
+#include "utils.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <limits>
 #include <math.h>
+#include <algorithm>
+#include <dirent.h>
+#include <cstring>
+#include <sys/stat.h>
 
 Patient_Parameters_Parser_t::Patient_Parameters_Parser_t()
     : separator ("=")
@@ -59,7 +64,7 @@ template<class T>
 std::vector<T> Patient_Parameters_Parser_t::readVector(std::string quantity, T defaultValue, bool firstIsSize)
 {
     // Parameter format: <Type>:<Quantity> = <Values> <Unit>
-    std::string quantityLower = trim(toLower(quantity));
+    std::string quantityLower = trim(utils::toLower(quantity));
 
     for (size_t line = 0; line < input.size(); line++) {
 
@@ -67,7 +72,7 @@ std::vector<T> Patient_Parameters_Parser_t::readVector(std::string quantity, T d
 
         if (separatorPos != std::string::npos) {
 
-            std::string inputQuantity = trim(toLower(input[line].substr(0, separatorPos)));
+            std::string inputQuantity = trim(utils::toLower(input[line].substr(0, separatorPos)));
 
             size_t typeEnd = inputQuantity.find(":");
             if (typeEnd != std::string::npos) {
@@ -101,7 +106,7 @@ std::vector<T> Patient_Parameters_Parser_t::readVector(std::string quantity, T d
                     values = trim(setting);
                 }
 
-                unit = toLower(unit);
+                unit = utils::toLower(unit);
 
                 std::vector<T> returnValues;
 
@@ -172,14 +177,14 @@ std::vector<T> Patient_Parameters_Parser_t::readVector(std::string quantity, T d
 std::string Patient_Parameters_Parser_t::readString(std::string quantity, std::string defaultValue)
 {
     // Parameter format: <Type>:<Quantity> = <String>
-    std::string quantityLower = trim(toLower(quantity));
+    std::string quantityLower = trim(utils::toLower(quantity));
 
     for (size_t line = 0; line < input.size(); line++) {
 
         size_t separatorPos = input[line].find(separator);
 
         if (separatorPos != std::string::npos) {
-            std::string inputQuantity = trim(toLower(input[line].substr(0, separatorPos)));
+            std::string inputQuantity = trim(utils::toLower(input[line].substr(0, separatorPos)));
 
             size_t typeEnd = inputQuantity.find(":");
             if (typeEnd != std::string::npos) {
@@ -226,7 +231,7 @@ bool Patient_Parameters_Parser_t::readBool(std::string quantity, bool defaultVal
         defaultString = "true";
     
     std::string value = readString(quantity, defaultString);
-    if(toLower(value) == "true")
+    if(utils::toLower(value) == "true")
         return true;
     else
         return false;
@@ -284,8 +289,120 @@ void Patient_Parameters_Parser_t::setConvertUnits(bool newValue)
 
 
 // Explicit Instantiation
+template float Patient_Parameters_Parser_t::readReal<float>(std::string, float);
 template double Patient_Parameters_Parser_t::readReal<double>(std::string, double);
 template unsigned int Patient_Parameters_Parser_t::readReal<unsigned int>(std::string, unsigned int);
+template std::vector<float> Patient_Parameters_Parser_t::readVector(std::string, float, bool);
 template std::vector<double> Patient_Parameters_Parser_t::readVector(std::string, double, bool);
 template std::vector<unsigned int> Patient_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
 
+std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string name)
+//      return all folder names of all folders
+{
+    std::vector<std::string> returnStrings; //empty returnvalue
+
+    struct dirent *direntp = NULL;
+    DIR *dirp = NULL;
+
+    dirp = opendir(folderpath.c_str());
+    if (dirp == NULL)
+    {
+        std::cerr << "ERROR, " << folderpath << " cannot be openned!" << std::endl;
+        std::cerr << "Was searching for " << name  << std::endl;
+        perror("Cannot open directory");
+        exit(EXIT_FAILURE);
+    }
+
+    // For every directory entry...
+    while ((direntp = readdir(dirp)) != NULL)
+    {
+        // Ignore special directories.
+        if ((std::strcmp(direntp->d_name, ".") == 0) ||
+                (std::strcmp(direntp->d_name, "..") == 0))
+            continue;
+
+        struct stat fstat;
+        std::string full_name;
+
+        full_name = std::string(folderpath);
+        if(*(full_name.end()-1) != '/')
+            full_name += std::string("/");
+        full_name += std::string(direntp->d_name);
+
+        // Get only if it is really directory.
+        if (stat(full_name.c_str(), &fstat) < 0)
+            continue;
+        if (S_ISDIR(fstat.st_mode))
+        {
+            // Check name
+            if (stat((full_name + "/" + name).c_str() , &fstat) < 0)
+                continue;
+            returnStrings.push_back(full_name);
+        }
+    }
+
+    return returnStrings;
+}
+
+std::vector<std::string> getFilesWithSuffix(std::string folderpath, std::string suffix, std::string contains)
+//  get a list of files inside of the folderpath with given suffix
+{
+    std::vector<std::string> returnStrings;
+
+    struct dirent *direntp = NULL;
+    DIR *dirp = NULL;
+
+    dirp = opendir(folderpath.c_str());
+    if (dirp == NULL)
+    {
+        std::cerr << "ERROR, " << folderpath << " cannot be openned!" << std::endl;
+        std::cerr << "Was searching for " << suffix  << std::endl;
+        perror("Cannot open directory");
+        exit(EXIT_FAILURE);
+    }
+
+    // For every directory entry...
+    while ((direntp = readdir(dirp)) != NULL)
+    {
+        // Ignore special directories.
+        if ((std::strcmp(direntp->d_name, ".") == 0) || (std::strcmp(direntp->d_name, "..") == 0))
+            continue;
+
+        struct stat fstat;
+        std::string full_name;
+
+        //  get full name
+        full_name = std::string(folderpath);
+        if (*(full_name.end()-1) != '/')
+            full_name += std::string("/");
+        full_name += std::string(direntp->d_name);
+
+        //  get info for this entry(folder or file)
+        if (stat(full_name.c_str(), &fstat) < 0)
+            continue;
+
+        //  if a file, check it
+        if(!S_ISDIR(fstat.st_mode))
+        {
+            std::string temp(direntp->d_name);
+            int n = temp.size();
+            int start = n-suffix.size();
+            std::string MacFilesPref = "._";
+            if(start<0) continue;  //the current file name is shorter than suffix
+            if(suffix == temp.substr(n-suffix.size(),n) && temp.substr(0,2) != MacFilesPref) {
+                // Check name
+                if (contains.empty() || temp.find(contains) != std::string::npos) {
+                    returnStrings.push_back(full_name);
+                }
+            }
+        }
+        //  if a folder, recursive
+        else
+        {
+            std::vector<std::string> temp = getFilesWithSuffix(full_name, suffix);
+            returnStrings.insert(returnStrings.end(), temp.begin(), temp.end() ); //append
+        }
+    }
+
+    return returnStrings;
+}

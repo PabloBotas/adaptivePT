@@ -220,6 +220,10 @@ inline __host__ __device__ int4 make_int4(uint4 a)
 {
     return make_int4(int(a.x), int(a.y), int(a.z), int(a.w));
 }
+inline __host__ __device__ int4 make_int4(float3 a)
+{
+    return make_int4(int(a.x), int(a.y), int(a.z), 0);
+}
 inline __host__ __device__ int4 make_int4(float4 a)
 {
     return make_int4(int(a.x), int(a.y), int(a.z), int(a.w));
@@ -802,6 +806,10 @@ inline __host__ __device__ void operator*=(uint2 &a, uint b)
 }
 
 inline __host__ __device__ float3 operator*(float3 a, float3 b)
+{
+    return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+inline __host__ __device__ float3 operator*(int3 a, float3 b)
 {
     return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
 }
