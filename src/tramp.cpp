@@ -188,7 +188,6 @@ void Tramp_t::to_file(std::string f)
 
 void Tramp_t::setEnergies()
 {
-    std::cout << "Setting energies!!" << std::endl;
     energies.reserve(nspots);
     for (size_t i = 0; i < nspots; i++)
     {
@@ -254,7 +253,6 @@ float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
 
 void Tramp_t::energy_to_internal()
 {
-    std::cout << "Setting internal energies!!" << std::endl;
     energies_internal.reserve(energies.size());
     if(machine.compare(toLower("TopasMGHR4")) == 0)
     {
@@ -283,8 +281,6 @@ void Tramp_t::energy_to_internal()
             energies_internal.push_back(energies[i]);
         }
     }
-    std::cout << energies_internal.size() << std::endl;
-
 }
 
 std::string toLower(std::string s) {
