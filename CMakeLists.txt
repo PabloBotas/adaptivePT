@@ -36,6 +36,12 @@ endif()
 # set (CUDA_SDK_ROOT_DIR "/home/gmoc/NVIDIA_GPU_Computing_SDK")
 # include_directories ("${CUDA_SDK_ROOT_DIR}")
 
+# Definitions------------------------------------------------
+option(DEBUG_SCORER "Use debug mode to export a CT volume with the ray paths" OFF)
+if(DEBUG_SCORER)
+  add_definitions(-D__DEBUG_MODE__)
+endif()
+
 
 # Files------------------------------------------------------
 file (GLOB cpp_sources  src/*.cpp)

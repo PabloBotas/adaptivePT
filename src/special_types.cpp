@@ -53,7 +53,9 @@ RangeShifter_Dims_t::RangeShifter_Dims_t():
                      exists(false),
                      thick(0),
                      zdown(0),
-                     zup(0)
+                     zup(0),
+                     density(1.15),
+                     wepl(thick*density)
 {
 }
 

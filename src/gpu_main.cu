@@ -37,15 +37,27 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
     gpu_ct_to_device::setDimensions(ct);
     gpu_ct_to_device::setDensities(ct);
 
-    // the simulation is initialized once, but the calculation is launched nbeams_h times
+    std::vector<unsigned int> number_spots(pat.nbeams);
+    unsigned int max_number_spots = 0;
     for(size_t i=0; i < pat.nbeams; i++)
     {
-        // Create tramp object
         Tramp_t tramp;
         tramp.read_file_header(pat.tramp_files.at(i));
+        number_spots.at(i) = tramp.nspots;
+        max_number_spots = max_number_spots > number_spots.at(i) ? max_number_spots : number_spots.at(i);
+    }
+
+    // the simulation is initialized once, but the calculation is launched nbeams_h times
+    for(size_t i = 0; i < pat.nbeams; i++)
+    {
         // Create scorer array
-        gpuErrchk( cudaMemcpyToSymbol(nspots, &tramp.nspots, sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
-        gpuErrchk( cudaMalloc( (void **) &scorer, sizeof(float3)*tramp.nspots) );
+        gpuErrchk( cudaMemcpyToSymbol(nspots, &number_spots.at(i), sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
+        unsigned int scorer_size = sizeof(float)*3*max_number_spots;
+#ifdef __DEBUG_MODE__
+        scorer_size = sizeof(float)*ct.nElements;
+#endif
+        gpuErrchk( cudaMalloc( (void **) &scorer, scorer_size) );
+        setScorerToZeros(scorer, scorer_size);
 
         std::vector<float4> xbuffer;
         std::vector<float4> vxbuffer;
@@ -53,8 +65,9 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
         init_rays(pat, i, xbuffer, vxbuffer);
         float3 ct_offsets = make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z);
         calculateRays(xbuffer, vxbuffer, pat.angles.at(i), ct_offsets);
+        outputScorerResults(scorer, scorer_size, pat.beam_names.at(i), pat.results_dir);
+
         // outputScorerResults(i);
-        clearScorer(scorer, sizeof(float3)*tramp.nspots);
         std::cout << std::endl;
     }
 

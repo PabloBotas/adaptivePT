@@ -10,7 +10,9 @@
 #include "spot.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include <sys/stat.h>
 
 void init_rays(const Patient_Parameters_t& pat,
                const unsigned int ibeam,
@@ -31,9 +33,10 @@ void init_rays(const Patient_Parameters_t& pat,
     {
         RangeShifter_Dims_t rs = pat.range_shifters[ibeam];
         std::cout << "    Range shifter thickness:    " << rs.thick << " cm" << std::endl;
-        std::cout << "    Range shifter z upstream:   " << rs.zup   << " cm" << std::endl;
-        std::cout << "    Range shifter z downstream: " << rs.zdown << " cm" << std::endl;
-        src.zeff = abs(rs.zup) > abs(src.zeff) ? rs.zup : src.zeff;
+        for (size_t i = 0; i < src.wepls.size(); i++)
+        {
+            src.wepls.at(i) -= rs.wepl;
+        }
     }
     if(pat.apertures[ibeam].exists)
     {
@@ -42,7 +45,6 @@ void init_rays(const Patient_Parameters_t& pat,
         std::cout << "    Aperture z downstream: " << ap.zdown << " cm" << std::endl;
     }
     std::cout << "    Source Z plane: " << src.z << " cm" << std::endl;
-    std::cout << "    Effective source Z plane: " << src.zeff << " cm" << std::endl;
 
     float2 SAD = make_float2(pat.virtualSAD.a, pat.virtualSAD.b); // cm
 
@@ -57,13 +59,13 @@ void init_rays(const Patient_Parameters_t& pat,
         float3 pos; // cm
         // The x,y coordinates are push together or pulled appart depending on the z coord they are going to be initialized in.
         // Some angular spread will be added too
-        pos.x = ((SAD.x + src.zeff) / SAD.x) * spot.x;
-        pos.y = ((SAD.y + src.zeff) / SAD.y) * spot.y;
-        pos.z = src.zeff;
+        pos.x = ((SAD.x + src.z) / SAD.x) * spot.x;
+        pos.y = ((SAD.y + src.z) / SAD.y) * spot.y;
+        pos.z = src.z;
 
         float3 dCos;
-        float a = (spot.x-pos.x)/abs(src.zeff);
-        float b = (spot.y-pos.y)/abs(src.zeff);
+        float a = (spot.x-pos.x)/abs(src.z);
+        float b = (spot.y-pos.y)/abs(src.z);
         float norm = sqrt(a*a + b*b + 1.f);
         dCos.x = a/norm;
         dCos.y = b/norm;
@@ -74,7 +76,7 @@ void init_rays(const Patient_Parameters_t& pat,
             std::cerr << "Something went wrong calculating direction cosines:" << std::endl;
             std::cerr << "Are these correct and they make sense?" << std::endl;
             std::cerr << "    Nominal Z plane:   " << src.z       << std::endl;
-            std::cerr << "    Effective Z plane: " << src.zeff    << std::endl;
+            std::cerr << "    Effective Z plane: " << src.z    << std::endl;
             std::cerr << "    SAD.x:             " << SAD.x       << std::endl;
             std::cerr << "    SAD.y:             " << SAD.y       << std::endl;
             std::cerr << "    spot #:            " << i           << std::endl;
@@ -91,24 +93,6 @@ void init_rays(const Patient_Parameters_t& pat,
         xbuffer.push_back( make_float4( -pos.y, -pos.x, pos.z, wepl) );
         vxbuffer.push_back( make_float4( -dCos.y, -dCos.x, dCos.z, energy) );
     }
-}
-
-
-void calculateRays(const std::vector<float4>& xbuffer,
-                   const std::vector<float4>& vxbuffer,
-                   const BeamAngles_t& ang,
-                   const float3& ct_offsets)
-{
-    float2 angles = make_float2(ang.gantry, ang.couch);
-
-    unsigned int num = rays_to_device(xbuffer, vxbuffer, angles, ct_offsets);
-
-    //      simulate a batch of rays
-    std::cout << "\tCalculating " << num << " rays ..." << std::endl;
-    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_RAYS;
-    calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(num, scorer);
-    gpuErrchk( cudaPeekAtLastError() );
-    gpuErrchk( cudaThreadSynchronize() );
 }
 
 
@@ -135,7 +119,50 @@ unsigned int rays_to_device(const std::vector<float4>& xbuffer,
 }
 
 
-void clearScorer(void *s, size_t sz)
+void calculateRays(const std::vector<float4>& xbuffer,
+                   const std::vector<float4>& vxbuffer,
+                   const BeamAngles_t& ang,
+                   const float3& ct_offsets)
+{
+    float2 angles = make_float2(ang.gantry, ang.couch);
+
+    unsigned int num = rays_to_device(xbuffer, vxbuffer, angles, ct_offsets);
+
+    //      simulate a batch of rays
+    std::cout << "\tCalculating " << num << " rays ..." << std::endl;
+    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_RAYS;
+    calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(num, scorer);
+    gpuErrchk( cudaPeekAtLastError() );
+    gpuErrchk( cudaThreadSynchronize() );
+}
+
+
+void outputScorerResults(float* src, const size_t size, std::string beam_name, std::string dir)
+{
+    std::cout << "Output results" << std::endl;
+    std::string file = dir + "/" + beam_name + ".bin";
+    std::cout << "\t" << file << std::endl;
+
+    struct stat sb;
+    if (!(stat(dir.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)))
+        mkdir(dir.c_str(), 0774);        
+
+    // copy data from GPU to CPU
+    std::vector<float> temp(size);
+    gpuErrchk( cudaMemcpy(temp.data(), src, size, cudaMemcpyDeviceToHost) );
+
+    // write results to file
+    std::ofstream ofs(file, std::ofstream::out | std::ofstream::binary);
+    if(!ofs.is_open())
+    {
+        std::cerr << "Can't open file " << file << " to write results." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    ofs.write(reinterpret_cast<const char*>(temp.data()), size);
+}
+
+
+void setScorerToZeros(void *s, size_t sz)
 {
     cudaMemset(s, 0, sz);
 }

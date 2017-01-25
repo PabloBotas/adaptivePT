@@ -35,7 +35,7 @@
 extern __device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
 extern __device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
 extern __device__ unsigned int nspots;
-extern float3 *scorer;
+extern float *scorer;
 
 // CT variables
 extern cudaArray *dens;

@@ -59,6 +59,10 @@ struct RangeShifter_Dims_t
     float zdown;
     float zup;
     RangeShifter_Dims_t();
+private:
+    float density;
+public:
+    float wepl;
 };
 
 // SAD_t ---------------------------------------

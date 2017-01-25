@@ -3,7 +3,7 @@
 #include "gpu_ray_class.cuh"
 #include "gpu_geometry_operations.cuh"
 
-__global__ void calculateRays_kernel(int num, float3 *scorer)
+__global__ void calculateRays_kernel(int num, float *scorer)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
     if(id < num)
@@ -14,14 +14,29 @@ __global__ void calculateRays_kernel(int num, float3 *scorer)
 
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
-        while (ray.isAlive())
+        while (ray.isAlive() && vox.w != -1)
         {
             float density = tex3D(dens_tex, vox.z, vox.y, vox.x);
             float step    = inters(ray, vox, voxUpdater, voxStepper);
             ray.step(step, density);
             changeVoxel(vox, voxUpdater, voxStepper);
+#ifdef __DEBUG_MODE__
+            if(vox.w != -1)
+            {
+                scorer[vox.w] += 1;
+                printf("%d: %d, %f\n", id, vox.w, scorer[vox.w]);
+            }
+#endif
         }
-        scorer[id] = ray.position();
+#ifndef __DEBUG_MODE__
+        if(vox.w != -1)
+        {
+            unsigned int index = id*3;
+            scorer[index+0] = ray.pos.x;
+            scorer[index+1] = ray.pos.y;
+            scorer[index+2] = ray.pos.z;
+        }
+#endif
     }
 }
 

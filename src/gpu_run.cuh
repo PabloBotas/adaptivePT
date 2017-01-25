@@ -24,7 +24,8 @@ unsigned int rays_to_device(const std::vector<float4>& xbuffer,
 
 __global__ void rays_to_device_kernel(int num, float2 angles, float3 ct_offsets);
 
-void clearScorer(void *s, size_t sz);
+void setScorerToZeros(void *s, size_t sz);
+void outputScorerResults(float* src, const size_t scorer_size, std::string beam_name, std::string dir);
 
 // void outputData(void *src, const size_t size, string outputfilename, const char *mode);
 // void outputScorerResults(size_t beamNumber);
