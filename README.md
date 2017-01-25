@@ -8,8 +8,8 @@ Patient geometry may change due to positioning or weight loss. Adaptive therapy 
 - [x] Read tramp files
 - [x] Read patient structure
 - [x] Read MHA files
-- [ ] Read ctvolume.dat
-- [ ] Create internal volume representation (float)
+- [x] Read ctvolume.dat
+- [x] Create internal volume representation (float)
 - [ ] Translate spot map to mha. Warp it with vf and read it in associating it with given tramp files.
 - [ ] Get distal coordinates for each spot in tramp file
   * [ ] Read physical data
