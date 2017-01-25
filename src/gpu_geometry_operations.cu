@@ -39,7 +39,7 @@ __device__ float inters(const Ray& ray,
     return fabs(step);
 }
 
-__device__ void changeVoxel(int4& vox, VoxelUpdater updater, VoxelStepper stepper)
+__device__ void changeVoxel(int4& vox, const VoxelUpdater updater, const VoxelStepper stepper)
 //    Changes voxel according to the information passed by inters()
 {
     if (updater == UPDATEZ)
