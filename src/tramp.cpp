@@ -22,6 +22,8 @@ Tramp_t::Tramp_t(std::string f, std::string machine_) : machine(machine_), inter
     defaults();
     read_();
     setEnergies();
+    energy_to_internal();
+    setWEPLs();
 }
 
 Tramp_t::Tramp_t(std::string f) : internal_energy_set(false), file(f)
@@ -29,6 +31,7 @@ Tramp_t::Tramp_t(std::string f) : internal_energy_set(false), file(f)
     defaults();
     read_();
     setEnergies();
+    setWEPLs();
 }
 
 Tramp_t::~Tramp_t()
@@ -120,6 +123,27 @@ void Tramp_t::read_()
     }
 }
 
+void Tramp_t::read_file_header(std::string f)
+{
+    std::ifstream stream(f);
+    if (!stream.is_open()) {
+        std::cerr << "Can't open file: " << f << std::endl;
+        return;
+    }
+
+    patient_id             = getHeaderValue<std::string>(stream);
+    patient_first_name     = getHeaderValue<std::string>(stream);
+    patient_middle_initial = getHeaderValue<std::string>(stream);
+    patient_last_name      = getHeaderValue<std::string>(stream);
+    astroid_id             = getHeaderValue<std::string>(stream);
+    course_name            = getHeaderValue<std::string>(stream);
+    beam_name              = getHeaderValue<std::string>(stream);
+    gantry                 = getHeaderValue<std::string>(stream);
+    couch_rotation         = getHeaderValue<std::string>(stream);
+    gigaprotons            = getHeaderValue<float>(stream);
+    nspots                 = getHeaderValue<unsigned int>(stream);
+}
+
 void Tramp_t::print(unsigned int n)
 {
     if ( n == 0)
@@ -164,17 +188,12 @@ void Tramp_t::to_file(std::string f)
 
 void Tramp_t::setEnergies()
 {
-    energies.resize(nspots);
+    std::cout << "Setting energies!!" << std::endl;
+    energies.reserve(nspots);
     for (size_t i = 0; i < nspots; i++)
     {
-        energies[i] = spots[i].e;
+        energies.push_back(spots[i].e);
     }
-
-    if(!machine.empty())
-    {
-        energy_to_internal();
-    }
-    setWEPLs();
 }
 
 void Tramp_t::setWEPLs()
@@ -235,6 +254,8 @@ float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
 
 void Tramp_t::energy_to_internal()
 {
+    std::cout << "Setting internal energies!!" << std::endl;
+    energies_internal.reserve(energies.size());
     if(machine.compare(toLower("TopasMGHR4")) == 0)
     {
         float R80AstroidTopasb8[3][27] =
@@ -247,7 +268,6 @@ void Tramp_t::energy_to_internal()
             { 65.040, 70.850, 78.980, 90.170, 102.08, 110.52, 118.77, 129.54, 138.14, 151.25, 161.62, 169.13, 179.04, 189.24, 198.44, 209.53, 220.06, 228.67, 238.09, 248.74, 257.02, 268.16, 277.82, 287.70, 296.79, 307.55, 313.34 }
         };
 
-        energies_internal.reserve(energies.size());
         for (size_t i = 0; i < energies.size(); i++)
         {
             // converts energy from MGHR4 machine to the one used by the virtual machines
@@ -257,7 +277,14 @@ void Tramp_t::energy_to_internal()
         }
     }
     else
-        energies_internal = energies;
+    {
+        for (size_t i = 0; i < energies.size(); i++)
+        {
+            energies_internal.push_back(energies[i]);
+        }
+    }
+    std::cout << energies_internal.size() << std::endl;
+
 }
 
 std::string toLower(std::string s) {

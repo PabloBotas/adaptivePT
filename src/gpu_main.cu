@@ -41,7 +41,8 @@ void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
     for(size_t i=0; i < pat.nbeams; i++)
     {
         // Create tramp object
-        Tramp_t tramp(pat.tramp_files.at(i));
+        Tramp_t tramp;
+        tramp.read_file_header(pat.tramp_files.at(i));
         // Create scorer array
         gpuErrchk( cudaMemcpyToSymbol(nspots, &tramp.nspots, sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
         gpuErrchk( cudaMalloc( (void **) &scorer, sizeof(float3)*tramp.nspots) );

@@ -23,6 +23,7 @@ public:
     void print(unsigned int n);
     void print(unsigned int n0, unsigned int n1);
     void defaults();
+    void read_file_header(std::string f);
 
     std::vector<Spot_t> spots;
     std::vector<float> energies;
