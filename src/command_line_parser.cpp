@@ -33,6 +33,8 @@ void Parser::process_command_line(int argc, char** argv)
                     "Topas MCAUTO_DICOM.txt file with the plan parameters")
         ("cbct",    po::value<std::string>(&cbct_file)->required(),
                     "CBCT to adapt the plan to")
+        ("outdir",  po::value<std::string>(&out_dir)->default_value("results"),
+                    "Output directory to write results to.")
         ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
                     "If the energy should be adapted layer by layer instead of with individual spots")
         ;

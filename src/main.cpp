@@ -13,6 +13,7 @@ int main(int argc, char** argv)
 
     // Read input patient
     Patient_Parameters_t patient_data(parser.patient);
+    patient_data.add_results_directory(parser.out_dir);
     patient_data.print();
 
     // Read CBCT

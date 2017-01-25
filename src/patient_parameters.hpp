@@ -49,6 +49,10 @@ public:
     std::vector<BeamAngles_t> angles;
     std::vector<float>        isocenter_to_beam_distance;
 
+    std::string results_dir;
+
+    void add_results_directory(std::string s);
+
 private:
     void exploreBeamDirectories();
     void parseTopasFiles();

@@ -16,6 +16,7 @@ public:
 
     std::string patient;
     std::string cbct_file;
+    std::string out_dir;
     bool if_per_layer;
 
     void print_parameters();

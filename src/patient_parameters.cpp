@@ -206,3 +206,9 @@ void Patient_Parameters_t::print()
     }
 }
 
+void Patient_Parameters_t::add_results_directory(std::string s)
+{
+    results_dir = s;
+}
+
+
