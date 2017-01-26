@@ -27,7 +27,7 @@ void Mha_reader_t::read_header()
     std::ifstream stream(file);
     if (!stream.is_open()) {
         std::cerr << "Can't open file: " << file << std::endl;
-        return;
+        exit(EXIT_FAILURE);
     }
 
     // Get header values
@@ -36,28 +36,24 @@ void Mha_reader_t::read_header()
     BinaryData             = getHeaderValue<bool>(stream);
     BinaryDataByteOrderMSB = getHeaderValue<bool>(stream);
     CompressedData         = getHeaderValue<bool>(stream);
-    std::vector<float> TransformMatrix = getHeaderVector<float>(stream, 9);
-    std::vector<float> Offset          = getHeaderVector<float>(stream, 3);
+    transform_matrix       = getHeaderVector<float>(stream, 9);
+    origin                 = getHeaderVector<float>(stream, 3);
     CenterOfRotation       = getHeaderVector<int>(stream, 9);
     AnatomicalOrientation  = getHeaderValue<std::string>(stream);
-    std::vector<float> ElementSpacing = getHeaderVector<float>(stream, 3);
-    std::vector<unsigned int> DimSize = getHeaderVector<unsigned int>(stream, 3);
-    std::string ElementType = getHeaderValue<std::string>(stream);
-    ElementDataFile         = getHeaderValue<std::string>(stream);
+    spacing                = getHeaderVector<float>(stream, 3);
+    dim                    = getHeaderVector<unsigned int>(stream, 3);
+    std::string ElType     = getHeaderValue<std::string>(stream);
+    ElementDataFile        = getHeaderValue<std::string>(stream);
 
-    transform_matrix = TransformMatrix;
-    origin           = Offset;
-    dim              = DimSize;
-    nElements        = dim.x*dim.y*dim.z;
-    spacing          = ElementSpacing;
+    nElements = dim.x*dim.y*dim.z;
 
-    if (ElementType.compare("MET_SHORT") == 0) {
+    if (ElType.compare("MET_SHORT") == 0) {
         nb = 2;
         type_id = 1;
-    } else if (ElementType.compare("MET_USHORT") == 0) {
+    } else if (ElType.compare("MET_USHORT") == 0) {
         nb = 2;
         type_id = 2;
-    } else if (ElementType.compare("MET_FLOAT") == 0) {
+    } else if (ElType.compare("MET_FLOAT") == 0) {
         nb = 4;
         type_id = 3;
     } else {
@@ -73,7 +69,7 @@ void Mha_reader_t::read_header()
     std::cout << "    - spacing:    ";
     std::cout << spacing.x << ", " << spacing.y << ", " << spacing.z << std::endl;
     std::cout << "    - data type:  ";
-    std::cout << ElementType << " (" << nb << " bytes)" << std::endl;
+    std::cout << ElType << " (" << nb << " bytes)" << std::endl;
 }
 
 
