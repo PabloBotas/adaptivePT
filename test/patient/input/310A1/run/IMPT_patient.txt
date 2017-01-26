@@ -1,0 +1,98 @@
+###################################################
+#----------------- IncludeFiles  ------------------
+# Beam describing chain
+# Target describing chain
+# Target scoring
+# This file will be used for patient calculations.
+#
+# It defines
+#   -- upto Dosegrid
+#   -- Rangeshifter as mass parallel if defined
+#   -- Aperture as mass parallel if defined
+#   -- reads contours
+
+###################################################
+
+includeFile = IMPT_beam.txt
+
+#####################################################
+## Aperture/RangeShifter/Compensator               ##
+## become MassParallel                             ##
+#####################################################
+b:Ge/Compensator/IsParallel  = Rt/beam/IncludeCompensator
+b:Ge/Aperture/IsParallel     = Rt/beam/IncludeAperture
+b:Ge/RangeShifter/IsParallel = Rt/beam/IncludeRangeShifter
+
+####################################################
+#----------------- World   --------------------
+####################################################
+Ge/World/HLX = 80.0 cm
+Ge/World/HLY = 80.0 cm
+Ge/World/HLZ = 80.0 cm
+
+###################################################
+##----  Patient from DICOM   ----#
+####################################################
+####################################################
+##------ PatientGroup (a group of components) -----
+####################################################
+s:Ge/PatientGroup/Type   = "Group"
+s:Ge/PatientGroup/Parent = "IEC_T"
+d:Ge/PatientGroup/TransX = 0 mm
+d:Ge/PatientGroup/TransY = 0 mm
+d:Ge/PatientGroup/TransZ = 0 mm
+d:Ge/PatientGroup/RotX   = 90.0 deg  
+d:Ge/PatientGroup/RotY   = 0.0  deg 
+d:Ge/PatientGroup/RotZ   = 0.0  deg
+
+s:Ge/Patient/Parent   = "PatientGroup"
+s:Ge/Patient/Type     = "TsDicomPatient"
+s:Ge/Patient/Material = "Water"     #for TOPAS 2.x
+#s:Ge/Patient/Material = "G4_WATER" #for TOPAS 3.0
+s:Ge/Patient/HUtoMaterialConversionMethod = "Schneider"
+d:Ge/Patient/RotX     = 0.0 deg
+d:Ge/Patient/RotY     = 0.0 deg
+d:Ge/Patient/RotZ     = 0.0 deg
+d:Ge/Patient/TransX   = Rt/CT/ImgCenterX - Rt/beam/IsoCenter0 mm
+d:Ge/Patient/TransY   = Rt/CT/ImgCenterY - Rt/beam/IsoCenter1 mm
+d:Ge/Patient/TransZ   = Rt/CT/ImgCenterZ - Rt/beam/IsoCenter2 mm
+
+#: (0018, 0050) Slice Thickness DS: '2.00000' * Ge/Patient/NumberOfVoxelsZ mm # Slice Thickness was missing.
+
+s:Ge/Patient/DicomDirectory = Rt/CT/Img_Directory
+
+###################################################
+#---- DoseGrid Positioning——#
+###################################################
+
+s:Ge/DoseGrid/Parent = "PatientGroup"
+s:Ge/DoseGrid/Type   = "TsBox"
+
+i:Ge/DoseGrid/XBins  = Rt/dose/Columns
+i:Ge/DoseGrid/YBins  = Rt/dose/Rows
+i:Ge/DoseGrid/ZBins  = Rt/dose/NumberOfSlicesZ 
+
+d:Ge/DoseGrid/FullLengthX = Rt/dose/PixelSpacing0 mm * Rt/dose/Columns
+d:Ge/DoseGrid/FullLengthY = Rt/dose/PixelSpacing1 mm * Rt/dose/Rows
+d:Ge/DoseGrid/FullLengthZ = Rt/dose/DoseGridSliceThickness mm * Rt/dose/NumberOfSlicesZ
+
+d:Ge/DoseGrid/HLX = 0.5 * Ge/DoseGrid/FullLengthX mm
+d:Ge/DoseGrid/HLY = 0.5 * Ge/DoseGrid/FullLengthY mm
+d:Ge/DoseGrid/HLZ = 0.5 * Ge/DoseGrid/FullLengthZ mm
+
+###################################################
+#---- Positioning ----#
+###################################################
+#Define TransVector := ImgCenter to DoseCenter
+d:Ge/DoseGrid/TransVectorX = Rt/dose/DoseGridCenter2CTOriginX - Rt/CT/ImgCenterX mm
+d:Ge/DoseGrid/TransVectorY = Rt/dose/DoseGridCenter2CTOriginY - Rt/CT/ImgCenterY mm
+d:Ge/DoseGrid/TransVectorZ = Rt/dose/DoseGridCenter2CTOriginZ - Rt/CT/ImgCenterZ mm
+#Move displacement vector of ISO center
+d:Ge/DoseGrid/TransX    = Ge/DoseGrid/TransVectorX + Ge/Patient/TransX mm
+d:Ge/DoseGrid/TransY    = Ge/DoseGrid/TransVectorY + Ge/Patient/TransY mm
+d:Ge/DoseGrid/TransZ    = Ge/DoseGrid/TransVectorZ + Ge/Patient/TransZ mm
+
+d:Ge/DoseGrid/RotX       = 0 deg
+d:Ge/DoseGrid/RotY       = 0 deg
+d:Ge/DoseGrid/RotZ       = 0 deg
+b:Ge/DoseGrid/IsParallel = "True"

@@ -1,9 +1,0 @@
-#  
-###################################################
-#----------------- IncludeFiles  ------------------
-###################################################
-includeFile =  plan_ch1.txt
-Ts/Seed =  1574801111
-i:Ts/NumberOfThreads = 2
-sv:Ph/Default/LayeredMassGeometryWorlds= 1 "RangeShifter" 
-Sc/DoseGrid_Dw/OutputFile = "Dw_ch1"
