@@ -37,6 +37,7 @@ struct BeamAngles_t
 struct CT_Dims_t
 {
     Topas_Vector_t<> offset;
+    Topas_Vector_t<> isocenter;
     Topas_Vector_t<float, std::vector<float> > d;
     Topas_Vector_t<unsigned int, std::vector<unsigned int> > n;
     unsigned int total;

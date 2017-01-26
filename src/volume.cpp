@@ -18,6 +18,9 @@ Patient_Volume_t::Patient_Volume_t(std::string f,
     source_type = s;
 
     read_volume();
+    imgCenter.x = (origin.x - d.x/2) + 1/2*d.x*n.x;
+    imgCenter.y = (origin.y - d.y/2) + 1/2*d.y*n.y;
+    imgCenter.z = (origin.z - d.z/2) + 1/2*d.z*n.z;
 }
 
 Patient_Volume_t::Patient_Volume_t(std::string f,
@@ -54,6 +57,7 @@ void Patient_Volume_t::read_volume()
             nElements = reader.nElements;
             n = reader.dim;
             d = reader.spacing;
+            origin = reader.origin;
             hu.resize(nElements);
             std::copy(reader.data.begin(), reader.data.end(), hu.begin());
             // hu = new std::vector<float>(reader.data.begin(), reader.data.end());

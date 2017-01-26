@@ -30,6 +30,8 @@ public:
     std::string file;
     Vector_t<unsigned int> n;
     Vector_t<float> d;
+    Vector_t<float> origin;
+    Vector_t<float> imgCenter;
     unsigned int nElements;
 
     std::vector<float> hu;

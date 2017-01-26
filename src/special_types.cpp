@@ -35,6 +35,7 @@ template class Vector_t<float>;
 template class Vector_t<double>;
 
 // Topas_Vector_t ---------------------------------------
+template struct Topas_Vector_t<float, float>;
 template struct Topas_Vector_t<double, double>;
 template struct Topas_Vector_t<double, std::vector<double> >;
 template struct Topas_Vector_t<unsigned int, std::vector<unsigned int> >;

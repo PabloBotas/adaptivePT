@@ -80,12 +80,12 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     float ImgCenterX = pars.readReal<float>("Rt/CT/ImgCenterX");
     float ImgCenterY = pars.readReal<float>("Rt/CT/ImgCenterY");
     float ImgCenterZ = pars.readReal<float>("Rt/CT/ImgCenterZ");
-    float IsoCenter0 = pars.readReal<float>("Rt/beam/IsoCenter0");
-    float IsoCenter1 = pars.readReal<float>("Rt/beam/IsoCenter1");
-    float IsoCenter2 = pars.readReal<float>("Rt/beam/IsoCenter2");
-    ct.offset.x = ImgCenterX - IsoCenter0;
-    ct.offset.y = ImgCenterY - IsoCenter1;
-    ct.offset.z = ImgCenterZ - IsoCenter2;
+    ct.isocenter.x = pars.readReal<float>("Rt/beam/IsoCenter0");
+    ct.isocenter.y = pars.readReal<float>("Rt/beam/IsoCenter1");
+    ct.isocenter.z = pars.readReal<float>("Rt/beam/IsoCenter2");
+    ct.offset.x = ImgCenterX - ct.isocenter.x;
+    ct.offset.y = ImgCenterY - ct.isocenter.y;
+    ct.offset.z = ImgCenterZ - ct.isocenter.z;
 
     // CT grid resolution
     ct.d.x = pars.readReal<float>("Rt/CT/PixelSpacing0");
@@ -211,4 +211,10 @@ void Patient_Parameters_t::add_results_directory(std::string s)
     results_dir = s;
 }
 
+void Patient_Parameters_t::update_offsets(Patient_Volume_t vol)
+{
+    ct.offset.x = vol.imgCenter.x - ct.isocenter.x;
+    ct.offset.y = vol.imgCenter.y - ct.isocenter.y;
+    ct.offset.z = vol.imgCenter.z - ct.isocenter.z;
+}
 

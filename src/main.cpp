@@ -18,6 +18,7 @@ int main(int argc, char** argv)
 
     // Read CBCT
     Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
+    patient_data.update_offsets(cbct);
     gpu_launch(patient_data, cbct);
 
 

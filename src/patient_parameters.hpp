@@ -2,6 +2,7 @@
 #define __PATIENT_PARAMETERS_HPP__
 
 #include "patient_parameters_parser.hpp"
+#include "volume.hpp"
 #include "special_types.hpp"
 
 #include <string>
@@ -52,6 +53,7 @@ public:
     std::string results_dir;
 
     void add_results_directory(std::string s);
+    void update_offsets(Patient_Volume_t vol);
 
 private:
     void exploreBeamDirectories();
