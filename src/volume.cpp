@@ -47,7 +47,6 @@ void Patient_Volume_t::read_volume()
             nElements = reader.nElements;
             hu.resize(nElements);
             std::copy( reader.hu.begin(), reader.hu.end(), hu.begin() );
-            // hu = new std::vector<float>(reader.hu.begin(), reader.hu.end());
             break;
         }
         case Source_type::MHA:
@@ -59,8 +58,18 @@ void Patient_Volume_t::read_volume()
             d = reader.spacing;
             origin = reader.origin;
             hu.resize(nElements);
-            std::copy(reader.data.begin(), reader.data.end(), hu.begin());
-            // hu = new std::vector<float>(reader.data.begin(), reader.data.end());
+            for (size_t k = 0; k < reader.dim.z; k++)
+            {
+                for (size_t j = 0; j < reader.dim.y; j++)
+                {
+                    for (size_t i = 0; i < reader.dim.x; i++)
+                    {
+                        size_t in  = i + j*reader.dim.x +                  k*reader.dim.x*reader.dim.y;
+                        size_t out = i + j*reader.dim.x + (reader.dim.z-k-1)*reader.dim.x*reader.dim.y;
+                        hu[out] = (float)reader.data[in];
+                    }
+                }
+            }
             break;
         }
     }
