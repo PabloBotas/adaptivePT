@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.2)
 project(adaptSpotEnergies)
 set (TARGET_NAME adaptSpotEnergies)
 
-
-
 set (PROJECT_ROOT_DIR ..)
 set (CMAKE_INSTALL_PREFIX ".")
 set (EXECUTABLE_OUTPUT_PATH "${PROJECT_ROOT_DIR}")
@@ -12,6 +10,12 @@ set (SEPARATE_COMPILATION ON)
 message ( STATUS "PROJECT_ROOT_DIR:       " ${PROJECT_ROOT_DIR} )
 message ( STATUS "CMAKE_INSTALL_PREFIX:   " ${CMAKE_INSTALL_PREFIX} )
 message ( STATUS "EXECUTABLE_OUTPUT_PATH: " ${EXECUTABLE_OUTPUT_PATH} )
+include_directories(src
+                    src/cuda src/cuda/cuda_helper
+                    src/patient_data
+                    src/phys_data
+                    src/utils
+                    src/volumes_representations)
 
 #-C++ compiler-------------------------------------------------------
 set (CMAKE_C_COMPILER "/usr/bin/clang")
@@ -44,11 +48,14 @@ endif()
 
 
 # Files------------------------------------------------------
-file (GLOB cpp_sources  src/*.cpp)
-file (GLOB cpp_headers  src/*.hpp)
-file (GLOB cuda_sources src/*.cu)
-file (GLOB cuda_headers src/*.cuh)
-# message ( STATUS "SRC_FILES:              " ${SRC_FILES} )
+file (GLOB cpp_sources  src/*.cpp src/**/*.cpp)
+file (GLOB cpp_headers  src/*.hpp src/**/*.hpp)
+file (GLOB cuda_sources src/*.cu  src/**/*.cu)
+file (GLOB cuda_headers src/*.cuh src/**/*.cuh)
+# message ( STATUS "cpp_sources:            " ${cpp_sources} )
+# message ( STATUS "cpp_headers:            " ${cpp_headers} )
+# message ( STATUS "cuda_sources:           " ${cuda_sources} )
+# message ( STATUS "cuda_headers:           " ${cuda_headers} )
 
 # Create objects--------------------------------------------------
 # cuda_compile (cuda_obj ${cuda_sources})
