@@ -10,7 +10,6 @@ namespace po = boost::program_options;
 class Parser
 {
 public:
-    Parser();
     Parser(int argc, char** argv);
     ~Parser();
 

@@ -13,10 +13,6 @@ Parser::Parser(int argc, char** argv)
     process_command_line(argc, argv);
 }
 
-Parser::Parser()
-{
-}
-
 Parser::~Parser()
 {
 }
