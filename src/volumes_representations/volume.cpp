@@ -7,10 +7,6 @@
 #include <vector>
 #include <algorithm>
 
-Patient_Volume_t::Patient_Volume_t()
-{
-}
-
 Patient_Volume_t::Patient_Volume_t(std::string f,
                                    Patient_Volume_t::Source_type s)
 {

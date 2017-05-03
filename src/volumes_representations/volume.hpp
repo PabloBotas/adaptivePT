@@ -15,7 +15,6 @@ public:
         MHA
     };
 
-    Patient_Volume_t();
     Patient_Volume_t(std::string file,
                     Patient_Volume_t::Source_type source);
     Patient_Volume_t(std::string file,
