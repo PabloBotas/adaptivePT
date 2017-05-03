@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.2)
 project(adaptSpotEnergies)
 set (TARGET_NAME adaptSpotEnergies)
 
-set (PROJECT_ROOT_DIR ..)
+set (PROJECT_ROOT_DIR "../adaptSpotEnergies")
 set (CMAKE_INSTALL_PREFIX ".")
 set (EXECUTABLE_OUTPUT_PATH "${PROJECT_ROOT_DIR}")
 set (SEPARATE_COMPILATION ON)
@@ -41,10 +41,10 @@ endif()
 # include_directories ("${CUDA_SDK_ROOT_DIR}")
 
 # Definitions------------------------------------------------
-option(DEBUG_SCORER "Use debug mode to export a CT volume with the ray paths" OFF)
-if(DEBUG_SCORER)
-  add_definitions(-D__DEBUG_MODE__)
-endif()
+# option(DEBUG_SCORER "Use debug mode to export a CT volume with the ray paths" OFF)
+# if(DEBUG_SCORER)
+#   add_definitions(-D__DEBUG_MODE__)
+# endif()
 
 
 # Files------------------------------------------------------
