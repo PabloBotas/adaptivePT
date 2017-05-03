@@ -18,7 +18,8 @@ void calculateRays(const std::vector<float4>& xbuffer,
                    const std::vector<BeamAngles_t>& angles,
                    const short* spots_per_beam,
                    const float3& ct_offsets,
-                   float4* scorer);
+                   float4* scorer,
+                   float* traces_scorer);
 
 unsigned int rays_to_device(const std::vector<float4>& xbuffer,
                             const std::vector<float4>& vxbuffer,

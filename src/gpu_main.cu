@@ -26,7 +26,8 @@ void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
 	// Set device
 	int device = 0;
 	cudaSetDevice(device);
-	printDevProp(device, false);
+	bool verbose = true;
+	printDevProp(device, verbose);
 }
 
 void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
@@ -57,7 +58,7 @@ std::vector<float4> gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
 
 void runCalculation(const Patient_Parameters_t &pat,
                     const Patient_Volume_t &ct,
-                    std::vector<float4>& results)
+                    std::vector<float4>& endpoints)
 {
     // Set geometry in GPU
     gpu_ct_to_device::setDimensions(ct);
@@ -66,9 +67,12 @@ void runCalculation(const Patient_Parameters_t &pat,
                                         // with a default value
 
     // Create scorer array
-    float4* scorer = NULL;
-    gpuErrchk( cudaMalloc( (void **) &scorer, sizeof(float4)*pat.total_spots) );
-    gpuErrchk( cudaMemset( (void *) scorer, 0, sizeof(float4)*pat.total_spots) );
+    float4* endpoints_scorer = NULL;
+    gpuErrchk( cudaMalloc( (void **) &endpoints_scorer, sizeof(float4)*pat.total_spots) );
+    gpuErrchk( cudaMemset( (void *) endpoints_scorer, 0, sizeof(float4)*pat.total_spots) );
+    float* traces_scorer = NULL;
+    gpuErrchk( cudaMalloc( (void **) &traces_scorer, sizeof(float)*pat.ct.total) );
+    gpuErrchk( cudaMemset( (void *) traces_scorer, 0, sizeof(float)*pat.ct.total) );
 
     // Create host buffers and fill them
     std::vector<float4> xbuffer;
@@ -82,12 +86,17 @@ void runCalculation(const Patient_Parameters_t &pat,
     // Calculate rays
     calculateRays(xbuffer, vxbuffer, ixbuffer,
                   pat.angles, pat.spots_per_field.data(),
-                  ct_offsets, scorer);
+                  ct_offsets, endpoints_scorer, traces_scorer);
 
-    gpuErrchk( cudaMemcpy(&results[0], scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(&endpoints[0], endpoints_scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
+
+    Patient_Volume_t traces(pat.ct);
+    gpuErrchk( cudaMemcpy(&traces.hu[0], traces_scorer, sizeof(float)*traces.nElements, cudaMemcpyDeviceToHost) );
+    traces.output("output_volume.bin");
 
     // Free memory
-    gpuErrchk( cudaFree(scorer) );
+    gpuErrchk( cudaFree(endpoints_scorer) );
+    gpuErrchk( cudaFree(traces_scorer) );
     freeCTMemory();
 }
 

@@ -3,7 +3,10 @@
 #include "gpu_ray_class.cuh"
 #include "gpu_geometry_operations.cuh"
 
-__global__ void calculateRays_kernel(const int num, float4 *scorer, const short* spots_per_beam)
+__global__ void calculateRays_kernel(const int num,
+		                             float4* endpoints,
+		                             float* traces,
+		                             const short* spots_per_beam)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
     if(id < num)
@@ -16,33 +19,41 @@ __global__ void calculateRays_kernel(const int num, float4 *scorer, const short*
         VoxelStepper voxStepper;
         if (id == 0)
         {
-        	printf("%d %d %d -> %f %f %f -> %f MeV -> %f -> %d %d\n", vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.energy/1000000, ray.initial_wepl, ray.isAlive(), vox.w);
-        	printf("NX NY NZ -> X Y Z -> WEPL -> STEP -> DENSITY\n");
+//        	printf("%d %d %d -> %f %f %f -> %f MeV -> %f -> %d %d\n", vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.energy/1000000, ray.initial_wepl, ray.isAlive(), vox.w);
+        	printf("ID - NX NY NZ -> X Y Z -> WEPL\n");
         }
+        if (id < 10)
+            printf("%d - %d %d %d -> %f %f %f -> %f\n", id, vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.wepl);
 
         while (ray.isAlive())
         {
+        	if (vox.w != -1)
+        		atomicAdd(&traces[vox.w], 1.f);
         	float density = tex3D(dens_tex, vox.z, vox.y, vox.x);
             float step    = inters(ray, vox, voxUpdater, voxStepper);
             if (step == INF)
             	break;
-        	if (id == 0)
-        		printf("%d %d %d -> %f %f %f -> %f -> %f -> %f\n", vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.wepl, step, density);
+//        	if (id == 0)
+//        		printf("%d %d %d -> %f %f %f -> %f -> %f -> %f\n", vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.wepl, step, density);
             ray.step(step, density);
             changeVoxel(vox, voxUpdater, voxStepper);
         }
 
-        unsigned int index = find_scorer_index(ray.beam_id, ray.spot_id, spots_per_beam);
-        scorer[index].x = ray.pos.x;
-        scorer[index].y = ray.pos.y;
-        scorer[index].z = ray.pos.z;
-        scorer[index].w = ray.wepl;
+        if (id < 10)
+        	printf("%d - %d %d %d -> %f %f %f -> %f\n", id, vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.wepl);
+		atomicAdd(&traces[vox.w], 50);
+
+        unsigned int index = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_beam);
+        endpoints[index].x = ray.pos.x;
+        endpoints[index].y = ray.pos.y;
+        endpoints[index].z = ray.pos.z;
+        endpoints[index].w = ray.wepl;
     }
 }
 
-__device__ unsigned int find_scorer_index(const short beam_id,
-                                          const short spot_id,
-                                          const short* spots_per_beam)
+__device__ unsigned int get_endpoints_index(const short beam_id,
+                                            const short spot_id,
+                                            const short* spots_per_beam)
 {
     unsigned int index = spot_id;
     for (int ibeam = 0; ibeam < beam_id; ibeam++)

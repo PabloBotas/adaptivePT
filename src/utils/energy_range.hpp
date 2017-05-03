@@ -9,10 +9,10 @@
 class Energy_Range_Calculator_t
 {
 public:
-    enum Dir_t {FromEtoR, FromRtoE};
-    Dir_t dir;
-    Energy_Range_Calculator_t(Dir_t dir=FromEtoR);
-    float calculate(float x, Dir_t dir=FromEtoR);
+    enum Direction_t {FromEtoR, FromRtoE};
+    Direction_t dir;
+    Energy_Range_Calculator_t(Direction_t dir = FromEtoR);
+    float calculate(float x, Direction_t dir = FromEtoR);
     float operator()(float& x);
 private:
     DataTable_t table;
