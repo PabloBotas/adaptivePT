@@ -43,7 +43,11 @@ public:
     std::vector<std::string> tramp_files;
     std::vector<std::string> topas_files;
 
+    short total_spots;
+    std::vector<short> spots_per_field;
+
     CT_Dims_t ct;
+    std::string planning_ct;
     std::vector<Aperture_Dims_t>     apertures;
     std::vector<RangeShifter_Dims_t> range_shifters;
 
@@ -53,13 +57,16 @@ public:
     std::string results_dir;
 
     void add_results_directory(std::string s);
-    void update_offsets(Patient_Volume_t vol);
+    void update_geometry_offsets(Patient_Volume_t vol);
 
 private:
     void exploreBeamDirectories();
     void parseTopasFiles();
     void getTopasGlobalParameters();
     void getTopasBeamParameters();
+    void set_spots_per_field();
+    void set_total_spots();
+    void set_planning_CT_file();
 
 //     std::string rel_beam_location  = "/input";
 //     std::string rel_topas_location = "/run";

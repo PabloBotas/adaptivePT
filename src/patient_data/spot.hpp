@@ -6,7 +6,6 @@
 
 struct Spot_t
 {
-    Spot_t();
     Spot_t(std::string line);
     Spot_t(float e, float w, float x, float y);
     ~Spot_t();

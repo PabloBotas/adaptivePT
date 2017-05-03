@@ -63,6 +63,8 @@ RangeShifter_Dims_t::RangeShifter_Dims_t():
 // SAD_t ---------------------------------------
 SAD_t::SAD_t()
 {
+    a = 0;
+    b = 0;
 }
 
 SAD_t::SAD_t(std::string machine)

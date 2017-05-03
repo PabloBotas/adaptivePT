@@ -9,7 +9,7 @@
 class Tramp_t
 {
 public:
-    Tramp_t();
+	Tramp_t();
     Tramp_t(std::string file);
     Tramp_t(std::string file, std::string machine);
     ~Tramp_t();

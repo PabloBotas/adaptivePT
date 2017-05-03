@@ -34,8 +34,7 @@
 
 extern __device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
 extern __device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
-extern __device__ unsigned int nspots;
-extern float *scorer;
+extern __device__ short2 ixdata[NRAYS]; // particle metadata (beam and spot ID)
 
 // CT variables
 extern cudaArray *dens;

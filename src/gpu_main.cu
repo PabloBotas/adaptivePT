@@ -16,74 +16,79 @@
 #include <string>
 #include <vector>
 
-
-void gpu_launch(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
+void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
 {
-    int device = 0;
-    cudaSetDevice(device);
-    printDevProp(device, false);
+	// mark the start total time timer
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	cudaEventRecord(start);
 
-    runCalculation(pat, ct);
+	// Set device
+	int device = 0;
+	cudaSetDevice(device);
+	printDevProp(device, false);
 }
 
-void runCalculation(const Patient_Parameters_t &pat, const Patient_Volume_t &ct)
+void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
 {
-    // mark the start total time timer
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
+	// Get timing
+	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
+	float dt_ms;
+	cudaEventElapsedTime(&dt_ms, start, stop);
+	cudaThreadExit();
+	cudaDeviceReset();
 
+	std::cout << std::endl;
+	std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
+}
+
+std::vector<float4> gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
+                                           const Patient_Volume_t &ct)
+{
+    // Run
+    std::vector<float4> endpoints(pat.total_spots);
+    runCalculation(pat, ct, endpoints);
+    
+
+
+    return endpoints;
+}
+
+void runCalculation(const Patient_Parameters_t &pat,
+                    const Patient_Volume_t &ct,
+                    std::vector<float4>& results)
+{
+    // Set geometry in GPU
     gpu_ct_to_device::setDimensions(ct);
-    gpu_ct_to_device::setDensities(ct);
+    gpu_ct_to_device::setDensities(ct); // density correction file
+                                        // is an additional parameter
+                                        // with a default value
 
-    std::vector<unsigned int> number_spots(pat.nbeams);
-    unsigned int max_number_spots = 0;
-    for(size_t i=0; i < pat.nbeams; i++)
-    {
-        Tramp_t tramp;
-        tramp.read_file_header(pat.tramp_files.at(i));
-        number_spots.at(i) = tramp.nspots;
-        max_number_spots = max_number_spots > number_spots.at(i) ? max_number_spots : number_spots.at(i);
-    }
+    // Create scorer array
+    float4* scorer = NULL;
+    gpuErrchk( cudaMalloc( (void **) &scorer, sizeof(float4)*pat.total_spots) );
+    gpuErrchk( cudaMemset( (void *) scorer, 0, sizeof(float4)*pat.total_spots) );
 
-    // the simulation is initialized once, but the calculation is launched nbeams_h times
-    for(size_t i = 0; i < pat.nbeams; i++)
-    {
-        // Create scorer array
-        gpuErrchk( cudaMemcpyToSymbol(nspots, &number_spots.at(i), sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
-        unsigned int scorer_size = sizeof(float)*3*max_number_spots;
-#ifdef __DEBUG_MODE__
-        scorer_size = sizeof(float)*ct.nElements;
-#endif
-        gpuErrchk( cudaMalloc( (void **) &scorer, scorer_size) );
-        setScorerToZeros(scorer, scorer_size);
+    // Create host buffers and fill them
+    std::vector<float4> xbuffer;
+    std::vector<float4> vxbuffer;
+    std::vector<short2> ixbuffer;
+    init_rays(pat, xbuffer, vxbuffer, ixbuffer);
 
-        std::vector<float4> xbuffer;
-        std::vector<float4> vxbuffer;
+    // Get ct offsets
+    float3 ct_offsets = make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z);
 
-        init_rays(pat, i, xbuffer, vxbuffer);
-        float3 ct_offsets = make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z);
-        calculateRays(xbuffer, vxbuffer, pat.angles.at(i), ct_offsets);
-        outputScorerResults(scorer, scorer_size, pat.beam_names.at(i), pat.results_dir);
+    // Calculate rays
+    calculateRays(xbuffer, vxbuffer, ixbuffer,
+                  pat.angles, pat.spots_per_field.data(),
+                  ct_offsets, scorer);
 
-        // outputScorerResults(i);
-        std::cout << std::endl;
-    }
+    gpuErrchk( cudaMemcpy(&results[0], scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
 
-    // Finalize the entire computation
-    freeMemory();
-
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float dt_ms;
-    cudaEventElapsedTime(&dt_ms, start, stop);
-    cudaThreadExit();
-    cudaDeviceReset();
-
-    std::cout << std::endl;
-    std::cout << "Program time:  "<< dt_ms << "  (ms)" << std::endl;
-    std::cout << "Have a nice day!" << std::endl;
+    // Free memory
+    gpuErrchk( cudaFree(scorer) );
+    freeCTMemory();
 }
 
 

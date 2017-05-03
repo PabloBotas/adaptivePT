@@ -3,82 +3,97 @@
 #include "gpu_ray_class.cuh"
 #include "gpu_geometry_operations.cuh"
 
-__global__ void calculateRays_kernel(int num, float *scorer)
+__global__ void calculateRays_kernel(const int num, float4 *scorer, const short* spots_per_beam)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
     if(id < num)
     {
-        Ray ray(xdata[id], vxdata[id]);
+        Ray ray(xdata[id], vxdata[id], ixdata[id]);
         int4 vox = make_int4(ray.pos/ctVoxSize);
         vox.w = getVoxelIndex(vox);
 
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
-        while (ray.isAlive() && vox.w != -1)
+        if (id == 0)
         {
-            float density = tex3D(dens_tex, vox.z, vox.y, vox.x);
+        	printf("%d %d %d -> %f %f %f -> %f MeV -> %f -> %d %d\n", vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.energy/1000000, ray.initial_wepl, ray.isAlive(), vox.w);
+        	printf("NX NY NZ -> X Y Z -> WEPL -> STEP -> DENSITY\n");
+        }
+
+        while (ray.isAlive())
+        {
+        	float density = tex3D(dens_tex, vox.z, vox.y, vox.x);
             float step    = inters(ray, vox, voxUpdater, voxStepper);
+            if (step == INF)
+            	break;
+        	if (id == 0)
+        		printf("%d %d %d -> %f %f %f -> %f -> %f -> %f\n", vox.x, vox.y, vox.z, ray.pos.x, ray.pos.y, ray.pos.z, ray.wepl, step, density);
             ray.step(step, density);
             changeVoxel(vox, voxUpdater, voxStepper);
-#ifdef __DEBUG_MODE__
-            if(vox.w != -1)
-            {
-                scorer[vox.w] += 1;
-                printf("%d: %d, %f\n", id, vox.w, scorer[vox.w]);
-            }
-#endif
         }
-#ifndef __DEBUG_MODE__
-        if(vox.w != -1)
-        {
-            unsigned int index = id*3;
-            scorer[index+0] = ray.pos.x;
-            scorer[index+1] = ray.pos.y;
-            scorer[index+2] = ray.pos.z;
-        }
-#endif
+
+        unsigned int index = find_scorer_index(ray.beam_id, ray.spot_id, spots_per_beam);
+        scorer[index].x = ray.pos.x;
+        scorer[index].y = ray.pos.y;
+        scorer[index].z = ray.pos.z;
+        scorer[index].w = ray.wepl;
     }
 }
 
+__device__ unsigned int find_scorer_index(const short beam_id,
+                                          const short spot_id,
+                                          const short* spots_per_beam)
+{
+    unsigned int index = spot_id;
+    for (int ibeam = 0; ibeam < beam_id; ibeam++)
+    {
+        index += spots_per_beam[ibeam];
+    }
+    return index;
+}
 
-__global__ void rays_to_device_kernel(int num, float2 angles, float3 ct_offsets)
+__global__ void rays_to_device_kernel(const int num,
+                                      float2* angles,
+                                      const float3 ct_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
     if (tid < num)
     {
+        float4 pos  = xdata[tid];
+        float4 vel  = vxdata[tid];
+        short2 meta = ixdata[tid]; // x = beam_id, y = spot_id
+
         //  get angles
-        float phi   =   angles.x; // gantry angle
-        float theta = - angles.y; // couch angle
+        float phi   =   angles[meta.x].x; // gantry angle
+        float theta = - angles[meta.x].y; // couch angle
 
         //  offset locations, the coordinate of corner A in internal coordinate
 
         float3 offset = ct_offsets - 0.5*ctVox*ctVoxSize;
 
         //  rotate location using gantry and couch
-        float3 temp = make_float3(xdata[tid].x, xdata[tid].y, xdata[tid].z);
-        float xs = temp.x*__cosf(theta) - __sinf(theta)*(temp.y*__sinf(phi) + temp.z*__cosf(phi)) - offset.x;
-        float ys = (temp.y*__cosf(phi) - temp.z*__sinf(phi)) - offset.y;
-        float zs = temp.x*__sinf(theta) + __cosf(theta)*(temp.y*__sinf(phi) + temp.z*__cosf(phi)) - offset.z;
-        xdata[tid] = make_float4(xs, ys, zs, xdata[tid].w);
+        pos.x = pos.x*__cosf(theta) - __sinf(theta)*(pos.y*__sinf(phi) + pos.z*__cosf(phi)) - offset.x;
+        pos.y = (pos.y*__cosf(phi) - pos.z*__sinf(phi)) - offset.y;
+        pos.z = pos.x*__sinf(theta) + __cosf(theta)*(pos.y*__sinf(phi) + pos.z*__cosf(phi)) - offset.z;
+        xdata[tid] = pos;
 
         //  velocity
-        temp = make_float3(vxdata[tid].x, vxdata[tid].y, vxdata[tid].z);
-        float vxs = temp.x*__cosf(theta) - __sinf(theta)*(temp.y*__sinf(phi) + temp.z*__cosf(phi));
-        float vys = (temp.y*__cosf(phi) - temp.z*__sinf(phi));
-        float vzs = temp.x*__sinf(theta) + __cosf(theta)*(temp.y*__sinf(phi) + temp.z*__cosf(phi));
-        vxdata[tid] = make_float4(vxs, vys, vzs, vxdata[tid].w);
+        vel.x = vel.x*__cosf(theta) - __sinf(theta)*(vel.y*__sinf(phi) + vel.z*__cosf(phi));
+        vel.y = (vel.y*__cosf(phi) - vel.z*__sinf(phi));
+        vel.z = vel.x*__sinf(theta) + __cosf(theta)*(vel.y*__sinf(phi) + vel.z*__cosf(phi));
+        vxdata[tid] = vel;
 
-        float temp2;
+        float temp;
         float alphaMin = -1.0f;
         float alpha1x, alphanx, alpha1y, alphany, alpha1z, alphanz;
 
-        alpha1x = (0.1f* ctVoxSize.x - xs)/vxs;
-        alphanx = (ctVox.x * ctVoxSize.x - 0.1f* ctVoxSize.x - xs)/vxs;
-        alpha1y = (0.1f* ctVoxSize.y - ys)/vys;
-        alphany = (ctVox.y * ctVoxSize.y - 0.1f* ctVoxSize.y - ys)/vys;
-        alpha1z = (0.1f* ctVoxSize.z - zs)/vzs;
-        alphanz = (ctVox.z * ctVoxSize.z - 0.1f* ctVoxSize.z - zs)/vzs;
+        alpha1x = (0.1f* ctVoxSize.x - pos.x)/vel.x;
+        alphanx = (ctVox.x * ctVoxSize.x - 0.1f* ctVoxSize.x - pos.x)/vel.x;
+        alpha1y = (0.1f* ctVoxSize.y - pos.y)/vel.y;
+        alphany = (ctVox.y * ctVoxSize.y - 0.1f* ctVoxSize.y - pos.y)/vel.y;
+        alpha1z = (0.1f* ctVoxSize.z - pos.z)/vel.z;
+        alphanz = (ctVox.z * ctVoxSize.z - 0.1f* ctVoxSize.z - pos.z)/vel.z;
 
         if((alpha1x<0.0f && alphanx<0.0f) ||(alpha1y<0.0f && alphany<0.0f)||(alpha1z<0.0f && alphanz<0.0f))
         {
@@ -90,18 +105,18 @@ __global__ void rays_to_device_kernel(int num, float2 angles, float3 ct_offsets)
         }
         else
         {
-            temp2 = min(alpha1x, alphanx);
-            alphaMin = max(alphaMin, temp2);
+            temp = min(alpha1x, alphanx);
+            alphaMin = max(alphaMin, temp);
 
-            temp2 = min(alpha1y, alphany);
-            alphaMin = max(alphaMin, temp2);
+            temp = min(alpha1y, alphany);
+            alphaMin = max(alphaMin, temp);
 
-            temp2 = min(alpha1z, alphanz);
-            alphaMin = max(alphaMin, temp2);
+            temp = min(alpha1z, alphanz);
+            alphaMin = max(alphaMin, temp);
 
-            xdata[tid].x = xs + vxs * alphaMin;
-            xdata[tid].y = ys + vys * alphaMin;
-            xdata[tid].z = zs + vzs * alphaMin;
+            xdata[tid].x = pos.x + vel.x*alphaMin;
+            xdata[tid].y = pos.y + vel.y*alphaMin;
+            xdata[tid].z = pos.z + vel.z*alphaMin;
         }
     }
 }

@@ -341,6 +341,8 @@ std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string 
         }
     }
 
+    std::sort(returnStrings.begin(), returnStrings.end());
+
     return returnStrings;
 }
 
@@ -403,6 +405,8 @@ std::vector<std::string> getFilesWithSuffix(std::string folderpath, std::string 
             returnStrings.insert(returnStrings.end(), temp.begin(), temp.end() ); //append
         }
     }
+
+    std::sort(returnStrings.begin(), returnStrings.end());
 
     return returnStrings;
 }

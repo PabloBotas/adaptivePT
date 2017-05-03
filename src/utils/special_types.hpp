@@ -69,7 +69,7 @@ public:
 // SAD_t ---------------------------------------
 struct SAD_t
 {
-    SAD_t();
+	SAD_t();
     SAD_t(std::string machine);
     float a;
     float b;

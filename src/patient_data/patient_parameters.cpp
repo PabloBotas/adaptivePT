@@ -1,5 +1,6 @@
 #include "patient_parameters.hpp"
 #include "patient_parameters_parser.hpp"
+#include "tramp.hpp"
 
 #include <iostream>
 #include <string>
@@ -11,11 +12,19 @@
 #include <math.h>
 
 Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
-                                                        input_dir(dir+"/input"),
-                                                        tramp_dir(input_dir+"/tramps")
+                                                              input_dir(dir+"/input"),
+                                                              tramp_dir(input_dir+"/tramps")
 {
     exploreBeamDirectories();
     parseTopasFiles();
+    set_spots_per_field();
+    set_total_spots();
+    set_planning_CT_file();
+}
+
+void Patient_Parameters_t::set_planning_CT_file()
+{
+	planning_ct = patient_dir + "/input/ctbinary/ctvolume.dat";
 }
 
 void Patient_Parameters_t::exploreBeamDirectories()
@@ -117,7 +126,7 @@ void Patient_Parameters_t::getTopasBeamParameters()
         Aperture_Dims_t&     ap        = apertures.at(i);
         RangeShifter_Dims_t& rs        = range_shifters.at(i);
         BeamAngles_t&        angle     = angles.at(i);
-        float&              isoToBeam = isocenter_to_beam_distance.at(i);
+        float&               isoToBeam = isocenter_to_beam_distance.at(i);
 
         // Aperture
         ap.exists = pars.readBool("Rt/beam/IncludeAperture", false);
@@ -211,10 +220,29 @@ void Patient_Parameters_t::add_results_directory(std::string s)
     results_dir = s;
 }
 
-void Patient_Parameters_t::update_offsets(Patient_Volume_t vol)
+void Patient_Parameters_t::update_geometry_offsets(Patient_Volume_t vol)
 {
     ct.offset.x = vol.imgCenter.x - ct.isocenter.x;
     ct.offset.y = vol.imgCenter.y - ct.isocenter.y;
     ct.offset.z = vol.imgCenter.z - ct.isocenter.z;
 }
 
+void Patient_Parameters_t::set_spots_per_field()
+{
+    spots_per_field.reserve(nbeams);
+    for(size_t i=0; i < nbeams; i++)
+    {
+        Tramp_t tramp;
+        tramp.read_file_header(tramp_files.at(i));
+        spots_per_field.push_back(tramp.nspots);
+    }
+}
+
+void Patient_Parameters_t::set_total_spots()
+{
+    total_spots = 0;
+    for(size_t i=0; i < nbeams; i++)
+    {
+        total_spots += spots_per_field.at(i);
+    }
+}
