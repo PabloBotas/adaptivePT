@@ -1,0 +1,12 @@
+eclipse.preferences.version=1
+environment/project/0.1949367728.1492455190/CWD/delimiter=\:
+environment/project/0.1949367728.1492455190/CWD/operation=replace
+environment/project/0.1949367728.1492455190/CWD/value=/opt/utils/adaptSpotEnergies/build
+environment/project/0.1949367728.1492455190/append=true
+environment/project/0.1949367728.1492455190/appendContributed=true
+environment/project/0.1949367728/CWD/delimiter=\:
+environment/project/0.1949367728/CWD/operation=replace
+environment/project/0.1949367728/CWD/value=/opt/utils/adaptSpotEnergies/build
+environment/project/0.1949367728/append=true
+environment/project/0.1949367728/appendContributed=false
+org.eclipse.cdt.core.code_formatter=org.eclipse.cdt.core.defaultCodeFormatter
