@@ -20,8 +20,8 @@ void Ctvolume_reader_t::read_file(std::string file)
     std::ifstream stream(file, std::ios::binary | std::ios::ate);
     if (!stream.is_open())
     {
-    	std::cerr << "ERROR! Planning CT \"" << file << "\" could not be opened." << std::endl;
-    	exit(EXIT_FAILURE);
+        std::cerr << "ERROR! Planning CT \"" << file << "\" could not be opened." << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     nElements = stream.tellg()/sizeof(short);

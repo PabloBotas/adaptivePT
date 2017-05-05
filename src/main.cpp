@@ -52,9 +52,9 @@ int main(int argc, char** argv)
     stop_device(start, stop);
 
 //    // Read CBCT and launch rays
-//	Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
-//	patient_data.update_geometry_offsets(cbct);
-//	std::vector<float4> cbct_endpoints = gpu_get_beam_endpoints(patient_data, cbct);
+//    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
+//    patient_data.update_geometry_offsets(cbct);
+//    std::vector<float4> cbct_endpoints = gpu_get_beam_endpoints(patient_data, cbct);
 
     // Get geometric coordinates of such WEPLS
 

@@ -18,30 +18,30 @@
 
 void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
 {
-	// mark the start total time timer
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-	cudaEventRecord(start);
+    // mark the start total time timer
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
 
-	// Set device
-	int device = 0;
-	cudaSetDevice(device);
-	bool verbose = false;
-	printDevProp(device, verbose);
+    // Set device
+    int device = 0;
+    cudaSetDevice(device);
+    bool verbose = false;
+    printDevProp(device, verbose);
 }
 
 void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
 {
-	// Get timing
-	cudaEventRecord(stop);
-	cudaEventSynchronize(stop);
-	float dt_ms;
-	cudaEventElapsedTime(&dt_ms, start, stop);
-	cudaThreadExit();
-	cudaDeviceReset();
+    // Get timing
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float dt_ms;
+    cudaEventElapsedTime(&dt_ms, start, stop);
+    cudaThreadExit();
+    cudaDeviceReset();
 
-	std::cout << std::endl;
-	std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
 }
 
 std::vector<float4> gpu_get_beam_endpoints(const Patient_Parameters_t &pat,

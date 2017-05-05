@@ -9,7 +9,7 @@ __device__ float inters(const Ray& ray,
                         VoxelUpdater& voxUpdater,
                         VoxelStepper& voxStepper)
 {
-    //	Checking out all the voxel walls for the smallest distance...
+    //    Checking out all the voxel walls for the smallest distance...
     // Z
     float invcos = (ray.dir.z != 0.0f) ? 1.0f/ray.dir.z : INF;
     int ifNext = (invcos > 0.0) ? 1 : 0;
@@ -86,18 +86,18 @@ __device__ int getVoxelIndex(int3 vox)
 
 __device__ int getVoxelIndex(int4 vox)
 {
-	return getVoxelIndex(make_int3(vox));
+    return getVoxelIndex(make_int3(vox));
 }
 
 __device__ int3 getVoxelCoords(unsigned int index)
 //      return the absolute vox index according to the coordinate
 {
-	int3 vox = make_int3(-1,-1,-1);
+    int3 vox = make_int3(-1,-1,-1);
     if(index < ctTotalVoxN)
     {
-    	vox.x = index/(ctVox.y*ctVox.z) % ctVox.x;
-    	vox.y = index/ctVox.z % ctVox.y;
-    	vox.z = index % ctVox.z;
+        vox.x = index/(ctVox.y*ctVox.z) % ctVox.x;
+        vox.y = index/ctVox.z % ctVox.y;
+        vox.z = index % ctVox.z;
     }
 
     return vox;

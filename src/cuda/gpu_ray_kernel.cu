@@ -4,9 +4,9 @@
 #include "gpu_geometry_operations.cuh"
 
 __global__ void calculateRays_kernel(const int num,
-		                             float4* endpoints,
-		                             float* traces,
-		                             const short* spots_per_beam)
+                                     float4* endpoints,
+                                     float* traces,
+                                     const short* spots_per_beam)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
     if(id < num)
@@ -23,15 +23,15 @@ __global__ void calculateRays_kernel(const int num,
 
         while (ray.isAlive() && vox.w != -1)
         {
-        	atomicAdd(&traces[vox.w], 1.f);
-        	float density = tex3D(dens_tex, vox.z, vox.y, vox.x);
+            atomicAdd(&traces[vox.w], 1.f);
+            float density = tex3D(dens_tex, vox.z, vox.y, vox.x);
             float step    = inters(ray, vox, voxUpdater, voxStepper);
             ray.step(step, density);
             changeVoxel(vox, voxUpdater, voxStepper);
         }
 
         if (vox.w != -1)
-        	atomicAdd(&traces[vox.w], 50);
+            atomicAdd(&traces[vox.w], 50);
 
         unsigned int index = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_beam);
         endpoints[index].x = ray.pos.x;

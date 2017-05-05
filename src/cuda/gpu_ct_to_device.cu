@@ -82,14 +82,14 @@ void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
 
 //__global__ void ct_to_densities(unsigned int hu_elements, unsigned int d_elements, float* hu, float* densities, float* factor)
 //{
-//	const unsigned int id = blockIdx.x*blockDim.x + threadIdx.x;
-//	if(id < hu_elements)
-//	{
-//		short hu_val = (hu[id] > -1000.f) ? hu[id] : -1000.f;
-//		short ind = hu_val + 1000;
-//		ind = (ind > d_elements-1) ? d_elements-1 : ind;
-//		densities[id] = HU2dens(hu_val)*factor[ind];
-//	}
+//    const unsigned int id = blockIdx.x*blockDim.x + threadIdx.x;
+//    if(id < hu_elements)
+//    {
+//        short hu_val = (hu[id] > -1000.f) ? hu[id] : -1000.f;
+//        short ind = hu_val + 1000;
+//        ind = (ind > d_elements-1) ? d_elements-1 : ind;
+//        densities[id] = HU2dens(hu_val)*factor[ind];
+//    }
 //}
 
 

@@ -62,39 +62,39 @@ void init_rays(const Patient_Parameters_t& pat,
 
 float3 adjust_to_internal_coordinates(float3 a)
 {
-	return make_float3(-a.y, -a.x, a.z);
+    return make_float3(-a.y, -a.x, a.z);
 }
 
 float3 getTanslatedPosition(float z, float2 SAD, float2 spot)
 {
-	float3 p;
-	p.x = ((SAD.x + z) / SAD.x) * spot.x;
-	p.y = ((SAD.y + z) / SAD.y) * spot.y;
-	p.z = z;
-	return p;
+    float3 p;
+    p.x = ((SAD.x + z) / SAD.x) * spot.x;
+    p.y = ((SAD.y + z) / SAD.y) * spot.y;
+    p.z = z;
+    return p;
 }
 
 float3 getDirection(float3 pos, float2 spot)
 {
-	float3 dCos;
-	float a = (spot.x-pos.x)/abs(pos.z);
-	float b = (spot.y-pos.y)/abs(pos.z);
-	float norm = sqrt(a*a + b*b + 1.f);
-	dCos.x = a/norm;
-	dCos.y = b/norm;
+    float3 dCos;
+    float a = (spot.x-pos.x)/abs(pos.z);
+    float b = (spot.y-pos.y)/abs(pos.z);
+    float norm = sqrt(a*a + b*b + 1.f);
+    dCos.x = a/norm;
+    dCos.y = b/norm;
 
-	float temp = 1.0f - dCos.x*dCos.x - dCos.y*dCos.y;
-	if(temp < 0)
-	{
-		std::cerr << "Something went wrong calculating direction cosines:\n";
-		std::cerr << "    Pos  x:  " << pos.x  << "\n";
-		std::cerr << "    Pos  y:  " << pos.y  << "\n";
-		std::cerr << "    Pos  z:  " << pos.z  << "\n";
-		std::cerr << "    spot x:  " << spot.x << "\n";
-		std::cerr << "    spot y:  " << spot.y << std::endl;
-		exit(EXIT_FAILURE);
-	};
-	dCos.z = sqrt(temp);
-	return dCos;
+    float temp = 1.0f - dCos.x*dCos.x - dCos.y*dCos.y;
+    if(temp < 0)
+    {
+        std::cerr << "Something went wrong calculating direction cosines:\n";
+        std::cerr << "    Pos  x:  " << pos.x  << "\n";
+        std::cerr << "    Pos  y:  " << pos.y  << "\n";
+        std::cerr << "    Pos  z:  " << pos.z  << "\n";
+        std::cerr << "    spot x:  " << spot.x << "\n";
+        std::cerr << "    spot y:  " << spot.y << std::endl;
+        exit(EXIT_FAILURE);
+    };
+    dCos.z = sqrt(temp);
+    return dCos;
 }
 

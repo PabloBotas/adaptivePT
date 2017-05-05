@@ -187,9 +187,9 @@ void Tramp_t::to_file(std::string f)
 
     for (size_t i = 0; i < nspots; i++)
     {
-    	Spot_t thisspot = spots.at(i);
-    	thisspot.x *= CM2MM;
-    	thisspot.y *= CM2MM;
+        Spot_t thisspot = spots.at(i);
+        thisspot.x *= CM2MM;
+        thisspot.y *= CM2MM;
         os << thisspot << "\n";
     }
 }
@@ -231,12 +231,12 @@ float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
     std::vector<float> lambda(npoints);
     // check order of interpolation
     if (order > npoints)
-    	order = npoints;
+        order = npoints;
     // if x is ouside the vector_X[] interval
     if (x <= vector_X[0])
-    	return result = vector_Y[0];
+        return result = vector_Y[0];
     if (x >= vector_X[npoints-1])
-    	return result = vector_Y[npoints-1];
+        return result = vector_Y[npoints-1];
     // loop to find j so that x[j-1] < x < x[j]
     int j=0;
     while (j < npoints)

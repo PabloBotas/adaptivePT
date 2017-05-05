@@ -37,10 +37,10 @@ std::vector<float> readDensityCorrect(std::string fname)
 }
 
 float HU2dens(int huValue)
-//	convert HU to dens, in g/cm^3
+//    convert HU to dens, in g/cm^3
 {
     float temp;
-    //	MGH calibration curve
+    //    MGH calibration curve
     if(huValue >= -1000 && huValue < -98)
         temp = 0.00121 + 0.001029700665188*(1000.0 + huValue);
     else if(huValue >= -98 && huValue < 15)

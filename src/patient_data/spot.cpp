@@ -19,10 +19,10 @@ Spot_t::Spot_t(float e_, float w_, float x_, float y_)
 
 Spot_t::Spot_t(std::string line)
 {
-	e = 0;
-	w = 0;
-	x = 0;
-	y = 0;
+    e = 0;
+    w = 0;
+    x = 0;
+    y = 0;
     std::istringstream ss(line);
     try {
         ss >> e >> x >> y >> w;

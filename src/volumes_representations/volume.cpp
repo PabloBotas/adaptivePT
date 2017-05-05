@@ -36,17 +36,17 @@ Patient_Volume_t::Patient_Volume_t(std::string f,
 
 Patient_Volume_t::Patient_Volume_t(const CT_Dims_t dims)
 {
-	nElements = dims.total;
-	hu.resize(nElements);
-	setVoxels(dims.n.x, dims.n.y, dims.n.z.front());
-	setSpacing(dims.d.x, dims.d.y, dims.d.z.front());
+    nElements = dims.total;
+    hu.resize(nElements);
+    setVoxels(dims.n.x, dims.n.y, dims.n.z.front());
+    setSpacing(dims.d.x, dims.d.y, dims.d.z.front());
 }
 
 Patient_Volume_t::Patient_Volume_t(const float* src,
-    		                       const CT_Dims_t dims) :
-								   Patient_Volume_t(dims)
+                                   const CT_Dims_t dims) :
+                                   Patient_Volume_t(dims)
 {
-	std::copy( src, src+nElements, hu.begin() );
+    std::copy( src, src+nElements, hu.begin() );
 }
 
 void Patient_Volume_t::read_volume()
@@ -90,14 +90,14 @@ void Patient_Volume_t::read_volume()
 
 void Patient_Volume_t::output(std::string outfile)
 {
-	std::ofstream myFile;
-	myFile.open (outfile, std::ios::out | std::ios::binary);
-	if( !myFile.is_open() )
-	{
-		std::cerr << "Can not open file " << outfile << " to write results." << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	myFile.write (reinterpret_cast<char*>(hu.data()), nElements*sizeof(float));
+    std::ofstream myFile;
+    myFile.open (outfile, std::ios::out | std::ios::binary);
+    if( !myFile.is_open() )
+    {
+        std::cerr << "Can not open file " << outfile << " to write results." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    myFile.write (reinterpret_cast<char*>(hu.data()), nElements*sizeof(float));
 }
 
 void Patient_Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)

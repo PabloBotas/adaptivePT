@@ -24,7 +24,7 @@ Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
 
 void Patient_Parameters_t::set_planning_CT_file()
 {
-	planning_ct = patient_dir + "/input/ctbinary/ctvolume.dat";
+    planning_ct = patient_dir + "/input/ctbinary/ctvolume.dat";
 }
 
 void Patient_Parameters_t::exploreBeamDirectories()
@@ -188,25 +188,25 @@ void Patient_Parameters_t::print()
         std::cout << "    - " << beam_names.at(i) << ": " << isocenter_to_beam_distance.at(i) << " cm" << std::endl;
     }
     std::cout << "CT data:" << std::endl;
-	std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ", (";
-	for (size_t i = 0; i < ct.n.z.size(); i++)
-	{
-		std::cout << ct.n.z.at(i);
-		if (i != ct.n.z.size()-1)
-			std::cout << ", ";
-		else
-			std::cout << ")" << std::endl;
-	}
-	std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ", (";
-	for (size_t i = 0; i < ct.d.z.size(); i++)
-	{
-		std::cout << ct.d.z.at(i);
-		if (i != ct.d.z.size()-1)
-			std::cout << ", ";
-		else
-			std::cout << ") cm" << std::endl;
-	}
-	std::cout << "    - Offset:     " << ct.offset.x << ", " << ct.offset.y << ", " << ct.offset.z << " cm" << std::endl;
+    std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ", (";
+    for (size_t i = 0; i < ct.n.z.size(); i++)
+    {
+        std::cout << ct.n.z.at(i);
+        if (i != ct.n.z.size()-1)
+            std::cout << ", ";
+        else
+            std::cout << ")" << std::endl;
+    }
+    std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ", (";
+    for (size_t i = 0; i < ct.d.z.size(); i++)
+    {
+        std::cout << ct.d.z.at(i);
+        if (i != ct.d.z.size()-1)
+            std::cout << ", ";
+        else
+            std::cout << ") cm" << std::endl;
+    }
+    std::cout << "    - Offset:     " << ct.offset.x << ", " << ct.offset.y << ", " << ct.offset.z << " cm" << std::endl;
 
 }
 
@@ -217,19 +217,19 @@ void Patient_Parameters_t::add_results_directory(std::string s)
 
 void Patient_Parameters_t::adjust_to_internal_coordinates()
 {
-	std::swap(ct.d.x, ct.d.z.front());
-	std::swap(ct.n.x, ct.n.z.front());
-	std::swap(ct.offset.x, ct.offset.z);
-	ct.offset.x *= -1;
-	ct.offset.x -= 0.5*ct.n.x*ct.d.x;
-	ct.offset.y -= 0.5*ct.n.y*ct.d.y;
-	ct.offset.z -= 0.5*ct.n.z.front()*ct.d.z.front();
+    std::swap(ct.d.x, ct.d.z.front());
+    std::swap(ct.n.x, ct.n.z.front());
+    std::swap(ct.offset.x, ct.offset.z);
+    ct.offset.x *= -1;
+    ct.offset.x -= 0.5*ct.n.x*ct.d.x;
+    ct.offset.y -= 0.5*ct.n.y*ct.d.y;
+    ct.offset.z -= 0.5*ct.n.z.front()*ct.d.z.front();
 
-	for(size_t i = 0; i < angles.size(); i++)
-	{
-		angles[i].couch *= -1.0; //reverse couch angle
+    for(size_t i = 0; i < angles.size(); i++)
+    {
+        angles[i].couch *= -1.0; //reverse couch angle
         angles[i].gantry = (270.0 * (M_PI/180.0)) - angles[i].gantry;
-	}
+    }
 }
 
 void Patient_Parameters_t::update_geometry_offsets(Patient_Volume_t vol)

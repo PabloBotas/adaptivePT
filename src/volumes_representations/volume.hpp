@@ -22,7 +22,7 @@ public:
                      unsigned int nx, unsigned int ny, unsigned int nz,
                      float dx, float dy, float dz);
     Patient_Volume_t(const float* src,
-    		         const CT_Dims_t dims);
+                     const CT_Dims_t dims);
     Patient_Volume_t(const CT_Dims_t dims);
 
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
