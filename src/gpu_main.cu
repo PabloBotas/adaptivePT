@@ -1,5 +1,6 @@
 #include "gpu_main.cuh"
 
+#include "initialize_rays.cuh"
 #include "patient_parameters.hpp"
 #include "gpu_errorcheck.cuh"
 #include "gpu_run.cuh"
@@ -7,7 +8,6 @@
 #include "gpu_main.cuh"
 
 #include "tramp.hpp"
-#include "gpu_run.cuh"
 #include "gpu_device_interaction.cuh"
 #include "gpu_ct_to_device.cuh"
 #include "volume.hpp"
@@ -26,7 +26,7 @@ void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
 	// Set device
 	int device = 0;
 	cudaSetDevice(device);
-	bool verbose = true;
+	bool verbose = false;
 	printDevProp(device, verbose);
 }
 
@@ -50,8 +50,6 @@ std::vector<float4> gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
     // Run
     std::vector<float4> endpoints(pat.total_spots);
     runCalculation(pat, ct, endpoints);
-    
-
 
     return endpoints;
 }
@@ -61,10 +59,8 @@ void runCalculation(const Patient_Parameters_t &pat,
                     std::vector<float4>& endpoints)
 {
     // Set geometry in GPU
-    gpu_ct_to_device::setDimensions(ct);
-    gpu_ct_to_device::setDensities(ct); // density correction file
-                                        // is an additional parameter
-                                        // with a default value
+    gpu_ct_to_device::sendDimensions(ct);
+    gpu_ct_to_device::sendDensities(ct);
 
     // Create scorer array
     float4* endpoints_scorer = NULL;
@@ -74,19 +70,17 @@ void runCalculation(const Patient_Parameters_t &pat,
     gpuErrchk( cudaMalloc( (void **) &traces_scorer, sizeof(float)*pat.ct.total) );
     gpuErrchk( cudaMemset( (void *) traces_scorer, 0, sizeof(float)*pat.ct.total) );
 
-    // Create host buffers and fill them
+    // Create host buffers and initialize rays
     std::vector<float4> xbuffer;
     std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
     init_rays(pat, xbuffer, vxbuffer, ixbuffer);
 
-    // Get ct offsets
-    float3 ct_offsets = make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z);
-
     // Calculate rays
     calculateRays(xbuffer, vxbuffer, ixbuffer,
                   pat.angles, pat.spots_per_field.data(),
-                  ct_offsets, endpoints_scorer, traces_scorer);
+                  make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                  endpoints_scorer, traces_scorer);
 
     gpuErrchk( cudaMemcpy(&endpoints[0], endpoints_scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
 

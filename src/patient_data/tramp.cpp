@@ -13,6 +13,9 @@
 #include <assert.h>
 #include <algorithm>
 
+#define MM2CM 0.1
+#define CM2MM 10
+
 Tramp_t::Tramp_t()
 {
 }
@@ -104,6 +107,8 @@ void Tramp_t::read_()
             continue;
 
         Spot_t thisSpot(line);
+        thisSpot.x *= MM2CM;
+        thisSpot.y *= MM2CM;
         spots.push_back(thisSpot);
         gigaprotons += thisSpot.w;
     }
@@ -182,7 +187,10 @@ void Tramp_t::to_file(std::string f)
 
     for (size_t i = 0; i < nspots; i++)
     {
-        os << spots.at(i) << "\n";
+    	Spot_t thisspot = spots.at(i);
+    	thisspot.x *= CM2MM;
+    	thisspot.y *= CM2MM;
+        os << thisspot << "\n";
     }
 }
 
@@ -222,10 +230,13 @@ float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
     // Allocate enough space for any table we'd like to read.
     std::vector<float> lambda(npoints);
     // check order of interpolation
-    if (order > npoints) order = npoints;
+    if (order > npoints)
+    	order = npoints;
     // if x is ouside the vector_X[] interval
-    if (x <= vector_X[0]) return result = vector_Y[0];
-    if (x >= vector_X[npoints-1]) return result = vector_Y[npoints-1];
+    if (x <= vector_X[0])
+    	return result = vector_Y[0];
+    if (x >= vector_X[npoints-1])
+    	return result = vector_Y[npoints-1];
     // loop to find j so that x[j-1] < x < x[j]
     int j=0;
     while (j < npoints)

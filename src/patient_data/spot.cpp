@@ -5,7 +5,6 @@
 #include <vector>
 #include <string>
 
-
 Spot_t::~Spot_t()
 {
 }

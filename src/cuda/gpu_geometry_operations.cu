@@ -2,6 +2,8 @@
 #include "gpu_device_interaction.cuh"
 #include "gpu_ray_class.cuh"
 
+#include "vector_types.h"
+
 __device__ float inters(const Ray& ray,
                         const int4& vox,
                         VoxelUpdater& voxUpdater,
@@ -70,18 +72,6 @@ __host__ __device__ int getabs(int xvox, int yvox, int zvox, int ny, int nz)
     return zvox + yvox*nz + xvox*nz*ny;
 }
 
-__device__ int getVoxelIndex(int4 vox)
-//      return the absolute vox index according to the coordinate
-{
-    // Check if in CT grid
-    if (vox.x < 0 || vox.x >= ctVox.x ||
-        vox.y < 0 || vox.y >= ctVox.y ||
-        vox.z < 0 || vox.z >= ctVox.z)
-        return -1;
-
-    return vox.z + vox.y*ctVox.z + vox.x*ctVox.z*ctVox.y;
-}
-
 __device__ int getVoxelIndex(int3 vox)
 //      return the absolute vox index according to the coordinate
 {
@@ -94,16 +84,21 @@ __device__ int getVoxelIndex(int3 vox)
     return vox.z + vox.y*ctVox.z + vox.x*ctVox.z*ctVox.y;
 }
 
+__device__ int getVoxelIndex(int4 vox)
+{
+	return getVoxelIndex(make_int3(vox));
+}
+
 __device__ int3 getVoxelCoords(unsigned int index)
 //      return the absolute vox index according to the coordinate
 {
-    if(index >= ctTotalVoxN)
-        return make_int3(-1,-1,-1);
-
-    int3 vox;
-    vox.x = index/(ctVox.y*ctVox.z) % ctVox.x;
-    vox.y = index/ctVox.z % ctVox.y;
-    vox.z = index % ctVox.z;
+	int3 vox = make_int3(-1,-1,-1);
+    if(index < ctTotalVoxN)
+    {
+    	vox.x = index/(ctVox.y*ctVox.z) % ctVox.x;
+    	vox.y = index/ctVox.z % ctVox.y;
+    	vox.z = index % ctVox.z;
+    }
 
     return vox;
 }

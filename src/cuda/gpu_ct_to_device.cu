@@ -11,24 +11,19 @@
 #include "gpu_errorcheck.cuh"
 #include "density_correction.hpp"
 
-void gpu_ct_to_device::setDimensions(const Patient_Volume_t& ct)
+void gpu_ct_to_device::sendDimensions(const Patient_Volume_t& ct)
 //  convert external to internal geometry
 {
     std::cout << "Setting CT dimensions in device..." << std::endl;
     int3   ct_n = make_int3(ct.n.x, ct.n.y, ct.n.z);
     float3 ct_d = make_float3(ct.d.x, ct.d.y, ct.d.z);
 
-    // Swap CT grid X, Z axis
-    std::swap(ct_d.x, ct_d.z);
-    std::swap(ct_n.x, ct_n.z);
-
     gpuErrchk( cudaMemcpyToSymbol(ctTotalVoxN, &ct.nElements, sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(ctVoxSize, &ct_d, sizeof(float3), 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(ctVox, &ct_n, sizeof(int3), 0, cudaMemcpyHostToDevice) );
 }
 
-void gpu_ct_to_device::setDensities(const Patient_Volume_t &ct,
-                                    std::string densityCorrect)
+void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
 //  generate phantom data based on CT volume
 {
     std::vector<float> densities;

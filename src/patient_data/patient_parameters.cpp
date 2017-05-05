@@ -85,17 +85,6 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     virtualSAD.a = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances0");
     virtualSAD.b = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances1");
 
-    // CT grid shift
-    float ImgCenterX = pars.readReal<float>("Rt/CT/ImgCenterX");
-    float ImgCenterY = pars.readReal<float>("Rt/CT/ImgCenterY");
-    float ImgCenterZ = pars.readReal<float>("Rt/CT/ImgCenterZ");
-    ct.isocenter.x = pars.readReal<float>("Rt/beam/IsoCenter0");
-    ct.isocenter.y = pars.readReal<float>("Rt/beam/IsoCenter1");
-    ct.isocenter.z = pars.readReal<float>("Rt/beam/IsoCenter2");
-    ct.offset.x = ImgCenterX - ct.isocenter.x;
-    ct.offset.y = ImgCenterY - ct.isocenter.y;
-    ct.offset.z = ImgCenterZ - ct.isocenter.z;
-
     // CT grid resolution
     ct.d.x = pars.readReal<float>("Rt/CT/PixelSpacing0");
     ct.d.y = pars.readReal<float>("Rt/CT/PixelSpacing1");
@@ -107,6 +96,20 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     ct.n.z = pars.readVectorInts<unsigned int>("Rt/CT/SliceThicknessSections", true);
 
     ct.total = ct.n.x*ct.n.y*ct.n.z.front();
+
+    // CT grid shift
+    float ImgCenterX = pars.readReal<float>("Rt/CT/ImgCenterX");
+    float ImgCenterY = pars.readReal<float>("Rt/CT/ImgCenterY");
+    float ImgCenterZ = pars.readReal<float>("Rt/CT/ImgCenterZ");
+    ct.isocenter.x = pars.readReal<float>("Rt/beam/IsoCenter0");
+    ct.isocenter.y = pars.readReal<float>("Rt/beam/IsoCenter1");
+    ct.isocenter.z = pars.readReal<float>("Rt/beam/IsoCenter2");
+
+    // Offset of first voxel corner to isocenter
+    ct.offset.x = ImgCenterX - ct.isocenter.x;
+    ct.offset.y = ImgCenterY - ct.isocenter.y;
+    ct.offset.z = ImgCenterZ - ct.isocenter.z;
+
 }
 
 void Patient_Parameters_t::getTopasBeamParameters()
@@ -140,66 +143,37 @@ void Patient_Parameters_t::getTopasBeamParameters()
         rs.exists = pars.readBool("Rt/beam/IncludeRangeShifter", false);
         if(rs.exists)
         {
-            rs.thick =  pars.readReal<float>("Rt/beam/RangeShifterThickness", 0);
-            rs.zdown = -pars.readReal<float>("Rt/beam/IsocenterToRangeShifterTrayDistance", 0);
-            rs.zup   =  rs.zdown - rs.thick;
+            rs.thick = pars.readReal<float>("Rt/beam/RangeShifterThickness", 0);
+            rs.zdown = pars.readReal<float>("Rt/beam/IsocenterToRangeShifterTrayDistance", 0);
         }
 
         // Angles
-        angle.gantry = (270.0 * (M_PI/180.0)) - pars.readReal<float>("Rt/beam/Gantry");
-        angle.couch  = - pars.readReal<float>("Rt/beam/PatientSupportAngle");
+        angle.gantry = pars.readReal<float>("Rt/beam/Gantry");
+        angle.couch  = pars.readReal<float>("Rt/beam/PatientSupportAngle");
 
         // Distance from isocenter to phase space plane
         // Downstream edge of range shifter - gets moved upstream later
-        if (rs.zdown != 0)
+        if (rs.thick != 0)
             isoToBeam = rs.zdown;
         else
-            isoToBeam = - pars.readReal<float>("Rt/beam/IsocenterToBeamDistance");
+            isoToBeam = pars.readReal<float>("Rt/beam/IsocenterToBeamDistance");
     }
 }
 
 
 void Patient_Parameters_t::print()
 {
-    std::cout << "Directories:" << std::endl;
-    std::cout << "    - Patient:     " << patient_dir << std::endl;
-    std::cout << "    - Beam parent: " << input_dir << std::endl;
+    std::cout << "Files:" << std::endl;
+    std::cout << "    - Patient: " << patient_dir << std::endl;
     std::cout << "    - Beams:" << std::endl;
     for (size_t i = 0; i < nbeams; i++)
         std::cout << "        " << beam_dirs.at(i) << std::endl;
-    
-    std::cout << "Files:" << std::endl;
-    std::cout << "    - Tramp files:" << std::endl;
-    for (size_t i = 0; i < nbeams; i++)
-        std::cout << "        " << tramp_files.at(i) << std::endl;
     std::cout << "    - Topas files:" << std::endl;
     for (size_t i = 0; i < nbeams; i++)
         std::cout << "        " << topas_files.at(i) << std::endl;
-
-    std::cout << "Beam names:" << std::endl;
+    std::cout << "    - Tramp files:" << std::endl;
     for (size_t i = 0; i < nbeams; i++)
-        std::cout << "        " << beam_names.at(i) << std::endl;
-
-    std::cout << "CT data:" << std::endl;
-    std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ", (";
-    for (size_t i = 0; i < ct.n.z.size(); i++)
-    {
-        std::cout << ct.n.z.at(i);
-        if (i != ct.n.z.size()-1)
-            std::cout << ", ";
-        else
-            std::cout << ")" << std::endl;
-    }
-    std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ", (";
-    for (size_t i = 0; i < ct.d.z.size(); i++)
-    {
-        std::cout << ct.d.z.at(i);
-        if (i != ct.d.z.size()-1)
-            std::cout << ", ";
-        else
-            std::cout << ") cm" << std::endl;
-    }
-    std::cout << "    - Offset:     " << ct.offset.x << ", " << ct.offset.y << ", " << ct.offset.z << " cm" << std::endl;
+        std::cout << "        " << tramp_files.at(i) << std::endl;
 
     std::cout << "Beam angles:" << std::endl;
     for (size_t i = 0; i < nbeams; i++)
@@ -208,11 +182,32 @@ void Patient_Parameters_t::print()
         std::cout << "        - gantry: " << angles.at(i).gantry*180.0/M_PI << " deg" << std::endl;
         std::cout << "        - couch:  " << angles.at(i).couch*180.0/M_PI  << " deg" << std::endl;
     }
-    std::cout << "Isocenter to distance:" << std::endl;
+    std::cout << "Isocenter to beam distance:" << std::endl;
     for (size_t i = 0; i < nbeams; i++)
     {
         std::cout << "    - " << beam_names.at(i) << ": " << isocenter_to_beam_distance.at(i) << " cm" << std::endl;
     }
+    std::cout << "CT data:" << std::endl;
+	std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ", (";
+	for (size_t i = 0; i < ct.n.z.size(); i++)
+	{
+		std::cout << ct.n.z.at(i);
+		if (i != ct.n.z.size()-1)
+			std::cout << ", ";
+		else
+			std::cout << ")" << std::endl;
+	}
+	std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ", (";
+	for (size_t i = 0; i < ct.d.z.size(); i++)
+	{
+		std::cout << ct.d.z.at(i);
+		if (i != ct.d.z.size()-1)
+			std::cout << ", ";
+		else
+			std::cout << ") cm" << std::endl;
+	}
+	std::cout << "    - Offset:     " << ct.offset.x << ", " << ct.offset.y << ", " << ct.offset.z << " cm" << std::endl;
+
 }
 
 void Patient_Parameters_t::add_results_directory(std::string s)
@@ -220,11 +215,28 @@ void Patient_Parameters_t::add_results_directory(std::string s)
     results_dir = s;
 }
 
+void Patient_Parameters_t::adjust_to_internal_coordinates()
+{
+	std::swap(ct.d.x, ct.d.z.front());
+	std::swap(ct.n.x, ct.n.z.front());
+	std::swap(ct.offset.x, ct.offset.z);
+	ct.offset.x *= -1;
+	ct.offset.x -= 0.5*ct.n.x*ct.d.x;
+	ct.offset.y -= 0.5*ct.n.y*ct.d.y;
+	ct.offset.z -= 0.5*ct.n.z.front()*ct.d.z.front();
+
+	for(size_t i = 0; i < angles.size(); i++)
+	{
+		angles[i].couch *= -1.0; //reverse couch angle
+        angles[i].gantry = (270.0 * (M_PI/180.0)) - angles[i].gantry;
+	}
+}
+
 void Patient_Parameters_t::update_geometry_offsets(Patient_Volume_t vol)
 {
-    ct.offset.x = vol.imgCenter.x - ct.isocenter.x;
-    ct.offset.y = vol.imgCenter.y - ct.isocenter.y;
-    ct.offset.z = vol.imgCenter.z - ct.isocenter.z;
+    ct.offset.x = (vol.imgCenter.x - 0.5*vol.n.x*vol.d.x) - ct.isocenter.x;
+    ct.offset.y = (vol.imgCenter.y - 0.5*vol.n.y*vol.d.y) - ct.isocenter.y;
+    ct.offset.z = (vol.imgCenter.z - 0.5*vol.n.z*vol.d.z) - ct.isocenter.z;
 }
 
 void Patient_Parameters_t::set_spots_per_field()

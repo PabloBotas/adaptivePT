@@ -33,8 +33,8 @@ __device__ void Ray::step(float step, float density)
     if(wepl < step_wepl)
 	{
     	step_wepl = wepl;
+		step = wepl/density;
 		alive = false;
-		step = step_wepl/density;
 	}
     wepl -= step_wepl;
 

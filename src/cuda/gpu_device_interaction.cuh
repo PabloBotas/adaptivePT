@@ -2,7 +2,7 @@
 #define __DEVICE_INTERACTION_CUH__
 
 // includes, project
-// #include <cuda_runtime.h>
+#include <cuda_runtime.h>
 
 // helper
 #include <helper_cuda.h>

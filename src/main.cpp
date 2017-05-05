@@ -5,7 +5,6 @@
 #include "patient_parameters.hpp"
 #include "volume.hpp"
 #include "gpu_main.cuh"
-#include "gpu_main.cuh"
 
 // TODO DONE Read CT
 // TODO Get endpoints on CT
@@ -25,6 +24,7 @@ int main(int argc, char** argv)
     Patient_Parameters_t patient_data(parser.patient);
     patient_data.add_results_directory(parser.out_dir);
     patient_data.print();
+    patient_data.adjust_to_internal_coordinates();
 
     // Start device
     cudaEvent_t start, stop;
@@ -32,8 +32,10 @@ int main(int argc, char** argv)
 
     // Read CT and launch rays
     Patient_Volume_t ct(patient_data.planning_ct, Patient_Volume_t::Source_type::CTVOLUME);
+    // The CT volume lacks dimensions information
     ct.setVoxels(patient_data.ct.n.x, patient_data.ct.n.y, patient_data.ct.n.z.front());
     ct.setSpacing(patient_data.ct.d.x, patient_data.ct.d.y, patient_data.ct.d.z.front());
+    // Get endpoints
     std::vector<float4> ct_endpoints = gpu_get_beam_endpoints(patient_data, ct);
 
     // Print results
