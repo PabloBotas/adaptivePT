@@ -1,4 +1,3 @@
 #!/bin/bash
 
-../adaptSpotEnergies --tramp_in grassC4D10__240deg1.tramp
-
+../adaptSpotEnergies --patient P15_base_plan --cbct adapt_data/1.3.46.423632.135778.1429720794.31_defrm_corrCBCT_AutoRigidCorr_isocenterMatched.mha

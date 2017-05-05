@@ -1,0 +1,26 @@
+#!/bin/bash
+##  |  | ##
+workdir=base_plan/exec/310A1
+#BSUB -J 310A1_ch1_average
+#BSUB -q short
+#BSUB -r     
+#BSUB -o "base_plan/exec/310A1/310A1_ch1_average.out"
+#BSUB -e "base_plan/exec/310A1/310A1_ch1_average.err"
+#BSUB -C 0 
+
+cd $workdir
+
+Nb=`expr 0`
+Files0=""
+for i in `find ./ -name DONE.310A1_ch1 -printf %h"\n " `
+do
+Files0+=`find $i -name Dw_ch1*.bin -printf %p" "`
+Nb=`expr $Nb + 1`
+done
+echo $Nb
+topas_bin3d --operation avg  --scale 200000.0 --input1  $Files0  --output1 ../../output/raw/310A1_Dw_ch1.bin
+if [ $? -eq 0 ]; then
+    touch DONE.310A1_ch1_average
+else
+    touch FAIL.310A1_ch1_average
+fi
