@@ -2,3 +2,5 @@ build/*
 adaptSpotEnergies
 adaptSpotEnergies.sublime-workspace
 test/results
+
+test/P15_base_plan/out_base_plan/
