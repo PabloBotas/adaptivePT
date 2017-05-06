@@ -31,7 +31,7 @@ public:
     std::vector<short> spots_per_field;
 
     CT_Dims_t ct;
-    std::string planning_ct;
+    std::string planning_ct_file;
     std::vector<Aperture_Dims_t>     apertures;
     std::vector<RangeShifter_Dims_t> range_shifters;
 

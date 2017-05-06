@@ -52,12 +52,27 @@ T Patient_Parameters_Parser_t::readReal(std::string quantity, T defaultValue)
     return returnValues[0];
 }
 
-int Patient_Parameters_Parser_t::readInteger(std::string quantity, int defaultValue)
+template<class T>
+T Patient_Parameters_Parser_t::readInteger(std::string quantity, T defaultValue)
 {
     float defaultFloat = defaultValue;
-    if (defaultValue == std::numeric_limits<int>::max()) defaultFloat = NAN;
+    if (defaultValue == std::numeric_limits<T>::max()) defaultFloat = NAN;
     std::vector<float> returnValues = readVector<float>(quantity, defaultFloat, false);
-    return static_cast<int>(returnValues[0]);
+    return static_cast<T>(returnValues[0]);
+}
+
+template<class T>
+T Patient_Parameters_Parser_t::readLastRealInVector(std::string quantity, T defaultValue, bool firstIsSize)
+{
+    std::vector<T> vec = readVector(quantity, defaultValue, firstIsSize);
+    return vec.back();
+}
+
+template<class T>
+T Patient_Parameters_Parser_t::readLastIntInVector(std::string quantity, T defaultValue, bool firstIsSize)
+{
+    std::vector<T> vec = readVectorInts(quantity, defaultValue, firstIsSize);
+    return static_cast<int>(vec[0]);
 }
 
 template<class T>
@@ -295,6 +310,9 @@ template unsigned int Patient_Parameters_Parser_t::readReal<unsigned int>(std::s
 template std::vector<float> Patient_Parameters_Parser_t::readVector(std::string, float, bool);
 template std::vector<double> Patient_Parameters_Parser_t::readVector(std::string, double, bool);
 template std::vector<unsigned int> Patient_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
+template float Patient_Parameters_Parser_t::readLastRealInVector<float>(std::string, float, bool);
+template unsigned int Patient_Parameters_Parser_t::readInteger<unsigned int>(std::string, unsigned int);
+template unsigned int Patient_Parameters_Parser_t::readLastIntInVector<unsigned int>(std::string, unsigned int, bool);
 
 std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string name)
 //      return all folder names of all folders

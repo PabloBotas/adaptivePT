@@ -24,7 +24,7 @@ Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
 
 void Patient_Parameters_t::set_planning_CT_file()
 {
-    planning_ct = patient_dir + "/input/ctbinary/ctvolume.dat";
+    planning_ct_file = patient_dir + "/input/ctbinary/ctvolume.dat";
 }
 
 void Patient_Parameters_t::exploreBeamDirectories()
@@ -88,14 +88,14 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     // CT grid resolution
     ct.d.x = pars.readReal<float>("Rt/CT/PixelSpacing0");
     ct.d.y = pars.readReal<float>("Rt/CT/PixelSpacing1");
-    ct.d.z = pars.readVector<float>("Rt/CT/SliceThicknessSpacing", true);
+    ct.d.z = pars.readLastRealInVector<float>("Rt/CT/SliceThicknessSpacing", true);
 
     // CT grid number of voxels
-    ct.n.x = pars.readReal<unsigned int>("Rt/CT/Columns");
-    ct.n.y = pars.readReal<unsigned int>("Rt/CT/Rows");
-    ct.n.z = pars.readVectorInts<unsigned int>("Rt/CT/SliceThicknessSections", true);
+    ct.n.x = pars.readInteger<unsigned int>("Rt/CT/Columns");
+    ct.n.y = pars.readInteger<unsigned int>("Rt/CT/Rows");
+    ct.n.z = pars.readLastIntInVector<unsigned int>("Rt/CT/SliceThicknessSections", true);
 
-    ct.total = ct.n.x*ct.n.y*ct.n.z.front();
+    ct.total = ct.n.x*ct.n.y*ct.n.z;
 
     // CT grid shift
     float ImgCenterX = pars.readReal<float>("Rt/CT/ImgCenterX");
@@ -188,25 +188,11 @@ void Patient_Parameters_t::print()
         std::cout << "    - " << beam_names.at(i) << ": " << isocenter_to_beam_distance.at(i) << " cm" << std::endl;
     }
     std::cout << "CT data:" << std::endl;
-    std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ", (";
-    for (size_t i = 0; i < ct.n.z.size(); i++)
-    {
-        std::cout << ct.n.z.at(i);
-        if (i != ct.n.z.size()-1)
-            std::cout << ", ";
-        else
-            std::cout << ")" << std::endl;
-    }
-    std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ", (";
-    for (size_t i = 0; i < ct.d.z.size(); i++)
-    {
-        std::cout << ct.d.z.at(i);
-        if (i != ct.d.z.size()-1)
-            std::cout << ", ";
-        else
-            std::cout << ") cm" << std::endl;
-    }
-    std::cout << "    - Offset:     " << ct.offset.x << ", " << ct.offset.y << ", " << ct.offset.z << " cm" << std::endl;
+    std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ct.n.z << std::endl;
+    std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ct.d.z << std::endl;
+    std::cout << "    - Offset:     " << ct.offset.x;
+    std::cout << ", " << ct.offset.y;
+    std::cout << ", " << ct.offset.z << " cm" << std::endl;
 
 }
 
@@ -217,13 +203,13 @@ void Patient_Parameters_t::add_results_directory(std::string s)
 
 void Patient_Parameters_t::adjust_to_internal_coordinates()
 {
-    std::swap(ct.d.x, ct.d.z.front());
-    std::swap(ct.n.x, ct.n.z.front());
+    std::swap(ct.d.x, ct.d.z);
+    std::swap(ct.n.x, ct.n.z);
     std::swap(ct.offset.x, ct.offset.z);
     ct.offset.x *= -1;
     ct.offset.x -= 0.5*ct.n.x*ct.d.x;
     ct.offset.y -= 0.5*ct.n.y*ct.d.y;
-    ct.offset.z -= 0.5*ct.n.z.front()*ct.d.z.front();
+    ct.offset.z -= 0.5*ct.n.z*ct.d.z;
 
     for(size_t i = 0; i < angles.size(); i++)
     {

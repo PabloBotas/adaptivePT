@@ -16,15 +16,22 @@ public:
 
     void readFromFile(std::string fileName);
 
-    template<class T>
-    T              readReal(std::string quantity, T defaultValue = NAN);
-    int            readInteger(std::string quantity, int defaultValue = std::numeric_limits<int>::max());
-    template<class T>
-    std::vector<T> readVector(std::string quantity, T defaultValue = NAN, bool firstIsSize = true);
-    template<class T>
-    std::vector<T> readVectorInts(std::string quantity, T defaultValue = std::numeric_limits<T>::max(), bool firstIsSize = true);
-    std::string    readString(std::string quantity, std::string defaultValue = "none");
-    bool           readBool(std::string quantity, bool defaultValue = false);
+    template<class T> T
+    readReal(std::string quantity, T defaultValue = NAN);
+    template<class T> T
+    readInteger(std::string quantity, T defaultValue = std::numeric_limits<T>::max());
+    template<class T> std::vector<T>
+    readVector(std::string quantity, T defaultValue = NAN, bool firstIsSize = true);
+    template<class T> std::vector<T>
+    readVectorInts(std::string quantity, T defaultValue = std::numeric_limits<T>::max(), bool firstIsSize = true);
+    template<class T> T
+    readLastRealInVector(std::string quantity, T defaultValue = NAN, bool firstIsSize = true);
+    template<class T> T
+    readLastIntInVector(std::string quantity, T defaultValue = std::numeric_limits<T>::max(), bool firstIsSize = true);
+    std::string
+    readString(std::string quantity, std::string defaultValue = "none");
+    bool
+    readBool(std::string quantity, bool defaultValue = false);
 
     std::string getSeparator();
     bool        getVerbose();

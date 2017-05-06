@@ -32,14 +32,6 @@ Vector_t<T>::Vector_t(const Vector_t<T> &obj)
 template class Vector_t<int>;
 template class Vector_t<unsigned int>;
 template class Vector_t<float>;
-template class Vector_t<double>;
-
-// Topas_Vector_t ---------------------------------------
-template struct Topas_Vector_t<float, float>;
-template struct Topas_Vector_t<double, double>;
-template struct Topas_Vector_t<double, std::vector<double> >;
-template struct Topas_Vector_t<unsigned int, std::vector<unsigned int> >;
-
 
 // Aperture_Dims_t ---------------------------------------
 Aperture_Dims_t::Aperture_Dims_t():
