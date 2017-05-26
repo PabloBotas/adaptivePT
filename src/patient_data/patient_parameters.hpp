@@ -53,6 +53,11 @@ private:
     void set_total_spots();
     void set_planning_CT_file();
 
+    void consolidate_originals();
+    CT_Dims_t original_ct;
+    std::vector<BeamAngles_t> original_angles;
+    std::vector<float>        original_isocenter_to_beam_distance;
+
 //     std::string rel_beam_location  = "/input";
 //     std::string rel_topas_location = "/run";
 };

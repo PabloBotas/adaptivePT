@@ -16,11 +16,12 @@ public:
 //    __device__ float energyToRange(float energy);
     __device__ float3 position();
     __device__ float3 direction();
-    __device__ void step(float step, float density);
+    __device__ void move(float step, float wepl);
     __device__ bool isAlive();
 
 private:
-    bool alive;
+    bool _alive;
+    float _min_wepl = 1e-08;
 };
 
 

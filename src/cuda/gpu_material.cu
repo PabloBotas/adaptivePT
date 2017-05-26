@@ -1,60 +1,73 @@
 #include "gpu_material.cuh"
 
-#include "gpu_errorcheck.cuh"
-
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
-std::vector<float> readDensityCorrect(std::string fname)
+std::vector<float> readDensityCorrect(const std::string file)
 //  read density correction factor
 {
-    char buffer[200];
-    std::cout << "densityCorrect: Reading " << fname << std::endl;
-    FILE *fp;
-    fp = fopen(fname.c_str(),"r");
-    if (fp == NULL)
-    {
-        std::cout << "Couldn't open file: " << fname << std::endl;
-        exit (EXIT_FAILURE);
+    std::cout << "densityCorrect: Reading " << file << std::endl;
+    std::ifstream stream(file);
+    if (!stream.is_open()) {
+        std::cerr << "Can't open file: " << file << std::endl;
+        exit(EXIT_FAILURE);
     }
 
-    if (!fgets(buffer,200,fp)) ioError("densityCorrect");
+    std::string line;
+    std::string dummy;
+    // dummy lines 
+    std::getline(stream, line);
+    // Get number of factors
+    std::getline(stream, line);
+    size_t const nfactors = stoi(line);
+    std::getline(stream, line);
+    std::getline(stream, line);
+    std::istringstream ss(line);
 
-    int nfactors = 0;
-    if (!fscanf(fp, "%d\n", &nfactors)) ioError("densityCorrect");
-    if (!fgets(buffer,200,fp)) ioError("densityCorrect");
-    
-    //  allocate space and read data
-    std::vector<float> dcfactor(nfactors);
-    for(int i = 0; i < nfactors; i++)
+    std::vector<float> dcfactor;
+    dcfactor.reserve(nfactors);
+    for (size_t i = 0; i < nfactors; i++)
     {
-        if (!fscanf(fp, "%f ,", &dcfactor[i])) ioError("densityCorrect");
+        std::string s;
+        getline(ss, s, ',');
+        dcfactor.push_back(stoi(s));
     }
-    fclose(fp);
 
     return dcfactor;
 }
 
-float HU2dens(int huValue)
-//    convert HU to dens, in g/cm^3
+
+float HU2dens(const short val)
 {
-    float temp;
+//    convert HU to dens, in g/cm^3
     //    MGH calibration curve
-    if(huValue >= -1000 && huValue < -98)
-        temp = 0.00121 + 0.001029700665188*(1000.0 + huValue);
-    else if(huValue >= -98 && huValue < 15)
-        temp = 1.018 + 0.000893*huValue;
-    else if(huValue >= 15 && huValue < 23)
-        temp = 1.03;
-    else if(huValue >= 23 && huValue < 101)
-        temp = 1.003 + 0.001169*huValue;
-    else if(huValue >= 101 && huValue < 2001)
-        temp = 1.017 + 0.000592*huValue;
-    else if(huValue >= 2001 && huValue < 2995)
-        temp = 2.201 + 0.0005*(-2000.0 + huValue);
+    if (val >= -1000 && val < -98)
+        return 0.00121 + 0.001029700665188*(1000.0 + val);
+    else if (val >= -98 && val < 15)
+        return 1.018 + 0.000893*val;
+    else if (val >= 15 && val < 23)
+        return 1.03;
+    else if (val >= 23 && val < 101)
+        return 1.003 + 0.001169*val;
+    else if (val >= 101 && val < 2001)
+        return 1.017 + 0.000592*val;
+    else if (val >= 2001 && val < 2995)
+        return 2.201 + 0.0005*(-2000.0 + val);
     else
-        temp = 4.54;
-    return temp;
+        return 4.54;
+}
+
+int HU2matId(const int val, const std::vector<int> hu_indexes)
+{
+//  conert HU to material id according to hu_indexes
+    for(size_t i = 0; i < hu_indexes.size()-1; i++)
+    {
+        if(val >= hu_indexes[i] && val < hu_indexes[i+1])
+            return i;
+    }
+    return hu_indexes.size()-1;
 }
 

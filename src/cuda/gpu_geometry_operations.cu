@@ -1,5 +1,5 @@
 #include "gpu_geometry_operations.cuh"
-#include "gpu_device_interaction.cuh"
+#include "gpu_device_globals.cuh"
 #include "gpu_ray_class.cuh"
 
 #include "vector_types.h"

@@ -7,11 +7,6 @@
 #include <vector>
 #include <string>
 
-void init_rays(const Patient_Parameters_t& pat,
-               std::vector<float4>& xbuffer,
-               std::vector<float4>& vxbuffer,
-               std::vector<short2>& ixbuffer);
-
 void calculateRays(const std::vector<float4>& xbuffer,
                    const std::vector<float4>& vxbuffer,
                    const std::vector<short2>& ixbuffer,

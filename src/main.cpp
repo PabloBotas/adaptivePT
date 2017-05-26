@@ -31,21 +31,22 @@ int main(int argc, char** argv)
     initialize_device(start, stop);
 
     // Read CT and launch rays
-    Patient_Volume_t ct(patient_data.planning_ct, Patient_Volume_t::Source_type::CTVOLUME);
+    Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
     // The CT volume lacks dimensions information
-    ct.setVoxels(patient_data.ct.n.x, patient_data.ct.n.y, patient_data.ct.n.z.front());
-    ct.setSpacing(patient_data.ct.d.x, patient_data.ct.d.y, patient_data.ct.d.z.front());
+
+    ct.setDimsFromPatient(patient_data.ct);
     // Get endpoints
     std::vector<float4> ct_endpoints = gpu_get_beam_endpoints(patient_data, ct);
 
     // Print results
-    std::cout << "SpotID \t WEPL \t X \t Y \t Z" << std::endl;
+    std::cout << "SpotID \t WEPL \t X \t Y \t Z \t WEPL" << std::endl;
     for (size_t i = 0; i < 10; i++)
     {
         std::cout << i << "\t" << ct_endpoints.at(i).w;
         std::cout << "\t" << ct_endpoints.at(i).x;
         std::cout << "\t" << ct_endpoints.at(i).y;
-        std::cout << "\t" << ct_endpoints.at(i).z << std::endl;
+        std::cout << "\t" << ct_endpoints.at(i).z;
+        std::cout << "\t" << ct_endpoints.at(i).w << std::endl;
     }
 
     // Stop device

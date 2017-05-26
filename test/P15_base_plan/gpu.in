@@ -12,7 +12,7 @@ Scorer dose
 SupressStd 1
 
 SourceType FluenceMap
-SimulationType perBeam
+SimulationType perSpot
 
 MCAUTOAstroid 1
 SpotFactor 500000

@@ -1,14 +1,10 @@
-#include "gpu_device_interaction.cuh"
 #include "gpu_run.cuh"
+
 #include "gpu_ray_kernel.cuh"
 #include "gpu_ray_positioning_kernel.cuh"
 #include "gpu_errorcheck.cuh"
-#include "gpu_geometry_operations.cuh"
-
-#include "patient_parameters.hpp"
+#include "gpu_device_globals.cuh"
 #include "special_types.hpp"
-#include "tramp.hpp"
-#include "spot.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -81,4 +77,8 @@ void freeCTMemory()
 {
     cudaFreeArray(dens);
     cudaUnbindTexture(dens_tex);
+    cudaFreeArray(matid);
+    cudaUnbindTexture(matid_tex);
+    cudaFreeArray(stp_ratio_array);
+    cudaUnbindTexture(stp_ratio_tex);
 }

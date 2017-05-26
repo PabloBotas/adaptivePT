@@ -1,5 +1,5 @@
 #include "gpu_ray_positioning_kernel.cuh"
-#include "gpu_device_interaction.cuh"
+#include "gpu_device_globals.cuh"
 
 __global__ void rays_to_delivery_plane(const int num,
                                         const float2* angles,

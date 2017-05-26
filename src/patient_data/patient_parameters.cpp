@@ -17,6 +17,7 @@ Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
 {
     exploreBeamDirectories();
     parseTopasFiles();
+    consolidate_originals();
     set_spots_per_field();
     set_total_spots();
     set_planning_CT_file();
@@ -109,7 +110,13 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     ct.offset.x = ImgCenterX - ct.isocenter.x;
     ct.offset.y = ImgCenterY - ct.isocenter.y;
     ct.offset.z = ImgCenterZ - ct.isocenter.z;
+}
 
+void Patient_Parameters_t::consolidate_originals()
+{
+    original_ct = ct;
+    original_angles = angles;
+    original_isocenter_to_beam_distance = isocenter_to_beam_distance;
 }
 
 void Patient_Parameters_t::getTopasBeamParameters()

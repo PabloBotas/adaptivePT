@@ -1,16 +1,11 @@
 #include "gpu_main.cuh"
 
-#include "initialize_rays.cuh"
 #include "patient_parameters.hpp"
+#include "volume.hpp"
+#include "gpu_ct_to_device.cuh"
+#include "initialize_rays.cuh"
 #include "gpu_errorcheck.cuh"
 #include "gpu_run.cuh"
-#include "gpu_geometry_operations.cuh"
-#include "gpu_main.cuh"
-
-#include "tramp.hpp"
-#include "gpu_device_interaction.cuh"
-#include "gpu_ct_to_device.cuh"
-#include "volume.hpp"
 
 #include <iostream>
 #include <string>
@@ -60,7 +55,9 @@ void runCalculation(const Patient_Parameters_t &pat,
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendDimensions(ct);
+    std::vector<int> HU_indexes = gpu_ct_to_device::sendMassStoppingPowerRatio();
     gpu_ct_to_device::sendDensities(ct);
+    gpu_ct_to_device::sendMaterialId(ct, HU_indexes);
 
     // Create scorer array
     float4* endpoints_scorer = NULL;
@@ -86,7 +83,7 @@ void runCalculation(const Patient_Parameters_t &pat,
 
     Patient_Volume_t traces(pat.ct);
     gpuErrchk( cudaMemcpy(&traces.hu[0], traces_scorer, sizeof(float)*traces.nElements, cudaMemcpyDeviceToHost) );
-    traces.output("output_volume.bin");
+    traces.output("output_volume.bin", "mhd");
 
     // Free memory
     gpuErrchk( cudaFree(endpoints_scorer) );
