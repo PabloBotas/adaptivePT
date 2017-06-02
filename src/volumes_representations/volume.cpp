@@ -130,6 +130,20 @@ void Patient_Volume_t::export_binary_metaimage(std::string f,
     ofs.close();
 }
 
+void Patient_Volume_t::export_binary(std::string f)
+{
+    std::ofstream ofs;
+    ofs.open (f, std::ios::out | std::ios::binary);
+    if( !ofs.is_open() )
+    {
+        std::cerr << "Can not open file " << f << " to write results." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    ofs.write (reinterpret_cast<char*>(hu.data()), nElements*sizeof(float));
+    ofs.close();
+}
+
 void Patient_Volume_t::output(std::string outfile, std::string out_type)
 {
     if (out_type == "mhd")
@@ -144,6 +158,10 @@ void Patient_Volume_t::output(std::string outfile, std::string out_type)
     {
         export_header_metaimage(outfile);
         export_binary_metaimage(outfile, std::ios::app);
+    }
+    else if(out_type == "bin" || out_type == "binary")
+    {
+        export_binary(outfile);
     }
     else
         std::cerr << "Output type not supported, supported type: mhd" << std::endl;
