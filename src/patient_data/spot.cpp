@@ -9,6 +9,10 @@ Spot_t::~Spot_t()
 {
 }
 
+Spot_t::Spot_t()
+{
+}
+
 Spot_t::Spot_t(float e_, float w_, float x_, float y_)
 {
     e = e_;
