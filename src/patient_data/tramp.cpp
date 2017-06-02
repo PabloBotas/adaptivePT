@@ -111,20 +111,20 @@ void Tramp_t::read_()
         thisSpot.y *= MM2CM;
         spots.push_back(thisSpot);
         gigaprotons += thisSpot.w;
+        nspots++;
     }
-    nspots = spots.size();
 
-    if( round(1000.*gigaprotons) != round(1000.*gigaprotons_header) )
-    {
-        std::cerr << "WARNING! Inconsistent tramp file." << std::endl;
-        std::cerr << "GigaProtons in the header (" << gigaprotons_header << ") differs ";
-        std::cerr << "from the summed gigaprotons (" << gigaprotons << ")" << std::endl;
-    }
     if( nspots != nspots_header )
     {
         std::cerr << "WARNING! Inconsistent tramp file. ";
         std::cerr << "Number of spots in the header (" << nspots_header << ") differs ";
         std::cerr << "from number of spots (" << nspots << ")" << std::endl;
+    }
+    if( int(1000.*gigaprotons) != int(1000.*gigaprotons_header) )
+    {
+        std::cerr << "WARNING! Inconsistent tramp file." << std::endl;
+        std::cerr << "GigaProtons in the header (" << gigaprotons_header << ") differs ";
+        std::cerr << "from the summed gigaprotons (" << gigaprotons << ")" << std::endl;
     }
 }
 
@@ -151,7 +151,7 @@ void Tramp_t::read_file_header(std::string f)
 
 void Tramp_t::print(unsigned int n)
 {
-    if ( n == 0)
+    if (n == 0)
         n = nspots;
 
     print(0,n);
