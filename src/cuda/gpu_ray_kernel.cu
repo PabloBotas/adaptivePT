@@ -4,13 +4,14 @@
 #include "gpu_geometry_operations.cuh"
 
 __global__ void calculateRays_kernel(const int num,
+                                     const short* spots_per_beam,
                                      float4* endpoints,
-                                     float* traces,
-                                     const short* spots_per_beam)
+                                     float* traces)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
     if(id < num)
     {
+        // float const max_energy_loss = 0.2; // % of pre-step energy
         Ray ray(xdata[id], vxdata[id], ixdata[id]);
         int4 vox;
         vox.x = floor(ray.pos.x/ctVoxSize.x);
@@ -23,16 +24,14 @@ __global__ void calculateRays_kernel(const int num,
 
         while (ray.isAlive() && vox.w != -1)
         {
-            atomicAdd(&traces[vox.w], 1.f);
+            if(traces)
+                atomicAdd(&traces[vox.w], 1.f);
             float max_step = inters(ray, vox, voxUpdater, voxStepper);
             float step_water, step;
             getWaterStep(step, step_water, max_step, ray.energy, ray.wepl, vox);
             ray.move(step, step_water);
             changeVoxel(vox, voxUpdater, voxStepper);
         }
-
-        if (vox.w != -1)
-            atomicAdd(&traces[vox.w], 50);
 
         unsigned int index = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_beam);
         endpoints[index].x = ray.pos.x;

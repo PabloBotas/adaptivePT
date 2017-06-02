@@ -41,10 +41,10 @@ endif()
 # include_directories ("${CUDA_SDK_ROOT_DIR}")
 
 # Definitions------------------------------------------------
-# option(DEBUG_SCORER "Use debug mode to export a CT volume with the ray paths" OFF)
-# if(DEBUG_SCORER)
-#   add_definitions(-D__DEBUG_MODE__)
-# endif()
+option(DEBUG_RAYS "Use mode to export a CT volume with the ray paths" OFF)
+if(DEBUG_RAYS)
+  add_definitions(-D__OUTPUT_SCORER_VOLUME__)
+endif()
 
 
 # Files------------------------------------------------------

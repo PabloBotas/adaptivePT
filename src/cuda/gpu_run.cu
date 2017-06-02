@@ -29,7 +29,7 @@ void calculateRays(const std::vector<float4>& xbuffer,
     std::cout << std::endl;
     std::cout << "Calculating " << total_spots << " rays ..." << std::endl;
     int nblocks = 1 + (total_spots-1)/NTHREAD_PER_BLOCK_RAYS;
-    calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(total_spots, endpoints_scorer, traces_scorer, spots_per_beam_gpu);
+    calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(total_spots, spots_per_beam_gpu, endpoints_scorer, traces_scorer);
     gpuErrchk( cudaPeekAtLastError() );
     gpuErrchk( cudaThreadSynchronize() );
 }
