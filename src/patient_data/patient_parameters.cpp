@@ -195,8 +195,8 @@ void Patient_Parameters_t::print()
         std::cout << "    - " << beam_names.at(i) << ": " << isocenter_to_beam_distance.at(i) << " cm" << std::endl;
     }
     std::cout << "CT data:" << std::endl;
-    std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ct.n.z << std::endl;
-    std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ct.d.z << std::endl;
+    std::cout << "    - Voxels:     " << ct.n.x << ", " << ct.n.y << ", " << ct.n.z << std::endl;
+    std::cout << "    - Voxel size: " << ct.d.x << ", " << ct.d.y << ", " << ct.d.z << " cm" << std::endl;
     std::cout << "    - Offset:     " << ct.offset.x;
     std::cout << ", " << ct.offset.y;
     std::cout << ", " << ct.offset.z << " cm" << std::endl;
@@ -214,6 +214,8 @@ void Patient_Parameters_t::adjust_to_internal_coordinates()
     std::swap(ct.n.x, ct.n.z);
     std::swap(ct.offset.x, ct.offset.z);
     ct.offset.x *= -1;
+    
+    // From the center to the corner
     ct.offset.x -= 0.5*ct.n.x*ct.d.x;
     ct.offset.y -= 0.5*ct.n.y*ct.d.y;
     ct.offset.z -= 0.5*ct.n.z*ct.d.z;
