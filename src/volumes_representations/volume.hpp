@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 class Patient_Volume_t
 {
@@ -25,10 +26,11 @@ public:
                      const CT_Dims_t& dims);
     Patient_Volume_t(const CT_Dims_t& dims);
 
-    void setDimsFromPatient(const CT_Dims_t& pat_ct);
+    void setDims(const CT_Dims_t& pat_ct, const bool interpolate = false);
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
     void setSpacing(float x, float y, float z);
     void output(std::string outfile, std::string out_type);
+    void output(std::string outfile, std::string out_type, const CT_Dims_t& dims);
 
     Patient_Volume_t::Source_type source_type;
     std::string file;
@@ -46,8 +48,13 @@ private:
     Vector_t<float> original_imgCenter;
     void read_volume();
     void import_from_metaimage(const float* data);
-    void export_to_metaimage(std::string f);
+    void export_header_metaimage(std::string f, std::string ref_file = "LOCAL");
+    void export_binary_metaimage(std::string f, std::ios::openmode mode = std::ios::out);
     void consolidate_originals();
+    void interpolate_to_geometry(Patient_Volume_t& pat, const CT_Dims_t& pat_ct, const float extrapolationValue = 0);
+    void interpolate_to_geometry(const CT_Dims_t& pat_ct, const float extrapolationValue = 0);
+    void do_interpolate(std::vector<float>& dest, const CT_Dims_t& pat_ct, const float extrapolationValue = 0);
+
 };
 
 #endif

@@ -44,7 +44,7 @@ Patient_Volume_t::Patient_Volume_t(const CT_Dims_t& dims)
 {
     nElements = dims.total;
     hu.resize(nElements);
-    setDimsFromPatient(dims);
+    setDims(dims);
     consolidate_originals();
 }
 
@@ -104,10 +104,13 @@ void Patient_Volume_t::import_from_metaimage(const float* data)
     }
 }
 
-void Patient_Volume_t::export_to_metaimage(std::string f)
+void Patient_Volume_t::export_binary_metaimage(std::string f,
+                                               std::ios::openmode other)
 {
+    std::ios::openmode mode = std::ios::out | std::ios::binary | other;
+
     std::ofstream ofs;
-    ofs.open (f, std::ios::out | std::ios::binary);
+    ofs.open (f, mode);
     if( !ofs.is_open() )
     {
         std::cerr << "Can not open file " << f << " to write results." << std::endl;
@@ -129,20 +132,32 @@ void Patient_Volume_t::export_to_metaimage(std::string f)
 
 void Patient_Volume_t::output(std::string outfile, std::string out_type)
 {
-    if (out_type != "mhd")
+    if (out_type == "mhd")
     {
-        std::cerr << "Output type not supported, supported type: mhd" << std::endl;
+        std::string file_basename = outfile.substr(0, outfile.find_last_of("/"));
+        std::string file_noext = outfile.substr(0, outfile.find_last_of("."));
+        std::string mhd_header_file = file_noext + ".mhd";
+        export_header_metaimage(mhd_header_file, file_basename);
+        export_binary_metaimage(outfile);
     }
+    else if(out_type == "mha")
+    {
+        export_header_metaimage(outfile);
+        export_binary_metaimage(outfile, std::ios::app);
+    }
+    else
+        std::cerr << "Output type not supported, supported type: mhd" << std::endl;
 
-    std::string file_basename = outfile.substr(0, outfile.find_last_of("/"));
-    std::string file_noext = outfile.substr(0, outfile.find_last_of("."));
-    std::string mhd_header_file = file_noext + ".mhd";
+    // Export file
+}
 
+void Patient_Volume_t::export_header_metaimage(std::string outfile, std::string ref_file)
+{
     // Output header file
-    std::ofstream header(mhd_header_file, std::ios::out);
+    std::ofstream header(outfile, std::ios::out);
     if( !header.is_open() )
     {
-        std::cerr << "Can not open file " << mhd_header_file << " to write results." << std::endl;
+        std::cerr << "Can not open file " << outfile << " to write results." << std::endl;
         exit(EXIT_FAILURE);
     }
     header << "ObjectType = Image\n";
@@ -156,24 +171,31 @@ void Patient_Volume_t::output(std::string outfile, std::string out_type)
     header << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";
     header << "AnatomicalOrientation = RAI\n";
     header << "ElementType = MET_FLOAT\n";
-    header << "ElementDataFile = " << file_basename << "\n";
+    header << "ElementDataFile = " << ref_file << "\n";
     header.close();
 
     std::cout << "Offset = " << CM2MM*origin.z << " " << CM2MM*origin.y << " " << CM2MM*origin.x << "\n";
     std::cout << "ElementSpacing = " << CM2MM*d.z << " " << CM2MM*d.y << " " << CM2MM*d.x << "\n";
     std::cout << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";
-
-    // Output binary
-    export_to_metaimage(outfile);
 }
 
-void Patient_Volume_t::setDimsFromPatient(const CT_Dims_t& pat_ct)
+void Patient_Volume_t::output(std::string outfile, std::string out_type, const CT_Dims_t& dims)
+{
+    Patient_Volume_t temp(dims);
+    this->interpolate_to_geometry(temp, dims, 0);
+    temp.output(outfile, out_type);
+}
+
+void Patient_Volume_t::setDims(const CT_Dims_t& pat_ct, const bool interpolate)
 {
     setVoxels(pat_ct.n.x, pat_ct.n.y, pat_ct.n.z);
     setSpacing(pat_ct.d.x, pat_ct.d.y, pat_ct.d.z);
     origin.x = pat_ct.offset.x + 0.5*pat_ct.d.x + pat_ct.isocenter.x;
     origin.y = pat_ct.offset.y + 0.5*pat_ct.d.y + pat_ct.isocenter.y;
     origin.z = pat_ct.offset.z + 0.5*pat_ct.d.z + pat_ct.isocenter.z;
+
+    if (interpolate)
+        interpolate_to_geometry(pat_ct);
 }
 
 void Patient_Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)
@@ -189,3 +211,118 @@ void Patient_Volume_t::setSpacing(float x, float y, float z)
     d.y = y;
     d.z = z;
 }
+
+void Patient_Volume_t::interpolate_to_geometry(const CT_Dims_t& pat_ct,
+                                               const float extrapolationValue)
+{
+    do_interpolate(hu, pat_ct, extrapolationValue);
+}
+
+void Patient_Volume_t::interpolate_to_geometry(Patient_Volume_t& pat,
+                                               const CT_Dims_t& pat_ct,
+                                               const float extrapolationValue)
+{
+    do_interpolate(pat.hu, pat_ct, extrapolationValue);
+}
+
+void Patient_Volume_t::do_interpolate(std::vector<float>& dest,
+                                      const CT_Dims_t& pat_ct,
+                                      const float extrapolationValue)
+{
+    for (size_t tid = 0; tid < pat_ct.total; tid++)
+    {
+        size_t zInd = tid%pat_ct.n.z;
+        size_t yInd = (tid/pat_ct.n.z)%pat_ct.n.y;
+        size_t xInd = tid/pat_ct.n.z/pat_ct.n.y;
+
+        // 3d volumetric interpolation
+        float fraction, interpolatedValue = 0.0f, mass = 0.0f;
+        Vector_t<float> inf, sup;
+        //calculate the position of the scoring grid boundary
+        inf.x = xInd*pat_ct.d.x + pat_ct.offset.x;
+        inf.y = yInd*pat_ct.d.y + pat_ct.offset.y;
+        inf.z = zInd*pat_ct.d.z + pat_ct.offset.z;
+        sup.x = xInd*(pat_ct.d.x + 1) + pat_ct.offset.x;
+        sup.y = yInd*(pat_ct.d.y + 1) + pat_ct.offset.y;
+        sup.z = zInd*(pat_ct.d.z + 1) + pat_ct.offset.z;
+
+        //calculate the nearest CT grid walls
+        Vector_t<int> infCT, supCT;
+        infCT.x = (int) floorf(inf.x/this->d.x);
+        infCT.y = (int) floorf(inf.y/this->d.y);
+        infCT.z = (int) floorf(inf.z/this->d.z);
+        supCT.x = (int) floorf(sup.x/this->d.x);
+        supCT.y = (int) floorf(sup.y/this->d.y);
+        supCT.z = (int) floorf(sup.z/this->d.z);
+
+        //loop over the CT grid voxels which overlap with the current interpolated grid voxel
+        for(int zvox = infCT.z; zvox <= supCT.z; zvox++) {
+            for(int yvox = infCT.y; yvox <= supCT.y; yvox++) {
+                for(int xvox = infCT.x; xvox <= supCT.x; xvox++) {
+
+                    float ctValue;
+
+                    if (! (xvox < 0 || xvox >= (int) this->n.x
+                        || yvox < 0 || yvox >= (int) this->n.y
+                        || zvox < 0 || zvox >= (int) this->n.z)) {
+                        // Inside CT grid
+                        ctValue = hu.at(zvox + yvox*this->n.z + xvox*this->n.z*this->n.y);
+                    } else {
+                        // Outside CT grid
+                        ctValue = extrapolationValue;
+                    }
+
+                    Vector_t<float> fractions;
+                    // determine the overlap along x direction
+                    if(xvox == infCT.x) {
+                        if(xvox == supCT.x)
+                            fractions.x = pat_ct.d.x / this->d.x;
+                        else
+                            fractions.x = ((xvox+1)*this->d.x - inf.x) / this->d.x;
+                    } else {
+                        if(xvox == supCT.x)
+                            fractions.x = (sup.x - xvox*this->d.x) / this->d.x;
+                        else
+                            fractions.x = 1.0f;
+                    }
+                    // determine the overlap along y direction
+                    if(yvox == infCT.y) {
+                        if(yvox == supCT.y)
+                            fractions.y = pat_ct.d.y / this->d.y;
+                        else
+                            fractions.y = ((yvox+1)*this->d.y - inf.y) / this->d.y;
+                    } else {
+                        if(yvox == supCT.y)
+                            fractions.y = (sup.y - yvox*this->d.y) / this->d.y;
+                        else
+                            fractions.y = 1.0f;
+                    }
+                    // determine the overlap along z direction
+                    if(zvox == infCT.z) {
+                        if(zvox == supCT.z)
+                            fractions.z = pat_ct.d.z / this->d.z;
+                        else
+                            fractions.z = ((zvox+1)*this->d.z - inf.z) / this->d.z;
+                    } else {
+                        if(zvox == supCT.z)
+                            fractions.z = (sup.z - zvox*this->d.z) / this->d.z;
+                        else
+                            fractions.z = 1.0f;
+                    }
+
+                    // overlap in 3d
+                    fraction = fractions.x * fractions.y * fractions.z;
+                    mass += fraction*this->d.x*this->d.y*this->d.z;
+                    interpolatedValue += fraction*ctValue*this->d.x*this->d.y*this->d.z;
+                }
+            }
+        }
+        if(mass > 0.0) {
+            dest.at(tid) = interpolatedValue/mass;
+        } else {
+            dest.at(tid) = extrapolationValue;
+        }
+    }
+}
+
+

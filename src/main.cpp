@@ -34,13 +34,14 @@ int main(int argc, char** argv)
     Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
     // The CT volume lacks dimensions information
 
-    ct.setDimsFromPatient(patient_data.ct);
+    ct.setDims(patient_data.ct);
     // Get endpoints
     std::vector<float4> ct_endpoints = gpu_get_beam_endpoints(patient_data, ct);
 
     // Print results
     std::cout << "SpotID \t WEPL \t X \t Y \t Z \t WEPL" << std::endl;
-    for (size_t i = 0; i < 10; i++)
+    size_t iters = ct_endpoints.size() < 10 ? ct_endpoints.size() : 10;
+    for (size_t i = 0; i < iters; i++)
     {
         std::cout << i << "\t" << ct_endpoints.at(i).w;
         std::cout << "\t" << ct_endpoints.at(i).x;
