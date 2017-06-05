@@ -6,6 +6,8 @@
 #include "volume.hpp"
 #include "gpu_main.cuh"
 
+#include "utils.hpp"
+
 // TODO DONE Read CT
 // TODO Get endpoints on CT
 // TODO Apply VF to endpoints -> updated endpoints
@@ -49,6 +51,8 @@ int main(int argc, char** argv)
         std::cout << "\t" << ct_endpoints.at(i).z;
         std::cout << "\t" << ct_endpoints.at(i).w << std::endl;
     }
+
+    utils::run_plastimatch_probe(ct_endpoints, parser.vf_file);
 
     // Stop device
     stop_device(start, stop);

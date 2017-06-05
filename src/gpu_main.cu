@@ -41,12 +41,13 @@ void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
 }
 
 std::vector< Vector4_t<float> > gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
-                                                      const Patient_Volume_t &ct)
+                                                       const Patient_Volume_t &ct)
 {
     // Run
     std::vector< Vector4_t<float> > endpoints(pat.total_spots);
     runCalculation(pat, ct, endpoints);
-    utils::flip_positions_Z(endpoints, pat.ct);
+    utils::flip_positions_X(endpoints, pat.ct);
+    // utils::cm_to_mm(endpoints);
 
     return endpoints;
 }

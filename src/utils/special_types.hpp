@@ -1,36 +1,8 @@
 #ifndef __SPECIAL_TYPES_HPP__
 #define __SPECIAL_TYPES_HPP__
 
-#include <vector>
+#include "vector3.hpp"
 #include <string>
-
-template <class T>
-class Vector3_t
-{
-public:
-    Vector3_t();
-    Vector3_t(const std::vector<T> &v);
-    Vector3_t(const Vector3_t<T> &obj);
-
-    T x;
-    T y;
-    T z;
-};
-
-template <class T>
-class Vector4_t
-{
-public:
-    Vector4_t();
-    Vector4_t(const std::vector<T> &v);
-    Vector4_t(const Vector4_t<T> &obj);
-    Vector4_t(const Vector3_t<T> &obj);
-
-    T x;
-    T y;
-    T z;
-    T w;
-};
 
 // BeamAngles_t ---------------------------------------
 struct BeamAngles_t
