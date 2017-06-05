@@ -6,3 +6,13 @@ test/results
 test/P15_base_plan/out_base_plan/
 
 test/P15_base_plan/out_base_plan_mha/
+
+test/P15_base_plan_simple/
+
+test/adapt_data_P15/
+
+*.mha
+
+*.raw
+
+test/Screenshot\.png
