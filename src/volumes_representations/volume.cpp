@@ -255,7 +255,7 @@ void Patient_Volume_t::do_interpolate(std::vector<float>& dest,
 
         // 3d volumetric interpolation
         float fraction, interpolatedValue = 0.0f, mass = 0.0f;
-        Vector_t<float> inf, sup;
+        Vector3_t<float> inf, sup;
         //calculate the position of the scoring grid boundary
         inf.x = xInd*pat_ct.d.x + pat_ct.offset.x;
         inf.y = yInd*pat_ct.d.y + pat_ct.offset.y;
@@ -265,7 +265,7 @@ void Patient_Volume_t::do_interpolate(std::vector<float>& dest,
         sup.z = zInd*(pat_ct.d.z + 1) + pat_ct.offset.z;
 
         //calculate the nearest CT grid walls
-        Vector_t<int> infCT, supCT;
+        Vector3_t<int> infCT, supCT;
         infCT.x = (int) floorf(inf.x/this->d.x);
         infCT.y = (int) floorf(inf.y/this->d.y);
         infCT.z = (int) floorf(inf.z/this->d.z);
@@ -290,7 +290,7 @@ void Patient_Volume_t::do_interpolate(std::vector<float>& dest,
                         ctValue = extrapolationValue;
                     }
 
-                    Vector_t<float> fractions;
+                    Vector3_t<float> fractions;
                     // determine the overlap along x direction
                     if(xvox == infCT.x) {
                         if(xvox == supCT.x)

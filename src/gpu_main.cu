@@ -6,6 +6,7 @@
 #include "initialize_rays.cuh"
 #include "gpu_errorcheck.cuh"
 #include "gpu_run.cuh"
+#include "utils.hpp"
 
 #include <iostream>
 #include <string>
@@ -39,19 +40,20 @@ void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
     std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
 }
 
-std::vector<float4> gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
-                                           const Patient_Volume_t &ct)
+std::vector< Vector4_t<float> > gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
+                                                      const Patient_Volume_t &ct)
 {
     // Run
-    std::vector<float4> endpoints(pat.total_spots);
+    std::vector< Vector4_t<float> > endpoints(pat.total_spots);
     runCalculation(pat, ct, endpoints);
+    utils::flip_positions_Z(endpoints, pat.ct);
 
     return endpoints;
 }
 
-void runCalculation(const Patient_Parameters_t &pat,
-                    const Patient_Volume_t &ct,
-                    std::vector<float4>& endpoints)
+void runCalculation(const Patient_Parameters_t& pat,
+                    const Patient_Volume_t& ct,
+                    std::vector< Vector4_t<float> >& endpoints)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendDimensions(ct);
@@ -91,7 +93,15 @@ void runCalculation(const Patient_Parameters_t &pat,
     gpuErrchk( cudaFree(traces_scorer) );
 #endif
 
-    gpuErrchk( cudaMemcpy(&endpoints[0], endpoints_scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
+    std::vector<float4> temp(endpoints.size());
+    gpuErrchk( cudaMemcpy(&temp[0], endpoints_scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
+    for (size_t i = 0; i < temp.size(); i++)
+    {
+        endpoints.at(i).x = temp.at(i).x;
+        endpoints.at(i).y = temp.at(i).y;
+        endpoints.at(i).z = temp.at(i).z;
+        endpoints.at(i).w = temp.at(i).w;
+    }
 
     // Free memory
     gpuErrchk( cudaFree(endpoints_scorer) );

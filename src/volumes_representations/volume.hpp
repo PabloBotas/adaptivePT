@@ -34,18 +34,18 @@ public:
 
     Patient_Volume_t::Source_type source_type;
     std::string file;
-    Vector_t<unsigned int> n;
-    Vector_t<float> d;
-    Vector_t<float> origin;
-    Vector_t<float> imgCenter;
+    Vector3_t<unsigned int> n;
+    Vector3_t<float> d;
+    Vector3_t<float> origin;
+    Vector3_t<float> imgCenter;
     unsigned int nElements;
 
     std::vector<float> hu;
 private:
-    Vector_t<unsigned int> original_n;
-    Vector_t<float> original_d;
-    Vector_t<float> original_origin;
-    Vector_t<float> original_imgCenter;
+    Vector3_t<unsigned int> original_n;
+    Vector3_t<float> original_d;
+    Vector3_t<float> original_origin;
+    Vector3_t<float> original_imgCenter;
     void read_volume();
     void import_from_metaimage(const float* data);
     void export_binary(std::string f);

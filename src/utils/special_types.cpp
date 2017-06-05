@@ -4,9 +4,9 @@
 #include <vector>
 #include <algorithm>
 
-// Vector_t ---------------------------------------
+// Vector3_t ---------------------------------------
 template<class T>
-Vector_t<T>::Vector_t()
+Vector3_t<T>::Vector3_t()
 {
     x = 0;
     y = 0;
@@ -14,7 +14,7 @@ Vector_t<T>::Vector_t()
 }
 
 template<class T>
-Vector_t<T>::Vector_t(const std::vector<T> &v)
+Vector3_t<T>::Vector3_t(const std::vector<T> &v)
 {
     x = v.at(0);
     y = v.at(1);
@@ -22,16 +22,55 @@ Vector_t<T>::Vector_t(const std::vector<T> &v)
 }
 
 template<class T>
-Vector_t<T>::Vector_t(const Vector_t<T> &obj)
+Vector3_t<T>::Vector3_t(const Vector3_t<T> &obj)
 {
     x = obj.x;
     y = obj.y;
     z = obj.z;
 }
 
-template class Vector_t<int>;
-template class Vector_t<unsigned int>;
-template class Vector_t<float>;
+// Vector4_t ---------------------------------------
+template<class T>
+Vector4_t<T>::Vector4_t()
+{
+    x = 0;
+    y = 0;
+    z = 0;
+    w = 0;
+}
+
+template<class T>
+Vector4_t<T>::Vector4_t(const std::vector<T> &v)
+{
+    x = v.at(0);
+    y = v.at(1);
+    z = v.at(2);
+    z = v.at(4);
+}
+
+template<class T>
+Vector4_t<T>::Vector4_t(const Vector4_t<T> &obj)
+{
+    x = obj.x;
+    y = obj.y;
+    z = obj.z;
+    w = obj.w;
+}
+
+template<class T>
+Vector4_t<T>::Vector4_t(const Vector3_t<T> &obj)
+{
+    x = obj.x;
+    y = obj.y;
+    z = obj.z;
+    w = 0;
+}
+
+template class Vector3_t<int>;
+template class Vector3_t<unsigned int>;
+template class Vector3_t<float>;
+template class Vector4_t<float>;
+
 
 // Aperture_Dims_t ---------------------------------------
 Aperture_Dims_t::Aperture_Dims_t():

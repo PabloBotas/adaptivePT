@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 
     ct.setDims(patient_data.ct);
     // Get endpoints
-    std::vector<float4> ct_endpoints = gpu_get_beam_endpoints(patient_data, ct);
+    std::vector< Vector4_t<float> > ct_endpoints = gpu_get_beam_endpoints(patient_data, ct);
 
     // Print results
     std::cout << "SpotID \t WEPL \t X \t Y \t Z \t WEPL" << std::endl;

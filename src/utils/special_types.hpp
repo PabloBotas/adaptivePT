@@ -5,16 +5,31 @@
 #include <string>
 
 template <class T>
-class Vector_t
+class Vector3_t
 {
 public:
-    Vector_t();
-    Vector_t(const std::vector<T> &v);
-    Vector_t(const Vector_t<T> &obj);
+    Vector3_t();
+    Vector3_t(const std::vector<T> &v);
+    Vector3_t(const Vector3_t<T> &obj);
 
     T x;
     T y;
     T z;
+};
+
+template <class T>
+class Vector4_t
+{
+public:
+    Vector4_t();
+    Vector4_t(const std::vector<T> &v);
+    Vector4_t(const Vector4_t<T> &obj);
+    Vector4_t(const Vector3_t<T> &obj);
+
+    T x;
+    T y;
+    T z;
+    T w;
 };
 
 // BeamAngles_t ---------------------------------------
@@ -27,10 +42,10 @@ struct BeamAngles_t
 // CT_Dims_t ---------------------------------------
 struct CT_Dims_t
 {
-    Vector_t<float> offset;
-    Vector_t<float> isocenter;
-    Vector_t<float> d;
-    Vector_t<unsigned int> n;
+    Vector3_t<float> offset;
+    Vector3_t<float> isocenter;
+    Vector3_t<float> d;
+    Vector3_t<unsigned int> n;
     unsigned int total;
 };
 

@@ -14,10 +14,10 @@ public:
     Mha_reader_t(std::string file);
 
     std::string file;
-    Vector_t<unsigned int> dim;
+    Vector3_t<unsigned int> dim;
     unsigned int nElements;
-    Vector_t<float> spacing;
-    Vector_t<float> origin;
+    Vector3_t<float> spacing;
+    Vector3_t<float> origin;
     std::vector<float> transform_matrix;
     unsigned short nb;
     unsigned short type_id;
