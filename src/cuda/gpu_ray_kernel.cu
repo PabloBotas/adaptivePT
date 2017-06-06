@@ -5,7 +5,9 @@
 
 __global__ void calculateRays_kernel(const int num,
                                      const short* spots_per_beam,
-                                     float4* endpoints,
+                                     float4 *pos_scorer,
+                                     float4 *dir_scorer,
+                                     short2 *meta_scorer,
                                      float* traces)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
@@ -33,11 +35,18 @@ __global__ void calculateRays_kernel(const int num,
             changeVoxel(vox, voxUpdater, voxStepper);
         }
 
-        unsigned int index = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_beam);
-        endpoints[index].x = ray.pos.x;
-        endpoints[index].y = ray.pos.y;
-        endpoints[index].z = ray.pos.z;
-        endpoints[index].w = ray.wepl;
+        size_t ind = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_beam);
+        pos_scorer[ind].x = ray.pos.x;
+        pos_scorer[ind].y = ray.pos.y;
+        pos_scorer[ind].z = ray.pos.z;
+        pos_scorer[ind].w = ray.wepl;
+
+        dir_scorer[ind].x = ray.dir.x;
+        dir_scorer[ind].y = ray.dir.y;
+        dir_scorer[ind].z = ray.dir.z;
+
+        meta_scorer[ind].x = ray.beam_id;
+        meta_scorer[ind].y = ray.spot_id;
     }
 }
 

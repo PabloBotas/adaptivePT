@@ -3,7 +3,9 @@
 
 __global__ void calculateRays_kernel(const int num,
                                      const short *spots_per_beam,
-                                     float4 *scorer,
+                                     float4 *pos_scorer,
+                                     float4 *dir_scorer,
+                                     short2 *meta_scorer,
                                      float* traces = NULL);
 
 __device__ unsigned int get_endpoints_index(const short beam_id,

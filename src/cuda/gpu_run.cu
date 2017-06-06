@@ -17,7 +17,9 @@ void calculateRays(const std::vector<float4>& xbuffer,
                    const std::vector<BeamAngles_t>& angles,
                    const short* spots_per_beam,
                    const float3& ct_offsets,
-                   float4* endpoints_scorer,
+                   float4* positions_scorer,
+                   float4* directions_scorer,
+                   short2* metadata_scorer,
                    float* traces_scorer)
 {
     unsigned int total_spots = rays_to_device(xbuffer, vxbuffer, ixbuffer, angles, ct_offsets);
@@ -29,7 +31,12 @@ void calculateRays(const std::vector<float4>& xbuffer,
     std::cout << std::endl;
     std::cout << "Calculating " << total_spots << " rays ..." << std::endl;
     int nblocks = 1 + (total_spots-1)/NTHREAD_PER_BLOCK_RAYS;
-    calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(total_spots, spots_per_beam_gpu, endpoints_scorer, traces_scorer);
+    calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(total_spots,
+                                                              spots_per_beam_gpu,
+                                                              positions_scorer,
+                                                              directions_scorer,
+                                                              metadata_scorer,
+                                                              traces_scorer);
     gpuErrchk( cudaPeekAtLastError() );
     gpuErrchk( cudaThreadSynchronize() );
 }

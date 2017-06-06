@@ -6,6 +6,7 @@
 #include "initialize_rays.cuh"
 #include "gpu_errorcheck.cuh"
 #include "gpu_run.cuh"
+#include "gpu_utils.cuh"
 #include "utils.hpp"
 
 #include <iostream>
@@ -69,43 +70,39 @@ void runCalculation(const Patient_Parameters_t& pat,
     init_rays(pat, xbuffer, vxbuffer, ixbuffer);
 
     // Create scorer array
-    float4* endpoints_scorer = NULL;
-    gpuErrchk( cudaMalloc( (void **) &endpoints_scorer, sizeof(float4)*pat.total_spots) );
-    gpuErrchk( cudaMemset( (void *) endpoints_scorer, 0, sizeof(float4)*pat.total_spots) );
+    float4* pos_scorer = NULL;
+    float4* dir_scorer = NULL;
+    short2* meta_scorer = NULL;
+    allocate_scorer<float4>(pos_scorer, pat.total_spots);
+    allocate_scorer<float4>(dir_scorer, pat.total_spots);
+    allocate_scorer<short2>(meta_scorer, pat.total_spots);
 
     // Calculate rays
 #if !defined __OUTPUT_SCORER_VOLUME__
     calculateRays(xbuffer, vxbuffer, ixbuffer,
                   pat.angles, pat.spots_per_field.data(),
                   make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                  endpoints_scorer);
+                  pos_scorer, dir_scorer, meta_scorer);
 #else
     float* traces_scorer = NULL;
-    gpuErrchk( cudaMalloc( (void **) &traces_scorer, sizeof(float)*pat.ct.total) );
-    gpuErrchk( cudaMemset( (void *) traces_scorer, 0, sizeof(float)*pat.ct.total) );  
+    allocate_scorer<float>(traces_scorer, pat.ct.total);
     calculateRays(xbuffer, vxbuffer, ixbuffer,
                   pat.angles, pat.spots_per_field.data(),
                   make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                  endpoints_scorer, traces_scorer);
+                  pos_scorer, dir_scorer, meta_scorer,
+                  traces_scorer);
     Patient_Volume_t traces(pat.ct);
     gpuErrchk( cudaMemcpy(&traces.hu[0], traces_scorer, sizeof(float)*traces.nElements, cudaMemcpyDeviceToHost) );
-    traces.output("output_volume.mha", "mha");
+    // traces.output("output_volume.mha", "mha");
     traces.output("output_volume.raw", "bin");
     gpuErrchk( cudaFree(traces_scorer) );
 #endif
-
-    std::vector<float4> temp(endpoints.size());
-    gpuErrchk( cudaMemcpy(&temp[0], endpoints_scorer, sizeof(float4)*pat.total_spots, cudaMemcpyDeviceToHost) );
-    for (size_t i = 0; i < temp.size(); i++)
-    {
-        endpoints.at(i).x = temp.at(i).x;
-        endpoints.at(i).y = temp.at(i).y;
-        endpoints.at(i).z = temp.at(i).z;
-        endpoints.at(i).w = temp.at(i).w;
-    }
+    retrieve_scorer<float, float4>(&(endpoints[0].x), pos_scorer, pat.total_spots);
 
     // Free memory
-    gpuErrchk( cudaFree(endpoints_scorer) );
+    gpuErrchk( cudaFree(pos_scorer) );
+    gpuErrchk( cudaFree(dir_scorer) );
+    gpuErrchk( cudaFree(meta_scorer) );
     freeCTMemory();
 }
 
