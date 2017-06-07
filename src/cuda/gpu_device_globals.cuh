@@ -26,11 +26,12 @@
 #define INF 1.0e20
 #define MM2CM 0.1
 #define CM2MM 10
+#define MeV2eV 1000000
 
 //==========================================================
 //      global variables
 //==========================================================
-#define NRAYS 131072 // number of rays calculated simultaneously
+#define NRAYS 32768 // max number of rays calculated simultaneously
 
 extern __device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
 extern __device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)

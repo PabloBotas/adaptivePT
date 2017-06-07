@@ -14,8 +14,6 @@
 #include "gpu_errorcheck.cuh"
 #include "density_correction.hpp"
 
-#define MeV2eV 1000000
-
 void gpu_ct_to_device::sendDimensions(const Patient_Volume_t& ct)
 //  convert external to internal geometry
 {
