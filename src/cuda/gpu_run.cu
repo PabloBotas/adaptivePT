@@ -35,9 +35,9 @@ void calculateRays(const std::vector<short> spots_per_field,
     cudaFree(spots_per_field_gpu);
 }
 
-void virtual_src_to_device(const std::vector<float4>& xbuffer,
-                           const std::vector<float4>& vxbuffer,
-                           const std::vector<short2>& ixbuffer)
+void buffers_to_device(const std::vector<float4>& xbuffer,
+                       const std::vector<float4>& vxbuffer,
+                       const std::vector<short2>& ixbuffer)
 {
     unsigned int num = xbuffer.size();
 

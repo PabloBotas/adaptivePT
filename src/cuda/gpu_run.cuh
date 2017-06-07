@@ -12,9 +12,9 @@ void calculateRays(const std::vector<short> spots_per_beam,
                    short2* metadata_scorer,
                    float* traces_scorer = NULL);
 
-void virtual_src_to_device(const std::vector<float4>& xbuffer,
-                           const std::vector<float4>& vxbuffer,
-                           const std::vector<short2>& ixbuffer);
+void buffers_to_device(const std::vector<float4>& xbuffer,
+                       const std::vector<float4>& vxbuffer,
+                       const std::vector<short2>& ixbuffer);
 
 void virtual_src_to_treatment_plane(const unsigned int num,
                                     const std::vector<BeamAngles_t>& angles,

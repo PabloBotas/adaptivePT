@@ -13,34 +13,6 @@
 #include <string>
 #include <vector>
 
-void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
-{
-    // mark the start total time timer
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
-
-    // Set device
-    int device = 0;
-    cudaSetDevice(device);
-    bool verbose = false;
-    printDevProp(device, verbose);
-}
-
-void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
-{
-    // Get timing
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float dt_ms;
-    cudaEventElapsedTime(&dt_ms, start, stop);
-    cudaThreadExit();
-    cudaDeviceReset();
-
-    std::cout << std::endl;
-    std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
-}
-
 std::vector< Vector4_t<float> > gpu_raytrace_plan(const Patient_Parameters_t &pat,
                                                   const Patient_Volume_t &ct)
 {
@@ -67,8 +39,8 @@ void gpu_raytrace_plan(const Patient_Parameters_t& pat,
     std::vector<float4> xbuffer;
     std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
-    tramps_to_virtual_source(pat, xbuffer, vxbuffer, ixbuffer);
-    virtual_src_to_device(xbuffer, vxbuffer, ixbuffer);
+    create_virtual_source_buffers(pat, xbuffer, vxbuffer, ixbuffer);
+    buffers_to_device(xbuffer, vxbuffer, ixbuffer);
     virtual_src_to_treatment_plane(xbuffer.size(), pat.angles,
                                    make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
 
@@ -105,6 +77,33 @@ void gpu_raytrace_plan(const Patient_Parameters_t& pat,
     freeCTMemory();
 }
 
+void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
+{
+    // mark the start total time timer
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    // Set device
+    int device = 0;
+    cudaSetDevice(device);
+    bool verbose = false;
+    printDevProp(device, verbose);
+}
+
+void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
+{
+    // Get timing
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float dt_ms;
+    cudaEventElapsedTime(&dt_ms, start, stop);
+    cudaThreadExit();
+    cudaDeviceReset();
+
+    std::cout << std::endl;
+    std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
+}
 
 void printDevProp(const int device, bool verbose)
 {
