@@ -28,4 +28,6 @@ void sendVectorToTexture(size_t w, size_t h, size_t d,
 //                                float* densities,
 //                                float* factor);
 
+void freeCTMemory();
+
 #endif

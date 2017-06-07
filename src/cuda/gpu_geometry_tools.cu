@@ -1,45 +1,10 @@
-#include "gpu_geometry_operations.cuh"
+#include "gpu_geometry_tools.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_ray_class.cuh"
 
 #include "vector_types.h"
 
-__device__ __host__ float3 ext_to_int_coordinates(float3 a)
-{
-    return make_float3(-a.y, -a.x, a.z);
-}
-
-__device__ __host__ float4 ext_to_int_coordinates(float4 a)
-{
-    return make_float4(-a.y, -a.x, a.z, a.w);
-}
-
-__device__ __host__ float3 int_to_ext_coordinates(float3 a)
-{
-    return make_float3(-a.y, -a.x, a.z);
-}
-
-__device__ __host__ float4 int_to_ext_coordinates(float4 a)
-{
-    return make_float4(-a.y, -a.x, a.z, a.w);
-}
-
-__device__ float4 rotate(const float4& p, const float& gantry, const float& couch)
-{
-    float c_couch = __cosf(couch);
-    float s_couch = __sinf(couch);
-    float c_gantry = __cosf(gantry);
-    float s_gantry = __sinf(gantry);
-
-    float4 res;
-    res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
-    res.y = p.y*c_gantry - p.z*s_gantry;
-    res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);
-    res.w = p.w;
-
-    return res;
-}
-
+// CT Navigation ----------------------------
 __device__ float inters(const Ray& ray,
                         const int4& vox,
                         VoxelUpdater& voxUpdater,

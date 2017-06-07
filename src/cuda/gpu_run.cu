@@ -1,7 +1,7 @@
 #include "gpu_run.cuh"
 
 #include "gpu_ray_kernel.cuh"
-#include "gpu_ray_positioning_kernel.cuh"
+#include "gpu_source_positioning.cuh"
 #include "gpu_errorcheck.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_utils.cuh"
@@ -52,33 +52,3 @@ void buffers_to_device(const std::vector<float4>& xbuffer,
     gpuErrchk( cudaMemcpyToSymbol(ixdata, ixbuffer.data(), bytes2, 0, cudaMemcpyHostToDevice) );
 }
 
-void virtual_src_to_treatment_plane(const unsigned int num,
-                                    const std::vector<BeamAngles_t>& angles,
-                                    const float3& ct_offsets)
-{
-    std::vector<float2> temp(angles.size());
-    for (size_t i = 0; i < angles.size(); i++)
-    {
-        temp[i].x = angles.at(i).gantry;
-        temp[i].y = angles.at(i).couch;
-    }
-
-    float2* angles_gpu;
-    array_to_device<float2>(angles_gpu, temp.data(), angles.size());
-
-    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
-    virtual_src_to_treatment_plane_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, angles_gpu, ct_offsets);
-    check_kernel_execution(__FILE__, __LINE__);
-
-    cudaFree(angles_gpu);
-}
-
-void freeCTMemory()
-{
-    cudaFreeArray(dens);
-    cudaUnbindTexture(dens_tex);
-    cudaFreeArray(matid);
-    cudaUnbindTexture(matid_tex);
-    cudaFreeArray(stp_ratio_array);
-    cudaUnbindTexture(stp_ratio_tex);
-}

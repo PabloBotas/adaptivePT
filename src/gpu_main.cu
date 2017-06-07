@@ -6,6 +6,7 @@
 #include "initialize_rays.cuh"
 #include "gpu_errorcheck.cuh"
 #include "gpu_run.cuh"
+#include "gpu_source_positioning.cuh"
 #include "gpu_utils.cuh"
 #include "utils.hpp"
 

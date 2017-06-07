@@ -1,6 +1,29 @@
-#include "gpu_ray_positioning_kernel.cuh"
+#include "gpu_source_positioning.cuh"
+
 #include "gpu_device_globals.cuh"
-#include "gpu_geometry_operations.cuh"
+#include "gpu_geometry_tools.cuh"
+#include "gpu_utils.cuh"
+
+void virtual_src_to_treatment_plane(const unsigned int num,
+                                    const std::vector<BeamAngles_t>& angles,
+                                    const float3& ct_offsets)
+{
+    std::vector<float2> temp(angles.size());
+    for (size_t i = 0; i < angles.size(); i++)
+    {
+        temp[i].x = angles.at(i).gantry;
+        temp[i].y = angles.at(i).couch;
+    }
+
+    float2* angles_gpu;
+    array_to_device<float2>(angles_gpu, temp.data(), angles.size());
+
+    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
+    virtual_src_to_treatment_plane_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, angles_gpu, ct_offsets);
+    check_kernel_execution(__FILE__, __LINE__);
+
+    cudaFree(angles_gpu);
+}
 
 __global__ void virtual_src_to_treatment_plane_kernel(const int num,
                                                       const float2* angles,
@@ -123,3 +146,40 @@ __device__ float4 ray_trace_to_CT_volume(const float4& p,
 
     return out;
 }
+
+__device__ __host__ float3 ext_to_int_coordinates(float3 a)
+{
+    return make_float3(-a.y, -a.x, a.z);
+}
+
+__device__ __host__ float4 ext_to_int_coordinates(float4 a)
+{
+    return make_float4(-a.y, -a.x, a.z, a.w);
+}
+
+__device__ __host__ float3 int_to_ext_coordinates(float3 a)
+{
+    return make_float3(-a.y, -a.x, a.z);
+}
+
+__device__ __host__ float4 int_to_ext_coordinates(float4 a)
+{
+    return make_float4(-a.y, -a.x, a.z, a.w);
+}
+
+__device__ float4 rotate(const float4& p, const float& gantry, const float& couch)
+{
+    float c_couch = __cosf(couch);
+    float s_couch = __sinf(couch);
+    float c_gantry = __cosf(gantry);
+    float s_gantry = __sinf(gantry);
+
+    float4 res;
+    res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
+    res.y = p.y*c_gantry - p.z*s_gantry;
+    res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);
+    res.w = p.w;
+
+    return res;
+}
+

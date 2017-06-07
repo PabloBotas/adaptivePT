@@ -51,6 +51,7 @@ int main(int argc, char** argv)
         std::cout << "\t" << ct_endpoints.at(i).w << std::endl;
     }
 
+    utils::flip_positions_X(ct_endpoints, patient_data.ct);
     utils::run_plastimatch_probe(ct_endpoints, parser.vf_file);
 
     // Stop device

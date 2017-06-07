@@ -9,7 +9,7 @@
 
 #include "gpu_device_globals.cuh"
 #include "special_types.hpp"
-#include "gpu_geometry_operations.cuh"
+#include "gpu_geometry_tools.cuh"
 #include "gpu_material.cuh"
 #include "gpu_errorcheck.cuh"
 #include "density_correction.hpp"
@@ -163,6 +163,16 @@ void sendVectorToTexture (size_t w, size_t h, size_t d,
     tex.normalized = false;
     tex.filterMode = cudaFilterModePoint;
     gpuErrchk( cudaBindTextureToArray(tex, array, tex.channelDesc) );
+}
+
+void freeCTMemory()
+{
+    cudaFreeArray(dens);
+    cudaUnbindTexture(dens_tex);
+    cudaFreeArray(matid);
+    cudaUnbindTexture(matid_tex);
+    cudaFreeArray(stp_ratio_array);
+    cudaUnbindTexture(stp_ratio_tex);
 }
 
 

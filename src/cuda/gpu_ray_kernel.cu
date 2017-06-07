@@ -1,7 +1,7 @@
 #include "gpu_ray_kernel.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_ray_class.cuh"
-#include "gpu_geometry_operations.cuh"
+#include "gpu_geometry_tools.cuh"
 
 __global__ void calculateRays_kernel(const int num,
                                      const short* spots_per_field,
