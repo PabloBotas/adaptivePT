@@ -47,8 +47,20 @@ std::string utils::replace_substring(std::string const& str,
 
 std::string utils::run_command(const std::string cmd)
 {
-    std::cerr << "Running command:" << std::endl;
-    std::cerr << cmd << std::endl;
+    std::cout << "Running command:";
+
+    if(cmd.size() > 256)
+    {
+        std::cout << " (trimmed)" << std::endl;
+        std::cout.write(&cmd[0], 256);
+        std::cout << " ...//... ";
+        size_t size = cmd.size();
+        std::cout.write(&cmd[size-128], 128) << std::endl;
+    }
+    else
+    {
+        std::cout << std::endl << cmd << std::endl;
+    }
 
     int const buff_length = 128;
     std::array<char, buff_length> buffer;
