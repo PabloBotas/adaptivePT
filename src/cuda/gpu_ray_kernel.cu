@@ -4,7 +4,7 @@
 #include "gpu_geometry_operations.cuh"
 
 __global__ void calculateRays_kernel(const int num,
-                                     const short* spots_per_beam,
+                                     const short* spots_per_field,
                                      float4 *pos_scorer,
                                      float4 *dir_scorer,
                                      short2 *meta_scorer,
@@ -35,7 +35,7 @@ __global__ void calculateRays_kernel(const int num,
             changeVoxel(vox, voxUpdater, voxStepper);
         }
 
-        size_t ind = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_beam);
+        size_t ind = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_field);
         pos_scorer[ind].x = ray.pos.x;
         pos_scorer[ind].y = ray.pos.y;
         pos_scorer[ind].z = ray.pos.z;
@@ -85,12 +85,12 @@ __device__ float massStpRatio(const float energy, const int4& vox)
 
 __device__ unsigned int get_endpoints_index(const short beam_id,
                                             const short spot_id,
-                                            const short* spots_per_beam)
+                                            const short* spots_per_field)
 {
     unsigned int index = spot_id;
     for (int ibeam = 0; ibeam < beam_id; ibeam++)
     {
-        index += spots_per_beam[ibeam];
+        index += spots_per_field[ibeam];
     }
     return index;
 }
