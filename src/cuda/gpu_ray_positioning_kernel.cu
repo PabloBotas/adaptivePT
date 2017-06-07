@@ -1,9 +1,10 @@
 #include "gpu_ray_positioning_kernel.cuh"
 #include "gpu_device_globals.cuh"
+#include "gpu_geometry_operations.cuh"
 
-__global__ void rays_to_delivery_plane(const int num,
-                                        const float2* angles,
-                                        const float3 ct_offsets)
+__global__ void virtual_src_to_treatment_plane_kernel(const int num,
+                                                      const float2* angles,
+                                                      const float3 ct_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
@@ -14,31 +15,57 @@ __global__ void rays_to_delivery_plane(const int num,
         short2 meta = ixdata[tid]; // x = beam_id, y = spot_id
         short beamid = meta.x;
 
+        // Adjust to internal coordinates
+        pos = ext_to_int_coordinates(pos);
+        vel = ext_to_int_coordinates(vel);
+
+        //  rotate location and direction using gantry and couch
+        float gantry = angles[beamid].x;
+        float couch  = angles[beamid].y;
+        pos = rotate(pos, gantry, couch);
+        vel = rotate(vel, gantry, couch);
+
+        // Add offsets
+        pos.x -= ct_offsets.x;
+        pos.y -= ct_offsets.y;
+        pos.z -= ct_offsets.z;
+
+        // Initialize them inside the CT
+        pos = ray_trace_to_CT_volume(pos, vel);
+
+        xdata[tid]  = pos;
+        vxdata[tid] = vel;
+    }
+}
+
+__global__ void treatment_plane_to_virtual_src_kernel(const int num,
+                                                      const float2* angles,
+                                                      const float3 ct_offsets)
+//  set source direction
+{
+    const int tid = blockIdx.x*blockDim.x + threadIdx.x;
+    if (tid < num)
+    {
+        float4 pos  = xdata[tid];
+        float4 vel  = vxdata[tid];
+        short2 meta = ixdata[tid]; // x = beam_id, y = spot_id
+        short beamid = meta.x;
+
+        // TODO: Ray trace to outside of CT volume if necessary????
+
+        pos.x += ct_offsets.x;
+        pos.y += ct_offsets.y;
+        pos.z += ct_offsets.z;
+
         //  rotate location using gantry and couch
         float gantry = angles[beamid].x;
         float couch  = angles[beamid].y;
+        pos = rotate(pos, -gantry, -couch);
+        vel = rotate(vel, -gantry, -couch);
 
-        float4 temp = pos;
-        pos.x = temp.x*__cosf(couch) -
-                __sinf(couch)*(temp.y*__sinf(gantry) + temp.z*__cosf(gantry)) -
-                ct_offsets.x;
-        pos.y = temp.y*__cosf(gantry) -
-                temp.z*__sinf(gantry) -
-                ct_offsets.y;
-        pos.z = temp.x*__sinf(couch) +
-                __cosf(couch)*(temp.y*__sinf(gantry) + temp.z*__cosf(gantry)) -
-                ct_offsets.z;
-
-        // rotate direction using gantry and couch
-        temp = vel;
-        vel.x = temp.x*__cosf(couch) -
-                __sinf(couch)*(temp.y*__sinf(gantry) + temp.z*__cosf(gantry));
-        vel.y = temp.y*__cosf(gantry) -
-                temp.z*__sinf(gantry);
-        vel.z = temp.x*__sinf(couch) +
-                __cosf(couch)*(temp.y*__sinf(gantry) + temp.z*__cosf(gantry));
-
-        pos = ray_trace_to_CT_volume(pos, vel);
+        // Adjust to external coordinates
+        pos = int_to_ext_coordinates(pos);
+        vel = int_to_ext_coordinates(vel);
 
         xdata[tid]  = pos;
         vxdata[tid] = vel;

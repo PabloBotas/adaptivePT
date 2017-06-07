@@ -41,21 +41,21 @@ void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
     std::cout << "Tracing time: "  << dt_ms/1000 << " s" << std::endl;
 }
 
-std::vector< Vector4_t<float> > gpu_get_beam_endpoints(const Patient_Parameters_t &pat,
-                                                       const Patient_Volume_t &ct)
+std::vector< Vector4_t<float> > gpu_raytrace_plan(const Patient_Parameters_t &pat,
+                                                  const Patient_Volume_t &ct)
 {
     // Run
     std::vector< Vector4_t<float> > endpoints(pat.total_spots);
-    runCalculation(pat, ct, endpoints);
+    gpu_raytrace_plan(pat, ct, endpoints);
     utils::flip_positions_X(endpoints, pat.ct);
     // utils::cm_to_mm(endpoints);
 
     return endpoints;
 }
 
-void runCalculation(const Patient_Parameters_t& pat,
-                    const Patient_Volume_t& ct,
-                    std::vector< Vector4_t<float> >& endpoints)
+void gpu_raytrace_plan(const Patient_Parameters_t& pat,
+                       const Patient_Volume_t& ct,
+                       std::vector< Vector4_t<float> >& endpoints)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendDimensions(ct);
@@ -67,7 +67,10 @@ void runCalculation(const Patient_Parameters_t& pat,
     std::vector<float4> xbuffer;
     std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
-    init_rays(pat, xbuffer, vxbuffer, ixbuffer);
+    tramps_to_virtual_source(pat, xbuffer, vxbuffer, ixbuffer);
+    virtual_src_to_device(xbuffer, vxbuffer, ixbuffer);
+    virtual_src_to_treatment_plane(xbuffer.size(), pat.angles,
+                                   make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
 
     // Create scorer array
     float4* pos_scorer = NULL;
@@ -79,16 +82,12 @@ void runCalculation(const Patient_Parameters_t& pat,
 
     // Calculate rays
 #if !defined __OUTPUT_SCORER_VOLUME__
-    calculateRays(xbuffer, vxbuffer, ixbuffer,
-                  pat.angles, pat.spots_per_field.data(),
-                  make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+    calculateRays(pat.spots_per_field,
                   pos_scorer, dir_scorer, meta_scorer);
 #else
     float* traces_scorer = NULL;
     allocate_scorer<float>(traces_scorer, pat.ct.total);
-    calculateRays(xbuffer, vxbuffer, ixbuffer,
-                  pat.angles, pat.spots_per_field.data(),
-                  make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+    calculateRays(pat.spots_per_field,
                   pos_scorer, dir_scorer, meta_scorer,
                   traces_scorer);
     Patient_Volume_t traces(pat.ct);

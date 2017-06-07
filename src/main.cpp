@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     Patient_Parameters_t patient_data(parser.patient);
     patient_data.add_results_directory(parser.out_dir);
     patient_data.print();
-    patient_data.adjust_to_internal_coordinates();
+    patient_data.ext_to_int_coordinates();
 
     // Start device
     cudaEvent_t start, stop;
@@ -35,10 +35,9 @@ int main(int argc, char** argv)
     // Read CT and launch rays
     Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
     // The CT volume lacks dimensions information
-
     ct.setDims(patient_data.ct);
     // Get endpoints
-    std::vector< Vector4_t<float> > ct_endpoints = gpu_get_beam_endpoints(patient_data, ct);
+    std::vector< Vector4_t<float> > ct_endpoints = gpu_raytrace_plan(patient_data, ct);
 
     // Print results
     std::cout << "SpotID \t WEPL \t X \t Y \t Z \t WEPL" << std::endl;

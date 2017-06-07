@@ -9,10 +9,10 @@
 
 #define MeV2eV 1e6
 
-void init_rays(const Patient_Parameters_t& pat,
-               std::vector<float4>& xbuffer,
-               std::vector<float4>& vxbuffer,
-               std::vector<short2>& ixbuffer)
+void tramps_to_virtual_source(const Patient_Parameters_t& pat,
+                              std::vector<float4>& xbuffer,
+                              std::vector<float4>& vxbuffer,
+                              std::vector<short2>& ixbuffer)
 //  initialize particle buffer
 {
     std::cout << "Gantry: " << pat.machine << std::endl;
@@ -45,13 +45,10 @@ void init_rays(const Patient_Parameters_t& pat,
         { // LOOP OVER SPOTS
             Spot_t& spot = src.spots[i];
 
-            float3 pos  = getTanslatedPosition(src.z, SAD, make_float2(spot.x, spot.y)); // cm
+            float3 pos  = iso_to_virtual_src_pos(src.z, SAD, make_float2(spot.x, spot.y)); // cm
             float3 dCos = getDirection(pos, make_float2(spot.x, spot.y));
             float energy = src.energies_internal.at(i)*MeV2eV; // eV
             float wepl   = src.wepls.at(i);                    // cm
-
-            pos  = adjust_to_internal_coordinates(pos);
-            dCos = adjust_to_internal_coordinates(dCos);
 
             xbuffer.push_back( make_float4(pos.x, pos.y, pos.z, wepl) );
             vxbuffer.push_back( make_float4(dCos.x, dCos.y, dCos.z, energy) );
@@ -60,18 +57,29 @@ void init_rays(const Patient_Parameters_t& pat,
     }
 }
 
-float3 adjust_to_internal_coordinates(float3 a)
-{
-    return make_float3(-a.y, -a.x, a.z);
-}
-
-float3 getTanslatedPosition(float z, float2 SAD, float2 spot)
+float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot)
 {
     float3 p;
     p.x = ((SAD.x + z) / SAD.x) * spot.x;
     p.y = ((SAD.y + z) / SAD.y) * spot.y;
     p.z = z;
     return p;
+}
+
+float2 virtual_src_to_iso_pos(float3 pos, float2 SAD)
+{
+    float2 spot;
+    spot.x = pos.x / ((SAD.x + pos.z) / SAD.x);
+    spot.y = pos.y / ((SAD.y + pos.z) / SAD.y);
+    return spot;
+}
+
+float2 virtual_src_to_iso_pos(float3 pos, float3 cos)
+{
+    float2 spot;
+    spot.x = pos.x + abs(pos.z)*cos.x / sqrt(1-cos.x*cos.x);
+    spot.y = pos.y + abs(pos.z)*cos.y / sqrt(1-cos.y*cos.y);
+    return spot;
 }
 
 float3 getDirection(float3 pos, float2 spot)

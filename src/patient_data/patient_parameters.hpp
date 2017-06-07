@@ -41,7 +41,8 @@ public:
     std::string results_dir;
 
     void add_results_directory(std::string s);
-    void adjust_to_internal_coordinates();
+    void ext_to_int_coordinates();
+    void int_to_ext_coordinates();
     void update_geometry_offsets(Patient_Volume_t vol);
 
 private:

@@ -212,7 +212,7 @@ void Patient_Parameters_t::add_results_directory(std::string s)
     results_dir = s;
 }
 
-void Patient_Parameters_t::adjust_to_internal_coordinates()
+void Patient_Parameters_t::ext_to_int_coordinates()
 {
     std::swap(ct.d.x, ct.d.z);
     std::swap(ct.n.x, ct.n.z);
@@ -223,6 +223,25 @@ void Patient_Parameters_t::adjust_to_internal_coordinates()
     ct.offset.x -= 0.5*ct.n.x*ct.d.x;
     ct.offset.y -= 0.5*ct.n.y*ct.d.y;
     ct.offset.z -= 0.5*ct.n.z*ct.d.z;
+
+    for(size_t i = 0; i < angles.size(); i++)
+    {
+        angles[i].couch *= -1.0; //reverse couch angle
+        angles[i].gantry = (270.0 * (M_PI/180.0)) - angles[i].gantry;
+    }
+}
+
+void Patient_Parameters_t::int_to_ext_coordinates()
+{
+    // From the center to the corner
+    ct.offset.x += 0.5*ct.n.x*ct.d.x;
+    ct.offset.y += 0.5*ct.n.y*ct.d.y;
+    ct.offset.z += 0.5*ct.n.z*ct.d.z;
+
+    std::swap(ct.d.x, ct.d.z);
+    std::swap(ct.n.x, ct.n.z);
+    std::swap(ct.offset.x, ct.offset.z);
+    ct.offset.x *= -1;
 
     for(size_t i = 0; i < angles.size(); i++)
     {

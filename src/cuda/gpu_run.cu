@@ -4,61 +4,58 @@
 #include "gpu_ray_positioning_kernel.cuh"
 #include "gpu_errorcheck.cuh"
 #include "gpu_device_globals.cuh"
+#include "gpu_utils.cuh"
 #include "special_types.hpp"
 
 #include <iostream>
 #include <fstream>
+#include <numeric>
 #include <vector>
 #include <sys/stat.h>
 
-void calculateRays(const std::vector<float4>& xbuffer,
-                   const std::vector<float4>& vxbuffer,
-                   const std::vector<short2>& ixbuffer,
-                   const std::vector<BeamAngles_t>& angles,
-                   const short* spots_per_beam,
-                   const float3& ct_offsets,
+void calculateRays(const std::vector<short> spots_per_field,
                    float4* positions_scorer,
                    float4* directions_scorer,
                    short2* metadata_scorer,
                    float* traces_scorer)
 {
-    unsigned int total_spots = rays_to_device(xbuffer, vxbuffer, ixbuffer, angles, ct_offsets);
-
-    short* spots_per_beam_gpu;
-    gpuErrchk( cudaMalloc((void **) &spots_per_beam_gpu, sizeof(short)*angles.size()) );
-    gpuErrchk( cudaMemcpy(spots_per_beam_gpu, spots_per_beam, sizeof(short)*angles.size(), cudaMemcpyHostToDevice) );
-    //      simulate a batch of rays
+    short* spots_per_field_gpu;
+    array_to_device<short>(spots_per_field_gpu, spots_per_field.data(), spots_per_field.size());
+    size_t total_spots = std::accumulate(spots_per_field.begin(), spots_per_field.end(), 0);
     std::cout << std::endl;
     std::cout << "Calculating " << total_spots << " rays ..." << std::endl;
     int nblocks = 1 + (total_spots-1)/NTHREAD_PER_BLOCK_RAYS;
     calculateRays_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(total_spots,
-                                                              spots_per_beam_gpu,
+                                                              spots_per_field_gpu,
                                                               positions_scorer,
                                                               directions_scorer,
                                                               metadata_scorer,
                                                               traces_scorer);
-    gpuErrchk( cudaPeekAtLastError() );
-    gpuErrchk( cudaThreadSynchronize() );
+    check_kernel_execution(__FILE__, __LINE__);
+    cudaFree(spots_per_field_gpu);
 }
 
-unsigned int rays_to_device(const std::vector<float4>& xbuffer,
-                            const std::vector<float4>& vxbuffer,
-                            const std::vector<short2>& ixbuffer,
-                            const std::vector<BeamAngles_t>& angles,
-                            const float3& ct_offsets)
+void virtual_src_to_device(const std::vector<float4>& xbuffer,
+                           const std::vector<float4>& vxbuffer,
+                           const std::vector<short2>& ixbuffer)
 {
     unsigned int num = xbuffer.size();
 
     // prepare GPU
     size_t bytes1 = sizeof(float4)*num;
     size_t bytes2 = sizeof(short2)*num;
-    gpuErrchk( cudaMalloc((void **) &xdata, bytes1) );
+    gpuErrchk( cudaMalloc((void **) &xdata,  bytes1) );
     gpuErrchk( cudaMalloc((void **) &vxdata, bytes1) );
     gpuErrchk( cudaMalloc((void **) &ixdata, bytes2) );
-    gpuErrchk( cudaMemcpyToSymbol(xdata,  xbuffer.data(), bytes1, 0, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpyToSymbol(xdata,  xbuffer.data(),  bytes1, 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(vxdata, vxbuffer.data(), bytes1, 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(ixdata, ixbuffer.data(), bytes2, 0, cudaMemcpyHostToDevice) );
+}
 
+void virtual_src_to_treatment_plane(const unsigned int num,
+                                    const std::vector<BeamAngles_t>& angles,
+                                    const float3& ct_offsets)
+{
     std::vector<float2> temp(angles.size());
     for (size_t i = 0; i < angles.size(); i++)
     {
@@ -67,17 +64,13 @@ unsigned int rays_to_device(const std::vector<float4>& xbuffer,
     }
 
     float2* angles_gpu;
-    gpuErrchk( cudaMalloc((void **) &angles_gpu, sizeof(float2)*angles.size()) );
-    gpuErrchk( cudaMemcpy(angles_gpu, temp.data(), sizeof(float2)*angles.size(), cudaMemcpyHostToDevice) );
+    array_to_device<float2>(angles_gpu, temp.data(), angles.size());
 
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
-    rays_to_delivery_plane<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, angles_gpu, ct_offsets);
-    gpuErrchk( cudaPeekAtLastError() );
-    gpuErrchk( cudaThreadSynchronize() );
+    virtual_src_to_treatment_plane_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, angles_gpu, ct_offsets);
+    check_kernel_execution(__FILE__, __LINE__);
 
     cudaFree(angles_gpu);
-
-    return num;
 }
 
 void freeCTMemory()
