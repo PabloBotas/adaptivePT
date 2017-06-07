@@ -6,7 +6,6 @@
 #define gpuErrchk(ans) {gpuAssert((ans), __FILE__, __LINE__); }
 
 void gpuAssert(cudaError_t code, char const *file, int line, bool abort=true);
-
-void ioError(std::string info);
+void check_kernel_execution(char const *file, int line);
 
 #endif

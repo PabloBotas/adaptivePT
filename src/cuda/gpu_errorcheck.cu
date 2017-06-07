@@ -18,7 +18,10 @@ void gpuAssert(cudaError_t code, char const *file, int line, bool abort)
     }
 }
 
-void ioError(std::string info) {
-    std::cerr << "Error reading/writting file. Info: " << info << std::endl;
-    exit(EXIT_FAILURE);
+void check_kernel_execution(char const *file, int line)
+{
+    cudaError_t code = cudaPeekAtLastError();
+    gpuAssert(code, file, line);
+    code = cudaPeekAtLastError();
+    gpuAssert(code, file, line);
 }
