@@ -15,6 +15,7 @@ public:
     Vector3_t(const std::vector<T> &v);
     Vector3_t(const Vector3_t<T> &obj);
     Vector3_t(const Vector4_t<T> &obj);
+    void print();
 
     T x;
     T y;

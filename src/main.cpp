@@ -39,29 +39,18 @@ int main(int argc, char** argv)
     std::vector< Vector4_t<float> > ct_endpoints = gpu_raytrace_plan(patient_data, ct);
 
     // Print results
-    std::cout << "SpotID \t WEPL \t X \t Y \t Z \t WEPL" << std::endl;
     size_t iters = ct_endpoints.size() < 10 ? ct_endpoints.size() : 10;
+    std::cout << "X \t Y \t Z \t WEPL" << std::endl;
     for (size_t i = 0; i < iters; i++)
-    {
-        std::cout << i << "\t" << ct_endpoints.at(i).w;
-        std::cout << "\t" << ct_endpoints.at(i).x;
-        std::cout << "\t" << ct_endpoints.at(i).y;
-        std::cout << "\t" << ct_endpoints.at(i).z;
-        std::cout << "\t" << ct_endpoints.at(i).w << std::endl;
-    }
+        ct_endpoints.at(i).print();
 
     utils::flip_positions_X(ct_endpoints, patient_data.ct);
     std::vector< Vector4_t<float> > ct_vf_endpoints = ct_endpoints;
     utils::run_plastimatch_probe(ct_vf_endpoints, parser.vf_file);
 
+    std::cout << "X \t Y \t Z \t WEPL" << std::endl;
     for (size_t i = 0; i < iters; i++)
-    {
-        std::cout << i << "\t" << ct_vf_endpoints.at(i).w;
-        std::cout << "\t" << ct_vf_endpoints.at(i).x;
-        std::cout << "\t" << ct_vf_endpoints.at(i).y;
-        std::cout << "\t" << ct_vf_endpoints.at(i).z;
-        std::cout << "\t" << ct_vf_endpoints.at(i).w << std::endl;
-    }
+        ct_endpoints.at(i).print();
 
     // Stop device
     stop_device(start, stop);
@@ -70,16 +59,6 @@ int main(int argc, char** argv)
 //    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
 //    patient_data.update_geometry_offsets(cbct);
 //    std::vector<float4> cbct_endpoints = gpu_get_beam_endpoints(patient_data, cbct);
-
-    // Get geometric coordinates of such WEPLS
-
-
-    // Apply vector field to those coordinates (same applied to contours)
-    // Get WEPLS of the coordinates in CBCT
-    // Adapt initial energies to new geometry
-
-    // plan_in.print(0);
-    // plan_in.to_file("test.tramp");
 
     // Finalize the entire computation
 

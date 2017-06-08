@@ -1,5 +1,6 @@
 #include "vector3.hpp"
 
+#include <iostream>
 #include <vector>
 
 // Vector3_t ---------------------------------------
@@ -42,6 +43,15 @@ Vector3_t<T>::Vector3_t(const Vector4_t<T> &obj)
     y = obj.y;
     z = obj.z;
 }
+
+template<class T>
+void Vector3_t<T>::print()
+{
+        std::cout << x << "\t";
+        std::cout << y << "\t";
+        std::cout << z << std::endl;
+}
+
 
 template class Vector3_t<int>;
 template class Vector3_t<unsigned int>;
