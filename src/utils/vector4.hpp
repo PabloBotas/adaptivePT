@@ -11,6 +11,7 @@ class Vector4_t
 {
 public:
     Vector4_t();
+    Vector4_t(float a, float b, float c, float d);
     Vector4_t(const std::vector<T> &v);
     Vector4_t(const Vector4_t<T> &obj);
     Vector4_t(const Vector3_t<T> &obj);

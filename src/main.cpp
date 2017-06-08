@@ -9,13 +9,12 @@
 #include "utils.hpp"
 
 // TODO DONE Read CT
-// TODO Get endpoints on CT
-// TODO Apply VF to endpoints -> updated endpoints
-// TODO Apply VF to tramp (2D) <- geometrical adjustment
+// TODO DONE Get endpoints on CT
+// TODO DONE Apply VF to endpoints -> updated endpoints
 // TODO DONE Read CBCT
-// TODO Get endpoints on CBCT of updated tramp files
-// TODO Get energy shift between CBCT endpoints and update CT endpoints
-// TODO Correct tramp again (E) <- energy adjustment
+// TODO Backtrace vf_endpoints in CBCT until initial wepl
+// TODO Get distances to initial endpoint positions
+// TODO Get WEPL and energy distance
 
 int main(int argc, char** argv)
 {
@@ -52,7 +51,17 @@ int main(int argc, char** argv)
     }
 
     utils::flip_positions_X(ct_endpoints, patient_data.ct);
-    utils::run_plastimatch_probe(ct_endpoints, parser.vf_file);
+    std::vector< Vector4_t<float> > ct_vf_endpoints = ct_endpoints;
+    utils::run_plastimatch_probe(ct_vf_endpoints, parser.vf_file);
+
+    for (size_t i = 0; i < iters; i++)
+    {
+        std::cout << i << "\t" << ct_vf_endpoints.at(i).w;
+        std::cout << "\t" << ct_vf_endpoints.at(i).x;
+        std::cout << "\t" << ct_vf_endpoints.at(i).y;
+        std::cout << "\t" << ct_vf_endpoints.at(i).z;
+        std::cout << "\t" << ct_vf_endpoints.at(i).w << std::endl;
+    }
 
     // Stop device
     stop_device(start, stop);

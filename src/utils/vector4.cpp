@@ -13,12 +13,21 @@ Vector4_t<T>::Vector4_t()
 }
 
 template<class T>
+Vector4_t<T>::Vector4_t(float a, float b, float c, float d)
+{
+    x = a;
+    y = b;
+    z = c;
+    w = d;
+}
+
+template<class T>
 Vector4_t<T>::Vector4_t(const std::vector<T> &v)
 {
     x = v.at(0);
     y = v.at(1);
     z = v.at(2);
-    z = v.at(4);
+    w = v.at(4);
 }
 
 template<class T>

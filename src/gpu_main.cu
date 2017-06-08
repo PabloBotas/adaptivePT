@@ -20,7 +20,6 @@ std::vector< Vector4_t<float> > gpu_raytrace_plan(const Patient_Parameters_t &pa
     // Run
     std::vector< Vector4_t<float> > endpoints(pat.total_spots);
     gpu_raytrace_plan(pat, ct, endpoints);
-    utils::flip_positions_X(endpoints, pat.ct);
     // utils::cm_to_mm(endpoints);
 
     return endpoints;

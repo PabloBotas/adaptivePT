@@ -12,6 +12,14 @@ Vector3_t<T>::Vector3_t()
 }
 
 template<class T>
+Vector3_t<T>::Vector3_t(float a, float b, float c)
+{
+    x = a;
+    y = b;
+    z = c;
+}
+
+template<class T>
 Vector3_t<T>::Vector3_t(const std::vector<T> &v)
 {
     x = v.at(0);
