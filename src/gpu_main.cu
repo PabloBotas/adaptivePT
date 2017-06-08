@@ -77,11 +77,10 @@ void gpu_raytrace_plan(const Patient_Parameters_t& pat,
     freeCTMemory();
 }
 
-void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
+void initialize_device(cudaEvent_t& start)
 {
     // mark the start total time timer
     cudaEventCreate(&start);
-    cudaEventCreate(&stop);
     cudaEventRecord(start);
 
     // Set device
@@ -91,9 +90,11 @@ void initialize_device(cudaEvent_t& start, cudaEvent_t& stop)
     printDevProp(device, verbose);
 }
 
-void stop_device(cudaEvent_t& start, cudaEvent_t& stop)
+void stop_device(cudaEvent_t& start)
 {
     // Get timing
+    cudaEvent_t stop;
+    cudaEventCreate(&stop);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float dt_ms;

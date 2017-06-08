@@ -28,8 +28,8 @@ int main(int argc, char** argv)
     patient_data.ext_to_int_coordinates();
 
     // Start device
-    cudaEvent_t start, stop;
-    initialize_device(start, stop);
+    cudaEvent_t start;
+    initialize_device(start);
 
     // Read CT and launch rays
     Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
         ct_endpoints.at(i).print();
 
     // Stop device
-    stop_device(start, stop);
+    stop_device(start);
 
 //    // Read CBCT and launch rays
 //    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);

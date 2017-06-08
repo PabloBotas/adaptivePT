@@ -11,9 +11,9 @@
 #include <helper_cuda.h>
 #include <helper_math.h>
 
-void initialize_device(cudaEvent_t& start, cudaEvent_t& stop);
+void initialize_device(cudaEvent_t& start);
 
-void stop_device(cudaEvent_t& start, cudaEvent_t& stop);
+void stop_device(cudaEvent_t& start);
 
 std::vector< Vector4_t<float> > gpu_raytrace_plan(const Patient_Parameters_t &pat,
                                                   const Patient_Volume_t &ct);
