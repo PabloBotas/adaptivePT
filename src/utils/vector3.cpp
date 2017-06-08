@@ -37,6 +37,14 @@ Vector3_t<T>::Vector3_t(const Vector3_t<T> &obj)
 }
 
 template<class T>
+Vector3_t<T>::Vector3_t(const Vector2_t<T> &obj)
+{
+    x = obj.x;
+    y = obj.y;
+    z = 0;
+}
+
+template<class T>
 Vector3_t<T>::Vector3_t(const Vector4_t<T> &obj)
 {
     x = obj.x;

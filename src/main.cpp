@@ -36,10 +36,13 @@ int main(int argc, char** argv)
     // The CT volume lacks dimensions information
     ct.setDims(patient_data.ct);
     // Get endpoints
-    std::vector< Vector4_t<float> > ct_endpoints = gpu_raytrace_plan(patient_data, ct);
+    std::vector< Vector4_t<float> > ct_endpoints(patient_data.total_spots);
+    std::vector< Vector4_t<float> > ct_directions(patient_data.total_spots);
+    std::vector< Vector2_t<short> > ct_metadata(patient_data.total_spots);
+    gpu_raytrace_plan(patient_data, ct, ct_endpoints, ct_directions, ct_metadata);
 
     // Print results
-    size_t iters = ct_endpoints.size() < 10 ? ct_endpoints.size() : 10;
+    size_t iters = ct_endpoints.size() < 5 ? ct_endpoints.size() : 5;
     std::cout << "X \t Y \t Z \t WEPL" << std::endl;
     for (size_t i = 0; i < iters; i++)
         ct_endpoints.at(i).print();
@@ -47,10 +50,13 @@ int main(int argc, char** argv)
     utils::flip_positions_X(ct_endpoints, patient_data.ct);
     std::vector< Vector4_t<float> > ct_vf_endpoints = ct_endpoints;
     utils::run_plastimatch_probe(ct_vf_endpoints, parser.vf_file);
+    utils::flip_positions_X(ct_vf_endpoints, patient_data.ct);
 
     std::cout << "X \t Y \t Z \t WEPL" << std::endl;
     for (size_t i = 0; i < iters; i++)
-        ct_endpoints.at(i).print();
+        ct_vf_endpoints.at(i).print();
+
+    // std::vector< Vector4_t<float> > adapted_sources = gpu_backtrace_endpoints(patient_data, ct);
 
     // Stop device
     stop_device(start);

@@ -49,13 +49,13 @@ std::string utils::run_command(const std::string cmd)
 {
     std::cout << "Running command:";
 
-    if(cmd.size() > 256)
+    if(cmd.size() > 160)
     {
         std::cout << " (trimmed)" << std::endl;
-        std::cout.write(&cmd[0], 256);
+        std::cout.write(&cmd[0], 75);
         std::cout << " ...//... ";
         size_t size = cmd.size();
-        std::cout.write(&cmd[size-128], 128) << std::endl;
+        std::cout.write(&cmd[size-75], 75) << std::endl;
     }
     else
     {

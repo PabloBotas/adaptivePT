@@ -14,6 +14,14 @@
 #include "gpu_errorcheck.cuh"
 #include "density_correction.hpp"
 
+void gpu_ct_to_device::sendGeometries(const Patient_Volume_t& ct)
+{
+    gpu_ct_to_device::sendDimensions(ct);
+    std::vector<int> HU_indexes = gpu_ct_to_device::sendMassStoppingPowerRatio();
+    gpu_ct_to_device::sendDensities(ct);
+    gpu_ct_to_device::sendMaterialId(ct, HU_indexes);
+}
+
 void gpu_ct_to_device::sendDimensions(const Patient_Volume_t& ct)
 //  convert external to internal geometry
 {

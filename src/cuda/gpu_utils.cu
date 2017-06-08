@@ -20,6 +20,7 @@ void retrieve_scorer(S* h, T* d, size_t n)
     gpuErrchk( cudaMemcpy(h, d, sizeof(T)*n, cudaMemcpyDeviceToHost) );
 }
 template void retrieve_scorer<float, float4>(float*, float4*, size_t);
+template void retrieve_scorer<short, short2>(short*, short2*, size_t);
 
 ///////////////////////////////////////
 template <class T>
