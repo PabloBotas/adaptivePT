@@ -12,14 +12,14 @@
 #include "gpu_geometry_tools.cuh"
 #include "gpu_material.cuh"
 #include "gpu_errorcheck.cuh"
+#include "gpu_utils.cuh"
 #include "density_correction.hpp"
 
 void gpu_ct_to_device::sendGeometries(const Patient_Volume_t& ct)
 {
     gpu_ct_to_device::sendDimensions(ct);
-    std::vector<int> HU_indexes = gpu_ct_to_device::sendMassStoppingPowerRatio();
     gpu_ct_to_device::sendDensities(ct);
-    gpu_ct_to_device::sendMaterialId(ct, HU_indexes);
+    gpu_ct_to_device::sendMaterialId(ct);
 }
 
 void gpu_ct_to_device::sendDimensions(const Patient_Volume_t& ct)
@@ -68,7 +68,7 @@ void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
 }
 
 void gpu_ct_to_device::sendMaterialId(const Patient_Volume_t &ct,
-                                      const std::vector<int> hu_indexes)
+                                      const std::vector<int>& hu_indexes)
 //  generate phantom data based on CT volume
 {
     std::vector<float> materialID(ct.nElements);
@@ -84,94 +84,17 @@ void gpu_ct_to_device::sendMaterialId(const Patient_Volume_t &ct,
     sendVectorToTexture(ct.n.z, ct.n.y, ct.n.x, materialID, matid, matid_tex);
 }
 
-std::vector<int> gpu_ct_to_device::sendMassStoppingPowerRatio()
+void gpu_ct_to_device::sendMaterialId(const Patient_Volume_t &ct)
 {
-    //  read mass stopping power ratio
-    std::string file = "../src/phys_data/mass_stopping_power_ratio.dat";
-    std::cout << "sendMassStoppingPowerRatio: Reading " << file << std::endl;
-    std::ifstream stream(file);
-    if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << file << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    std::vector<int> hu_indexes = {
+        -1000, -950, -120, -83, -53, -23, 7,
+        18, 80, 120, 200, 300, 400, 500, 600,
+        700, 800, 900, 1000, 1100, 1200, 1300,
+        1400, 1500, 2995, 0};
 
-    std::string line;
-    std::string dummy;
-    // Two dummy lines 
-    std::getline(stream, line);
-    std::getline(stream, line);
-    // Get number of materials
-    std::getline(stream, line);
-    size_t const n_materials = stoi(line);
-
-    std::vector<int> HU_starting_values(n_materials);
-    std::vector<float> stp_ratios;
-    size_t n_energies;
-    float minimum_energy;
-    float delta_energy;
-    
-    // Read data
-    for (size_t imat = 0; imat < n_materials; imat++)
-    {
-        // Get number of energies per material
-        std::getline(stream, line);
-        std::getline(stream, line);
-        std::istringstream ss(line);
-        ss >> dummy >> HU_starting_values.at(imat) >>
-              dummy >> n_energies >> minimum_energy >> delta_energy;
-        std::getline(stream, line);
-
-        if (imat == 0)
-        {
-            stp_ratios.resize(n_energies*n_materials);
-        }
-
-        for (size_t i = 0; i < n_energies; i++)
-        {
-            std::getline(stream, line);
-            std::istringstream ss(line);
-            ss >> dummy >> stp_ratios.at(i + imat*n_energies);
-        }
-    }
-
-    //  transfer to GPU
-    minimum_energy *= MeV2eV;
-    delta_energy *= MeV2eV;
-    cudaMemcpyToSymbol(stp_ratio_min_e, &minimum_energy, sizeof(float), 0, cudaMemcpyHostToDevice);
-    cudaMemcpyToSymbol(stp_ratio_delta_e, &delta_energy, sizeof(float), 0, cudaMemcpyHostToDevice);
-
-    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-    cudaMallocArray(&stp_ratio_array, &channelDesc, n_energies, n_materials);
-    cudaMemcpyToArray(stp_ratio_array, 0,0, &stp_ratios[0], sizeof(float)*stp_ratios.size(), cudaMemcpyHostToDevice);
-    stp_ratio_tex.filterMode = cudaFilterModeLinear;
-    cudaBindTextureToArray(stp_ratio_tex, stp_ratio_array, channelDesc);
-
-    return HU_starting_values;
+    gpu_ct_to_device::sendMaterialId(ct, hu_indexes);
 }
 
-void sendVectorToTexture (size_t w, size_t h, size_t d,
-                          std::vector<float> host_vec,
-                          cudaArray* array,
-                          texture<float, 3, cudaReadModeElementType>& tex)
-{
-    //  create a 3d array on device
-    cudaExtent extent = make_cudaExtent(w, h, d);
-    gpuErrchk( cudaMalloc3DArray(&array, &tex.channelDesc, extent) );
-
-    // copy data to GPU
-    cudaMemcpy3DParms pars = {0};
-    pars.srcPtr   = make_cudaPitchedPtr((void *)host_vec.data(),
-                                        extent.width*sizeof(float),
-                                        extent.width, extent.height);
-    pars.dstArray = array;
-    pars.extent   = extent;
-    pars.kind     = cudaMemcpyHostToDevice;
-    gpuErrchk( cudaMemcpy3D(&pars) );
-    // Bind device array to texture
-    tex.normalized = false;
-    tex.filterMode = cudaFilterModePoint;
-    gpuErrchk( cudaBindTextureToArray(tex, array, tex.channelDesc) );
-}
 
 void freeCTMemory()
 {
@@ -179,8 +102,6 @@ void freeCTMemory()
     cudaUnbindTexture(dens_tex);
     cudaFreeArray(matid);
     cudaUnbindTexture(matid_tex);
-    cudaFreeArray(stp_ratio_array);
-    cudaUnbindTexture(stp_ratio_tex);
 }
 
 
