@@ -42,3 +42,34 @@ template void array_to_device<float2>(float2*&, const float2*, size_t);
 // }
 // template void symbol_to_device<float4>(float4*& dest, const float4*, size_t);
 // template void symbol_to_device<short2>(short2*& dest, const short2*, size_t);
+
+///////////////////////////////////////
+template <class T>
+void sendVectorToTexture(size_t w, size_t h, size_t d,
+                         std::vector<T> host_vec,
+                         cudaArray* array,
+                         texture<T, 3, cudaReadModeElementType>& tex)
+{
+    //  create a 3d array on device
+    cudaExtent extent = make_cudaExtent(w, h, d);
+    gpuErrchk( cudaMalloc3DArray(&array, &tex.channelDesc, extent) );
+
+    // copy data to GPU
+    cudaMemcpy3DParms pars = {0};
+    pars.srcPtr   = make_cudaPitchedPtr((void *)host_vec.data(),
+                                        extent.width*sizeof(T),
+                                        extent.width, extent.height);
+    pars.dstArray = array;
+    pars.extent   = extent;
+    pars.kind     = cudaMemcpyHostToDevice;
+    gpuErrchk( cudaMemcpy3D(&pars) );
+    // Bind device array to texture
+    tex.normalized = false;
+    tex.filterMode = cudaFilterModePoint;
+    gpuErrchk( cudaBindTextureToArray(tex, array, tex.channelDesc) );
+}
+template void sendVectorToTexture<float>(size_t w, size_t h, size_t d,
+                                         std::vector<float> host_vec,
+                                         cudaArray* array,
+                                         texture<float, 3, cudaReadModeElementType>& tex);
+
