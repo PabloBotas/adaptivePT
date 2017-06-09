@@ -21,6 +21,14 @@ void gpu_raytrace_plan(const Patient_Parameters_t &pat,
                        std::vector< Vector4_t<float> >& directions,
                        std::vector< Vector2_t<short> >& metadata);
 
+void
+gpu_backtrace_endpoints(const Patient_Parameters_t& pat,
+                        const Patient_Volume_t& ct,
+                        const std::vector< Vector4_t<float> >& endpoints,
+                        const std::vector< Vector4_t<float> >& directions,
+                        const std::vector< Vector2_t<short> >& metadata,
+                        std::vector< Vector4_t<float> >& output);
+
 void printDevProp(const int device, bool verbose);
 
 #endif

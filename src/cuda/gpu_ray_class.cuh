@@ -16,12 +16,16 @@ public:
 //    __device__ float energyToRange(float energy);
     __device__ float3 position();
     __device__ float3 direction();
+    __device__ void reverse();
     __device__ void move(float step, float wepl);
+    __device__ void move_back(float step, float wepl);
     __device__ bool isAlive();
+    __device__ void setMaxWEPL(float m);
 
 private:
-    bool _alive;
+    bool _alive = true;
     float _min_wepl = 1e-08;
+    float _max_wepl = 1e+08;
 };
 
 

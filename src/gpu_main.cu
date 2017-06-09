@@ -5,6 +5,7 @@
 #include "gpu_ct_to_device.cuh"
 #include "initialize_rays.cuh"
 #include "gpu_errorcheck.cuh"
+#include "gpu_physics_to_device.cuh"
 #include "gpu_run.cuh"
 #include "gpu_source_positioning.cuh"
 #include "gpu_utils.cuh"
@@ -42,14 +43,14 @@ void gpu_raytrace_plan(const Patient_Parameters_t& pat,
 
     // Calculate rays
 #if !defined __OUTPUT_SCORER_VOLUME__
-    calculateRays(pat.spots_per_field,
-                  pos_scorer, dir_scorer, meta_scorer);
+    do_raytrace_plan(pat.spots_per_field,
+                     pos_scorer, dir_scorer, meta_scorer);
 #else
     float* traces_scorer = NULL;
     allocate_scorer<float>(traces_scorer, pat.ct.total);
-    calculateRays(pat.spots_per_field,
-                  pos_scorer, dir_scorer, meta_scorer,
-                  traces_scorer);
+    do_raytrace_plan(pat.spots_per_field,
+                     pos_scorer, dir_scorer, meta_scorer,
+                     traces_scorer);
     Patient_Volume_t traces(pat.ct);
     gpuErrchk( cudaMemcpy(&traces.hu[0], traces_scorer, sizeof(float)*traces.nElements, cudaMemcpyDeviceToHost) );
     // traces.output("output_volume.mha", "mha");
@@ -67,57 +68,42 @@ void gpu_raytrace_plan(const Patient_Parameters_t& pat,
     freeCTMemory();
 }
 
-// std::vector< Vector4_t<float> >
-// gpu_backtrace_endpoints(const Patient_Parameters_t& pat,
-//                         const Patient_Volume_t& cbct,
-//                         const std::vector< Vector4_t<float> >& endpoints,
-//                         const std::vector< Vector4_t<float> >& directions,
-//                         const std::vector< Vector2_t<short> >& metadata)
-// {
-//     // Set geometry in GPU
-//     gpu_ct_to_device::sendGeometries(cbct);
+void
+gpu_backtrace_endpoints(const Patient_Parameters_t& pat,
+                        const Patient_Volume_t& ct,
+                        const std::vector< Vector4_t<float> >& endpoints,
+                        const std::vector< Vector4_t<float> >& directions,
+                        const std::vector< Vector2_t<short> >& metadata,
+                        std::vector< Vector4_t<float> >& output)
+{
+    // Set geometry in GPU
+    gpu_ct_to_device::sendGeometries(ct);
 
-//     // Create host buffers and initialize rays
-//     std::vector<float4> xbuffer;
-//     std::vector<float4> vxbuffer;
-//     std::vector<short2> ixbuffer;
-//     create_virtual_source_buffers(pat, xbuffer, vxbuffer, ixbuffer);
-//     buffers_to_device(xbuffer, vxbuffer, ixbuffer);
-//     virtual_src_to_treatment_plane(xbuffer.size(), pat.angles,
-//                                    make_float3(pat.cbct.offset.x, pat.cbct.offset.y, pat.cbct.offset.z));
+    buffers_to_device(endpoints, directions, metadata);
 
-//     // Create scorer array
-//     float4* pos_scorer = NULL;
-//     float4* dir_scorer = NULL;
-//     short2* meta_scorer = NULL;
-//     allocate_scorer<float4>(pos_scorer, pat.total_spots);
-//     allocate_scorer<float4>(dir_scorer, pat.total_spots);
-//     allocate_scorer<short2>(meta_scorer, pat.total_spots);
+    // Create scorer array
+    float4* pos_scorer = NULL;
+    allocate_scorer<float4>(pos_scorer, pat.total_spots);
 
-//     // Calculate rays
-// #if !defined __OUTPUT_SCORER_VOLUME__
-//     calculateRays(pat.spots_per_field,
-//                   pos_scorer, dir_scorer, meta_scorer);
-// #else
-//     float* traces_scorer = NULL;
-//     allocate_scorer<float>(traces_scorer, pat.ct.total);
-//     calculateRays(pat.spots_per_field,
-//                   pos_scorer, dir_scorer, meta_scorer,
-//                   traces_scorer);
-//     Patient_Volume_t traces(pat.ct);
-//     gpuErrchk( cudaMemcpy(&traces.hu[0], traces_scorer, sizeof(float)*traces.nElements, cudaMemcpyDeviceToHost) );
-//     // traces.output("output_volume.mha", "mha");
-//     traces.output("output_volume.raw", "bin");
-//     gpuErrchk( cudaFree(traces_scorer) );
-// #endif
-//     retrieve_scorer<float, float4>(&(endpoints[0].x), pos_scorer, pat.total_spots);
+    // Calculate rays
+#if !defined __OUTPUT_SCORER_VOLUME__
+    do_backtrace_endpoints(pat.spots_per_field, pos_scorer);
+#else
+    float* traces_scorer = NULL;
+    allocate_scorer<float>(traces_scorer, pat.ct.total);
+    do_backtrace_endpoints(pat.spots_per_field, pos_scorer, traces_scorer);
+    Patient_Volume_t traces(pat.ct);
+    gpuErrchk( cudaMemcpy(&traces.hu[0], traces_scorer, sizeof(float)*traces.nElements, cudaMemcpyDeviceToHost) );
+    // traces.output("output_volume.mha", "mha");
+    traces.output("backtrace_output_volume.raw", "bin");
+    gpuErrchk( cudaFree(traces_scorer) );
+#endif
+    retrieve_scorer<float, float4>(&(output[0].x), pos_scorer, pat.total_spots);
 
-//     // Free memory
-//     gpuErrchk( cudaFree(pos_scorer) );
-//     gpuErrchk( cudaFree(dir_scorer) );
-//     gpuErrchk( cudaFree(meta_scorer) );
-//     freeCTMemory();
-// }
+    // Free memory
+    gpuErrchk( cudaFree(pos_scorer) );
+    freeCTMemory();
+}
 
 void initialize_device(cudaEvent_t& start)
 {
@@ -130,10 +116,14 @@ void initialize_device(cudaEvent_t& start)
     cudaSetDevice(device);
     bool verbose = false;
     printDevProp(device, verbose);
+
+    gpu_physics_to_device::sendMassStoppingPowerRatio();
 }
 
 void stop_device(cudaEvent_t& start)
 {
+    freePhysicsMemory();
+
     // Get timing
     cudaEvent_t stop;
     cudaEventCreate(&stop);

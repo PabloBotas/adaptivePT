@@ -1,6 +1,6 @@
 #include "gpu_ray_class.cuh"
 
-__device__ Ray::Ray(float4 x_, float4 vx_, short2 ix_) : _alive(true)
+__device__ Ray::Ray(float4 x_, float4 vx_, short2 ix_)
 {
     pos.x        = x_.x;
     pos.y        = x_.y;
@@ -27,6 +27,13 @@ __device__ float3 Ray::direction()
     return dir;
 }
 
+__device__ void Ray::reverse()
+{
+    dir.x = -dir.x;
+    dir.y = -dir.y;
+    dir.z = -dir.z;
+}
+
 __device__ void Ray::move(float step, float step_water)
 {
     pos.x += step*dir.x;
@@ -35,6 +42,22 @@ __device__ void Ray::move(float step, float step_water)
 
     wepl -= step_water;
     if (wepl <= _min_wepl)
+        _alive = false;
+}
+
+__device__ void Ray::setMaxWEPL(float m)
+{
+    _max_wepl = m;
+}
+
+__device__ void Ray::move_back(float step, float step_water)
+{
+    pos.x += step*dir.x;
+    pos.y += step*dir.y;
+    pos.z += step*dir.z;
+
+    wepl += step_water;
+    if (wepl >= _max_wepl)
         _alive = false;
 }
 

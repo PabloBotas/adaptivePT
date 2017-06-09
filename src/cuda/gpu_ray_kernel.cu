@@ -3,10 +3,10 @@
 #include "gpu_ray_class.cuh"
 #include "gpu_geometry_tools.cuh"
 
-__global__ void calculateRays_kernel(const int num,
+__global__ void raytrace_plan_kernel(const int num,
                                      const short* spots_per_field,
                                      float4 *pos_scorer,
-                                     float4 *dir_scorer,
+                                     float4 *ini_scorer,
                                      short2 *meta_scorer,
                                      float* traces)
 {
@@ -15,6 +15,60 @@ __global__ void calculateRays_kernel(const int num,
     {
         // float const max_energy_loss = 0.2; // % of pre-step energy
         Ray ray(xdata[id], vxdata[id], ixdata[id]);
+        size_t ind = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_field);
+        int4 vox;
+        vox.x = floor(ray.pos.x/ctVoxSize.x);
+        vox.y = floor(ray.pos.y/ctVoxSize.y);
+        vox.z = floor(ray.pos.z/ctVoxSize.z);
+        vox.w = getVoxelIndex(vox);
+
+        VoxelUpdater voxUpdater;
+        VoxelStepper voxStepper;
+
+        if(ini_scorer)
+        {
+            ini_scorer[ind].x = ray.pos.x;
+            ini_scorer[ind].y = ray.pos.y;
+            ini_scorer[ind].z = ray.pos.z;
+            ini_scorer[ind].w = ray.energy;
+        }
+
+        if(meta_scorer)
+        {
+            meta_scorer[ind].x = ray.beam_id;
+            meta_scorer[ind].y = ray.spot_id;
+        }
+
+        while (ray.isAlive() && vox.w != -1)
+        {
+            if(traces)
+                atomicAdd(&traces[vox.w], 1.f);
+            float max_step = inters(ray, vox, voxUpdater, voxStepper);
+            float step_water, step;
+            getWaterStep(step, step_water, max_step, ray.energy, ray.wepl, vox);
+            ray.move(step, step_water);
+            changeVoxel(vox, voxUpdater, voxStepper);
+        }
+
+        pos_scorer[ind].x = ray.pos.x;
+        pos_scorer[ind].y = ray.pos.y;
+        pos_scorer[ind].z = ray.pos.z;
+        pos_scorer[ind].w = ray.initial_wepl;
+    }
+}
+
+__global__ void backtrace_endpoints_kernel(const int num,
+                                           const short* spots_per_field,
+                                           float4 *pos_scorer,
+                                           float* traces)
+{
+    const int id = blockIdx.x*blockDim.x + threadIdx.x;
+    if(id < num)
+    {
+        Ray ray(xdata[id], vxdata[id], ixdata[id]);
+        ray.reverse();
+        ray.setMaxWEPL(ray.initial_wepl);
+        ray.wepl = 0;
         int4 vox;
         vox.x = floor(ray.pos.x/ctVoxSize.x);
         vox.y = floor(ray.pos.y/ctVoxSize.y);
@@ -31,7 +85,7 @@ __global__ void calculateRays_kernel(const int num,
             float max_step = inters(ray, vox, voxUpdater, voxStepper);
             float step_water, step;
             getWaterStep(step, step_water, max_step, ray.energy, ray.wepl, vox);
-            ray.move(step, step_water);
+            ray.move_back(step, step_water);
             changeVoxel(vox, voxUpdater, voxStepper);
         }
 
@@ -40,13 +94,6 @@ __global__ void calculateRays_kernel(const int num,
         pos_scorer[ind].y = ray.pos.y;
         pos_scorer[ind].z = ray.pos.z;
         pos_scorer[ind].w = ray.wepl;
-
-        dir_scorer[ind].x = ray.dir.x;
-        dir_scorer[ind].y = ray.dir.y;
-        dir_scorer[ind].z = ray.dir.z;
-
-        meta_scorer[ind].x = ray.beam_id;
-        meta_scorer[ind].y = ray.spot_id;
     }
 }
 
