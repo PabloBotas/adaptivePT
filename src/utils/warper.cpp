@@ -19,9 +19,8 @@ warp_data (std::vector< Vector4_t<float> >& endpoints,
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
 
-    std::vector< Vector4_t<float> > endpoints_copy = endpoints;
+    warp_vector_projection(init_pos, endpoints, vf_file);
     warp_vector(endpoints, vf_file);
-    warp_vector_projection(init_pos, endpoints_copy, vf_file);
 
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
