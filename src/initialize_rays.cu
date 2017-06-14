@@ -1,6 +1,9 @@
 #include "initialize_rays.cuh"
+
 #include "tramp.hpp"
+#include "gpu_source_positioning.cuh"
 #include "spot.hpp"
+#include "helper_math.h"
 
 #include <iostream>
 #include <vector>
@@ -57,6 +60,41 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
     }
 }
 
+void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
+                                     const std::vector< Vector4_t<float> >& endpoints,
+                                     const std::vector< Vector4_t<float> >& init_pos,
+                                     std::vector<float4>& xbuffer,
+                                     std::vector<float4>& vxbuffer,
+                                     std::vector<short2>& ixbuffer)
+{
+    size_t s = endpoints.size();
+    xbuffer.resize(s);
+    vxbuffer.resize(s);
+    ixbuffer.resize(s);
+    for (size_t i = 0; i < s; i++)
+    {
+        float3 start = make_float3(init_pos.at(i).x, init_pos.at(i).y, init_pos.at(i).z);
+        float3 end   = make_float3(endpoints.at(i).x, endpoints.at(i).y, endpoints.at(i).z);
+        float3 dir   = end - start;
+        float3 dCos  = getDirection(dir);
+        float wepl   = init_pos.at(i).w;
+        float energy = endpoints.at(i).w;
+        short2 meta  = get_beam_spot_id(i+1, pat.spots_per_field);
+
+        int3 nvox   = make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z);
+        float3 dvox = make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
+        float3 start2 = ray_trace_to_CT_volume(start, dCos, nvox, dvox);
+
+        xbuffer.at(i)  = make_float4(start2, wepl);
+        vxbuffer.at(i) = make_float4(dCos, energy);
+        ixbuffer.at(i) = meta;
+
+        // std::cout << start2.x << " " << start.y << " " << start.z << " " << wepl << std::endl;
+        // std::cout << dCos.x << " " << dCos.y << " " << dCos.z << " " << energy << std::endl;
+        // std::cout << meta.x << " " << meta.y <<std::endl;
+    }
+}
+
 float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot)
 {
     float3 p;
@@ -106,3 +144,22 @@ float3 getDirection(float3 pos, float2 spot)
     return dCos;
 }
 
+float3 getDirection(float3 dir)
+{
+    float norm = length(dir);
+    return dir/norm;
+}
+
+short2 get_beam_spot_id (size_t num, const std::vector<short> spots_per_field)
+{
+    size_t spotid = spots_per_field.at(0);
+    size_t i = 1;
+    for (; i < spots_per_field.size(); i++)
+    {
+        if (num > spotid)
+            spotid += spots_per_field.at(i)-1;
+        else
+            break;
+    }
+    return make_short2(i, spotid-1);
+}
