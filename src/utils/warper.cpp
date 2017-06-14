@@ -14,12 +14,14 @@ void
 warp_data (std::vector< Vector4_t<float> >& endpoints,
            std::vector< Vector4_t<float> >& init_pos,
            const std::string vf_file,
-           const CT_Dims_t& ct)
+           const CT_Dims_t& ct,
+           std::vector< Vector4_t<float> > treatment_plane)
 {
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
+    flip_direction_X(treatment_plane);
 
-    warp_vector_projection(init_pos, endpoints, vf_file);
+    warp_vector_projection(init_pos, treatment_plane, vf_file);
     warp_vector(endpoints, vf_file);
 
     flip_positions_X(endpoints, ct);
@@ -37,14 +39,12 @@ warp_vector (std::vector< Vector4_t<float> >& p,
 
 void 
 warp_vector_projection (std::vector< Vector4_t<float> >& p,
-                        std::vector< Vector4_t<float> >& p2,
+                        const std::vector< Vector4_t<float> >& treatment_plane,
                         const std::string vf_file)
 {
     std::vector< Vector3_t<float> > vf;
     probe_vf(vf, p, vf_file);
-    std::vector< Vector3_t<float> > n(p.size());
-    get_unitary_vector(n, p, p2);
-    project_vector_on_plane(vf, n);
+    project_vector_on_plane(vf, treatment_plane);
     apply_vf(p, vf);
 }
 
@@ -81,7 +81,7 @@ get_unitary_vector (std::vector< Vector3_t<float> >& r,
 
 void 
 project_vector_on_plane (std::vector< Vector3_t<float> >& p,
-                         const std::vector< Vector3_t<float> >& n)
+                         const std::vector< Vector4_t<float> >& n)
 {
     for (size_t i = 0; i < p.size(); i++)
     {
@@ -185,6 +185,15 @@ flip_positions_X (std::vector< Vector4_t<float> >& vec,
     for (size_t i = 0; i < vec.size(); i++)
     {
         vec.at(i).x = dims.n.x*dims.d.x - vec.at(i).x;
+    }
+}
+
+void
+flip_direction_X (std::vector< Vector4_t<float> >& vec)
+{
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        vec.at(i).x *= -1;
     }
 }
 

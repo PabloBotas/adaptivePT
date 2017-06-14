@@ -15,6 +15,9 @@ void
 flip_positions_X (std::vector< Vector4_t<float> >& vec,
                   const CT_Dims_t dims);
 
+void
+flip_direction_X (std::vector< Vector4_t<float> >& vec);
+
 void 
 get_unitary_vector (std::vector< Vector3_t<float> >& r,
                     const std::vector< Vector4_t<float> >& p,
@@ -34,7 +37,7 @@ probe_vf (const std::vector< Vector4_t<float> >& p,
 
 void 
 project_vector_on_plane (std::vector< Vector3_t<float> >& p,
-                         const std::vector< Vector3_t<float> >& n);
+                         const std::vector< Vector4_t<float> >& n);
 
 std::string
 to_location_str (const Vector3_t<float>& p, const bool last);
@@ -43,7 +46,8 @@ void
 warp_data(std::vector< Vector4_t<float> >& endpoints,
           std::vector< Vector4_t<float> >& init_pos,
           const std::string vf_file,
-          const CT_Dims_t& ct);
+          const CT_Dims_t& ct,
+          std::vector< Vector4_t<float> > treatment_plane);
 
 void 
 warp_vector (std::vector< Vector4_t<float> >& p,
@@ -51,7 +55,7 @@ warp_vector (std::vector< Vector4_t<float> >& p,
 
 void 
 warp_vector_projection (std::vector< Vector4_t<float> >& p,
-                        std::vector< Vector4_t<float> >& p2,
+                        const std::vector< Vector4_t<float> >& treatment_plane,
                         const std::string vf_file);
 
 #endif
