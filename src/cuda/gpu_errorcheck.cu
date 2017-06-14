@@ -20,7 +20,7 @@ void gpuAssert(cudaError_t code, char const *file, int line, bool abort)
 
 void check_kernel_execution(char const *file, int line)
 {
-    cudaError_t code = cudaPeekAtLastError();
+    cudaError_t code = cudaThreadSynchronize();
     gpuAssert(code, file, line);
     code = cudaPeekAtLastError();
     gpuAssert(code, file, line);
