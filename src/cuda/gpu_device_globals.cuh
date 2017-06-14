@@ -27,6 +27,7 @@
 #define MM2CM 0.1
 #define CM2MM 10
 #define MeV2eV 1000000
+#define MP 938.272046e6 //proton mass, in eV
 
 //==========================================================
 //      global variables
@@ -50,7 +51,13 @@ extern texture<float, 3, cudaReadModeElementType> dens_tex;
 extern cudaArray* matid;
 extern texture<float, 3, cudaReadModeElementType> matid_tex;
 
-// Stopping power table
+// Water resticted stopping power
+extern __device__ __constant__ float stp_w_min_e;
+extern __device__ __constant__ float stp_w_delta_e;
+extern cudaArray *stp_w_array, *stp_w_b_coeff_array;
+extern texture<float, 1, cudaReadModeElementType> stp_w_tex, stp_w_b_coeff_tex;
+
+// Stopping power ratio table
 extern __device__ __constant__ float stp_ratio_min_e;
 extern __device__ __constant__ float stp_ratio_delta_e;
 extern cudaArray* stp_ratio_array;

@@ -17,7 +17,13 @@ texture<float, 3, cudaReadModeElementType> dens_tex;
 cudaArray* matid;
 texture<float, 3, cudaReadModeElementType> matid_tex;
 
-// Stopping power table
+// Water resticted stopping power
+__device__ __constant__ float stp_w_min_e;
+__device__ __constant__ float stp_w_delta_e;
+cudaArray *stp_w_array, *stp_w_b_coeff_array;
+texture<float,1,cudaReadModeElementType> stp_w_tex, stp_w_b_coeff_tex;
+
+// Stopping power ratio table
 __device__ __constant__ float stp_ratio_min_e;
 __device__ __constant__ float stp_ratio_delta_e;
 cudaArray* stp_ratio_array;
