@@ -5,22 +5,23 @@
 #include "vector_types.h"
 
 // CT Navigation ----------------------------
-__device__ float inters(const Ray& ray,
+__device__ float inters(const float3& pos,
+                        const float3& dir,
                         const int4& vox,
                         VoxelUpdater& voxUpdater,
                         VoxelStepper& voxStepper)
 {
     //    Checking out all the voxel walls for the smallest distance...
     // Z
-    float invcos = (ray.dir.z != 0.0f) ? 1.0f/ray.dir.z : INF;
+    float invcos = (dir.z != 0.0f) ? 1.0f/dir.z : INF;
     int ifNext = (invcos > 0.0) ? 1 : 0;
-    float step = ((vox.z+ifNext)*ctVoxSize.z - ray.pos.z) * invcos;
+    float step = ((vox.z+ifNext)*ctVoxSize.z - pos.z) * invcos;
     voxUpdater = UPDATEZ;
     voxStepper = ifNext ? FORWARD : BACKWARD;
     // Y
-    invcos = (ray.dir.y != 0.0f) ? 1.0f/ray.dir.y : INF;
+    invcos = (dir.y != 0.0f) ? 1.0f/dir.y : INF;
     ifNext = (invcos > 0.0) ? 1 : 0;
-    float tempstep = ((vox.y+ifNext) * ctVoxSize.y - ray.pos.y) * invcos;
+    float tempstep = ((vox.y+ifNext) * ctVoxSize.y - pos.y) * invcos;
     if (tempstep < step)
     {
         step = tempstep;
@@ -29,9 +30,9 @@ __device__ float inters(const Ray& ray,
 
     }
     // X
-    invcos = (ray.dir.x != 0.0f) ? 1.0f/ray.dir.x : INF;
+    invcos = (dir.x != 0.0f) ? 1.0f/dir.x : INF;
     ifNext = (invcos > 0.0) ? 1 : 0;
-    tempstep = ((vox.x+ifNext) * ctVoxSize.x - ray.pos.x) * invcos;
+    tempstep = ((vox.x+ifNext) * ctVoxSize.x - pos.x) * invcos;
     if (tempstep < step)
     {
         step = tempstep;
@@ -73,25 +74,24 @@ __host__ __device__ int getabs(int xvox, int yvox, int zvox, int ny, int nz)
     return zvox + yvox*nz + xvox*nz*ny;
 }
 
-__device__ int getVoxelIndex(int3 vox)
-//      return the absolute vox index according to the coordinate
+__device__ int4 get_voxel (float3 pos)
 {
+    int4 vox;
+    vox.x = floor(pos.x/ctVoxSize.x);
+    vox.y = floor(pos.y/ctVoxSize.y);
+    vox.z = floor(pos.z/ctVoxSize.z);
     // Check if in CT grid
     if (vox.x < 0 || vox.x >= ctVox.x ||
         vox.y < 0 || vox.y >= ctVox.y ||
         vox.z < 0 || vox.z >= ctVox.z)
-        return -1;
+        vox.w = -1;
+    else
+        vox.w = vox.z + vox.y*ctVox.z + vox.x*ctVox.z*ctVox.y;
 
-    return vox.z + vox.y*ctVox.z + vox.x*ctVox.z*ctVox.y;
-}
-
-__device__ int getVoxelIndex(int4 vox)
-{
-    return getVoxelIndex(make_int3(vox));
+    return vox;
 }
 
 __device__ int3 getVoxelCoords(unsigned int index)
-//      return the absolute vox index according to the coordinate
 {
     int3 vox = make_int3(-1,-1,-1);
     if(index < ctTotalVoxN)

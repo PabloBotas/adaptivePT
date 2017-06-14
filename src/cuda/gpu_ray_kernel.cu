@@ -6,8 +6,6 @@
 __global__ void raytrace_plan_kernel(const int num,
                                      const short* spots_per_field,
                                      float4 *pos_scorer,
-                                     float4 *ini_scorer,
-                                     short2 *meta_scorer,
                                      float* traces)
 {
     const int id = blockIdx.x*blockDim.x + threadIdx.x;
@@ -15,37 +13,22 @@ __global__ void raytrace_plan_kernel(const int num,
     {
         // float const max_energy_loss = 0.2; // % of pre-step energy
         Ray ray(xdata[id], vxdata[id], ixdata[id]);
-        size_t ind = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_field);
-        int4 vox;
-        vox.x = floor(ray.pos.x/ctVoxSize.x);
-        vox.y = floor(ray.pos.y/ctVoxSize.y);
-        vox.z = floor(ray.pos.z/ctVoxSize.z);
-        vox.w = getVoxelIndex(vox);
+        size_t ind = get_endpoints_index(ray.get_beam_id(), ray.get_spot_id(), spots_per_field);
+        int4 vox = get_voxel (ray.get_position());
 
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
 
-        if(ini_scorer)
-        {
-            ini_scorer[ind].x = ray.pos.x;
-            ini_scorer[ind].y = ray.pos.y;
-            ini_scorer[ind].z = ray.pos.z;
-            ini_scorer[ind].w = ray.energy;
-        }
+        pos_scorer[ind].w = ray.get_energy();
 
-        if(meta_scorer)
-        {
-            meta_scorer[ind].x = ray.beam_id;
-            meta_scorer[ind].y = ray.spot_id;
-        }
-
-        while (ray.isAlive() && vox.w != -1)
+        while (ray.is_alive() && vox.w != -1)
         {
             if(traces)
-                atomicAdd(&traces[vox.w], 1.f);
-            float max_step = inters(ray, vox, voxUpdater, voxStepper);
+                atomicAdd(&traces[vox.w], 1.0f);
+            float max_step = inters(ray.get_position(), ray.get_direction(),
+                                    vox, voxUpdater, voxStepper);
             float step_water, step;
-            getWaterStep(step, step_water, max_step, ray.energy, ray.wepl, vox);
+            getWaterStep(step, step_water, max_step, ray.get_energy(), ray.get_wepl(), vox);
             ray.move(step, step_water);
             changeVoxel(vox, voxUpdater, voxStepper);
         }
@@ -53,61 +36,22 @@ __global__ void raytrace_plan_kernel(const int num,
         pos_scorer[ind].x = ray.pos.x;
         pos_scorer[ind].y = ray.pos.y;
         pos_scorer[ind].z = ray.pos.z;
-        pos_scorer[ind].w = ray.initial_wepl;
-    }
-}
 
-__global__ void backtrace_endpoints_kernel(const int num,
-                                           const short* spots_per_field,
-                                           float4 *pos_scorer,
-                                           float* traces)
-{
-    const int id = blockIdx.x*blockDim.x + threadIdx.x;
-    if(id < num)
-    {
-        Ray ray(xdata[id], vxdata[id], ixdata[id]);
-        ray.reverse();
-        ray.setMaxWEPL(ray.initial_wepl);
-        ray.wepl = 0;
-        int4 vox;
-        vox.x = floor(ray.pos.x/ctVoxSize.x);
-        vox.y = floor(ray.pos.y/ctVoxSize.y);
-        vox.z = floor(ray.pos.z/ctVoxSize.z);
-        vox.w = getVoxelIndex(vox);
-
-        VoxelUpdater voxUpdater;
-        VoxelStepper voxStepper;
-
-        while (ray.isAlive() && vox.w != -1)
-        {
-            if(traces)
-                atomicAdd(&traces[vox.w], 1.f);
-            float max_step = inters(ray, vox, voxUpdater, voxStepper);
-            float step_water, step;
-            getWaterStep(step, step_water, max_step, ray.energy, ray.wepl, vox);
-            ray.move_back(step, step_water);
-            changeVoxel(vox, voxUpdater, voxStepper);
-        }
-
-        size_t ind = get_endpoints_index(ray.beam_id, ray.spot_id, spots_per_field);
-        pos_scorer[ind].x = ray.pos.x;
-        pos_scorer[ind].y = ray.pos.y;
-        pos_scorer[ind].z = ray.pos.z;
-        pos_scorer[ind].w = ray.wepl;
+        printf("ENDPOINT: %f %f %f\n", pos_scorer[ind].x, pos_scorer[ind].y, pos_scorer[ind].z);
     }
 }
 
 __device__ void getWaterStep(float& step,
                              float& step_water,
                              const float max_step,
-                             const float energy,
+                             const float energy_in,
                              const float avail_wepl,
                              const int4& vox)
 {
     // Get density
     float const density  = tex3D(dens_tex, vox.z, vox.y, vox.x);
     // Get stp ratio
-    float const mass_stp_ratio = massStpRatio(energy, vox);
+    float const mass_stp_ratio = massStpRatio(energy_in, vox);
 
     // Set steps
     step = max_step;

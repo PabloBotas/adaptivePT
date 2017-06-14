@@ -69,15 +69,73 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_star
     cudaMemcpyToSymbol(stp_ratio_min_e, &minimum_energy, sizeof(float), 0, cudaMemcpyHostToDevice);
     cudaMemcpyToSymbol(stp_ratio_delta_e, &delta_energy, sizeof(float), 0, cudaMemcpyHostToDevice);
 
-    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-    cudaMallocArray(&stp_ratio_array, &channelDesc, n_energies, n_materials);
+    cudaMallocArray(&stp_ratio_array, &stp_ratio_tex.channelDesc, n_energies, n_materials);
     cudaMemcpyToArray(stp_ratio_array, 0,0, &stp_ratios[0], sizeof(float)*stp_ratios.size(), cudaMemcpyHostToDevice);
     stp_ratio_tex.filterMode = cudaFilterModeLinear;
-    cudaBindTextureToArray(stp_ratio_tex, stp_ratio_array, channelDesc);
+    cudaBindTextureToArray(stp_ratio_tex, stp_ratio_array);
+}
+
+void gpu_physics_to_device::sendWaterRestrictedSPower()
+{
+    std::string file = "../src/phys_data/nist_stopping_power_water.dat";
+    std::cout << "sendWaterRestrictedSPower: Reading " << file << std::endl;
+    std::ifstream stream(file);
+    if (!stream.is_open()) {
+        std::cerr << "Can't open file: " << file << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::string line;
+    // Two dummy lines 
+    std::getline(stream, line);
+    std::getline(stream, line);
+    // Get next
+    std::getline(stream, line);
+    float dummy, min_energy, delta_energy;
+    size_t ndata;
+    std::istringstream ss(line);
+    ss >> dummy >> min_energy >> dummy >> delta_energy >> ndata;
+
+    min_energy   *= MeV2eV;
+    delta_energy *= MeV2eV;
+
+    //  read
+    std::vector<float> stp_w(ndata);
+    std::vector<float> stp_w_b(ndata);
+    //  read info
+    std::getline(stream, line);
+    std::getline(stream, line);
+
+    for(size_t i = 0; i < ndata; i++)
+    {
+        std::getline(stream, line, '\n');
+        ss.clear();
+        ss.str(line);
+        ss >> dummy >> dummy >> dummy >> stp_w[i] >> stp_w_b[i];
+        stp_w[i] *= MeV2eV;
+    }
+
+    cudaMemcpyToSymbol(stp_w_min_e, &min_energy, sizeof(float), 0, cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(stp_w_delta_e, &delta_energy, sizeof(float), 0, cudaMemcpyHostToDevice);
+
+    //  pass to GPU
+    cudaMallocArray(&stp_w_array, &stp_w_tex.channelDesc, ndata, 1);
+    cudaMemcpyToArray(stp_w_array, 0, 0, &stp_w[0], sizeof(float)*ndata, cudaMemcpyHostToDevice);
+    stp_w_tex.filterMode = cudaFilterModeLinear;
+    cudaBindTextureToArray(stp_w_tex, stp_w_array);
+
+    cudaMallocArray(&stp_w_b_coeff_array, &stp_w_b_coeff_tex.channelDesc, ndata, 1);
+    cudaMemcpyToArray(stp_w_b_coeff_array, 0, 0, stp_w_b.data(), sizeof(float)*ndata, cudaMemcpyHostToDevice);
+    stp_w_b_coeff_tex.filterMode = cudaFilterModeLinear;
+    cudaBindTextureToArray(stp_w_b_coeff_tex, stp_w_b_coeff_array);
 }
 
 void freePhysicsMemory()
 {
+    cudaFreeArray(stp_w_array);
+    cudaUnbindTexture(stp_w_tex);
+    cudaFreeArray(stp_w_b_coeff_array);
+    cudaUnbindTexture(stp_w_b_coeff_tex);
     cudaFreeArray(stp_ratio_array);
     cudaUnbindTexture(stp_ratio_tex);
 }

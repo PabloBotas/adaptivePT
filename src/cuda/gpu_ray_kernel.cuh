@@ -4,14 +4,7 @@
 __global__ void raytrace_plan_kernel(const int num,
                                      const short *spots_per_beam,
                                      float4 *pos_scorer,
-                                     float4 *dir_scorer,
-                                     short2 *meta_scorer,
                                      float* traces = NULL);
-
-__global__ void backtrace_endpoints_kernel(const int num,
-                                           const short* spots_per_field,
-                                           float4 *pos_scorer,
-                                           float* traces = NULL);
 
 __device__ unsigned int get_endpoints_index(const short beam_id,
                                             const short spot_id,
