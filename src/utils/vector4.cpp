@@ -14,6 +14,15 @@ Vector4_t<T>::Vector4_t()
 }
 
 template<class T>
+Vector4_t<T>::Vector4_t(float a)
+{
+    x = a;
+    y = a;
+    z = a;
+    w = a;
+}
+
+template<class T>
 Vector4_t<T>::Vector4_t(float a, float b, float c, float d)
 {
     x = a;

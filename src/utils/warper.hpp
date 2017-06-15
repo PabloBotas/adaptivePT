@@ -49,13 +49,4 @@ warp_data(std::vector< Vector4_t<float> >& endpoints,
           const CT_Dims_t& ct,
           std::vector< Vector4_t<float> > treatment_plane);
 
-void 
-warp_vector (std::vector< Vector4_t<float> >& p,
-             const std::string vf_file);
-
-void 
-warp_vector_projection (std::vector< Vector4_t<float> >& p,
-                        const std::vector< Vector4_t<float> >& treatment_plane,
-                        const std::string vf_file);
-
 #endif

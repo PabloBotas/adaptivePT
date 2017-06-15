@@ -3,13 +3,14 @@
 #include "gpu_ray_class.cuh"
 
 #include "vector_types.h"
+#include <assert.h>
 
 // CT Navigation ----------------------------
-__device__ float inters(const float3& pos,
-                        const float3& dir,
-                        const int4& vox,
-                        VoxelUpdater& voxUpdater,
-                        VoxelStepper& voxStepper)
+__device__ float to_boundary(const float3& pos,
+                             const float3& dir,
+                             const int4& vox,
+                             VoxelUpdater& voxUpdater,
+                             VoxelStepper& voxStepper)
 {
     //    Checking out all the voxel walls for the smallest distance...
     // Z
@@ -27,7 +28,6 @@ __device__ float inters(const float3& pos,
         step = tempstep;
         voxUpdater = UPDATEY;
         voxStepper = ifNext ? FORWARD : BACKWARD;
-
     }
     // X
     invcos = (dir.x != 0.0f) ? 1.0f/dir.x : INF;
@@ -39,11 +39,47 @@ __device__ float inters(const float3& pos,
         voxUpdater = UPDATEX;
         voxStepper = ifNext ? FORWARD : BACKWARD;
     }
-
     return fabs(step);
 }
 
-__device__ void changeVoxel(int4& vox, const VoxelUpdater updater, const VoxelStepper stepper)
+__device__ float to_boundary(const float3& pos,
+                             const float3& dir,
+                             const int4& vox,
+                             VoxelUpdater& voxUpdater,
+                             VoxelStepper& voxStepper,
+                             const float3 endpoint)
+{
+    float dist = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
+
+    float3 diff     = endpoint-pos;
+    float step_diff = length(diff);
+    float cos_angle = dot(diff, dir)/step_diff;
+
+    assert((cos_angle >  0.9999 && cos_angle < 1.0001) ||
+           (cos_angle > -0.0001 && cos_angle < 0.0001));
+
+    if(cos_angle > 0 && step_diff < dist)
+    {
+        dist = step_diff;
+        voxUpdater = NONE;
+    }
+
+    // printf("Dist to endpoint - step - cos: %f - %f\n", step_diff, dist);
+
+    return dist;
+}
+
+__device__ int ahead_or_behind(const float3& dir,
+                               const float3& point,
+                               const float3& pos)
+{
+    float3 vector = point - pos;
+    return dot(vector, dir)/length(vector) > 0 ? 1 : -1;
+}
+
+__device__ void changeVoxel(int4& vox,
+                            const VoxelUpdater updater,
+                            const VoxelStepper stepper)
 //    Changes voxel according to the information passed by inters()
 {
     if (updater == UPDATEZ)
@@ -56,7 +92,7 @@ __device__ void changeVoxel(int4& vox, const VoxelUpdater updater, const VoxelSt
         vox.y += stepper;
         vox.w += stepper*ctVox.z;
     }
-    else
+    else if (updater == UPDATEX)
     {
         vox.x += stepper;
         vox.w += stepper*ctVox.z*ctVox.y;

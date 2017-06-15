@@ -79,7 +79,7 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
         float3 dCos  = getDirection(dir);
         float wepl   = init_pos.at(i).w;
         float energy = endpoints.at(i).w;
-        short2 meta  = get_beam_spot_id(i+1, pat.spots_per_field);
+        short2 meta  = get_beam_spot_id(i, pat.spots_per_field);
 
         int3 nvox   = make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z);
         float3 dvox = make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
@@ -150,16 +150,15 @@ float3 getDirection(float3 dir)
     return dir/norm;
 }
 
-short2 get_beam_spot_id (size_t num, const std::vector<short> spots_per_field)
+short2 get_beam_spot_id (const size_t num, const std::vector<short> spots_per_field)
 {
-    size_t spotid = spots_per_field.at(0);
-    size_t i = 1;
-    for (; i < spots_per_field.size(); i++)
+    size_t spotid = 0;
+    size_t beamid = 0;
+    for (; beamid < spots_per_field.size(); beamid++)
     {
-        if (num > spotid)
-            spotid += spots_per_field.at(i)-1;
-        else
+        spotid += spots_per_field.at(beamid);
+        if (num < spotid)
             break;
     }
-    return make_short2(i, spotid-1);
+    return make_short2(beamid, num);
 }

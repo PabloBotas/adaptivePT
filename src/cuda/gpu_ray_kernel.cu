@@ -5,6 +5,7 @@
 
 __global__ void raytrace_plan_kernel(const int num,
                                      const short* spots_per_field,
+                                     const float4* orig_endpoints,
                                      float4 *pos_scorer,
                                      float* traces)
 {
@@ -21,23 +22,57 @@ __global__ void raytrace_plan_kernel(const int num,
 
         pos_scorer[ind].w = ray.get_energy();
 
+        // ray.print();
+        
         while (ray.is_alive() && vox.w != -1)
         {
             if(traces)
                 atomicAdd(&traces[vox.w], 1.0f);
-            float max_step = inters(ray.get_position(), ray.get_direction(),
-                                    vox, voxUpdater, voxStepper);
+
             float step_water, step;
-            getWaterStep(step, step_water, max_step, ray.get_energy(), ray.get_wepl(), vox);
+            float max_step = to_boundary(ray.get_position(), ray.get_direction(),
+                                         vox, voxUpdater, voxStepper);
+            getWaterStep(step, step_water, max_step,
+                         ray.get_energy(), ray.get_wepl(), vox);
             ray.move(step, step_water);
-            changeVoxel(vox, voxUpdater, voxStepper);
+            if (step == max_step)
+                changeVoxel(vox, voxUpdater, voxStepper);
         }
 
+        // Save scorer
         pos_scorer[ind].x = ray.pos.x;
         pos_scorer[ind].y = ray.pos.y;
         pos_scorer[ind].z = ray.pos.z;
 
-        printf("ENDPOINT: %f %f %f\n", pos_scorer[ind].x, pos_scorer[ind].y, pos_scorer[ind].z);
+        if (orig_endpoints)
+        {
+            // printf("Converging to endpoint!!!\n");
+            const float sample_energy = 160*MeV2eV;
+            const float sample_wepl   = 17.82000; // Janni table for sample energy
+            float3 plan_endpoint = make_float3(orig_endpoints[id]);
+            ray.set_energy(sample_energy); // sample energy
+            ray.set_wepl(sample_wepl);     // Janni table for sample energy
+            ray.dir *= ahead_or_behind(ray.dir, plan_endpoint, ray.pos);
+
+            while (ray.is_alive() && vox.w != -1)
+            {
+                float step_water, step;
+                float max_step = to_boundary(ray.get_position(), ray.get_direction(),
+                                             vox, voxUpdater, voxStepper,
+                                             plan_endpoint);
+                getWaterStep(step, step_water, max_step,
+                             ray.get_energy(), ray.get_wepl(), vox);
+                ray.move(step, step_water);
+                if (voxUpdater != NONE)
+                    changeVoxel(vox, voxUpdater, voxStepper);
+                else
+                    break;
+            }
+
+            pos_scorer[ind].w = sample_energy - ray.get_energy();
+        }
+
+        // ray.print();
     }
 }
 
@@ -74,12 +109,12 @@ __device__ float massStpRatio(const float energy, const int4& vox)
 }
 
 
-__device__ unsigned int get_endpoints_index(const short beam_id,
-                                            const short spot_id,
-                                            const short* spots_per_field)
-{
+__device__ size_t get_endpoints_index(const short beam_id,
+                                      const short spot_id,
+                                      const short* spots_per_field)
+{   
     unsigned int index = spot_id;
-    for (int ibeam = 0; ibeam < beam_id; ibeam++)
+    for (short ibeam = 0; ibeam < beam_id; ibeam++)
     {
         index += spots_per_field[ibeam];
     }

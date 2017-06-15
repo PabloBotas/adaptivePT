@@ -13,18 +13,26 @@
 #include <vector>
 #include <sys/stat.h>
 
-void do_raytrace (const std::vector<short> spots_per_field,
+void do_raytrace (const std::vector<short>& spots_per_field,
                   float4* positions_scorer,
-                  float* traces_scorer)
+                  float* traces_scorer,
+                  const std::vector< Vector4_t<float> >& orig_endpoints)
 {
-    short* spf_gpu;
+    // Set up optional target endpoints
+    float4* dev_orig_endpoints = NULL;
+    if (!orig_endpoints.empty())
+        array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
+
+    short* spf_gpu = NULL;
     array_to_device<short>(spf_gpu, spots_per_field.data(), spots_per_field.size());
+    
     size_t total_spots = std::accumulate(spots_per_field.begin(), spots_per_field.end(), 0);
     std::cout << std::endl;
     std::cout << "Calculating " << total_spots << " rays ..." << std::endl;
     int nblocks = 1 + (total_spots-1)/NTHREAD_PER_BLOCK_RAYS;
     raytrace_plan_kernel<<<nblocks, NTHREAD_PER_BLOCK_RAYS>>>(total_spots,
                                                               spf_gpu,
+                                                              dev_orig_endpoints,
                                                               positions_scorer,
                                                               traces_scorer);
     check_kernel_execution(__FILE__, __LINE__);

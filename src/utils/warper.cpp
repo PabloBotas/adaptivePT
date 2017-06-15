@@ -21,31 +21,14 @@ warp_data (std::vector< Vector4_t<float> >& endpoints,
     flip_positions_X(init_pos, ct);
     flip_direction_X(treatment_plane);
 
-    warp_vector_projection(init_pos, treatment_plane, vf_file);
-    warp_vector(endpoints, vf_file);
+    std::vector< Vector3_t<float> > vf;
+    probe_vf(vf, endpoints, vf_file);
+    apply_vf(endpoints, vf);
+    project_vector_on_plane(vf, treatment_plane);
+    apply_vf(init_pos, vf);
 
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
-}
-
-void 
-warp_vector (std::vector< Vector4_t<float> >& p,
-             const std::string vf_file)
-{
-    std::vector< Vector3_t<float> > vf;
-    probe_vf(vf, p, vf_file);
-    apply_vf(p, vf);
-}
-
-void 
-warp_vector_projection (std::vector< Vector4_t<float> >& p,
-                        const std::vector< Vector4_t<float> >& treatment_plane,
-                        const std::string vf_file)
-{
-    std::vector< Vector3_t<float> > vf;
-    probe_vf(vf, p, vf_file);
-    project_vector_on_plane(vf, treatment_plane);
-    apply_vf(p, vf);
 }
 
 void 

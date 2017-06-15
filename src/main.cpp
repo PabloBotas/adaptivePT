@@ -64,15 +64,17 @@ int main(int argc, char** argv)
         ct_vf_init_pat_pos.at(i).print();
 
     // Get endpoints in CBCT --------------------
-    std::vector< Vector4_t<float> > cbct_endpoints(patient_data.total_spots);
+    std::vector< Vector4_t<float> > cbct_endpoints(patient_data.total_spots, 5);
     gpu_raytrace_warped (patient_data, ct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
                          "output_volume_cbct.raw");
 
     // Print results
-    std::cout << "X \t Y \t Z \t E" << std::endl;
+    std::cout << "X \t Y \t Z \t Energy adapt" << std::endl;
     for (size_t i = 0; i < iters; i++)
         cbct_endpoints.at(i).print();
+    
+    // std::cout << "X \t Y \t Z \t E" << std::endl;
 
     // Stop device
     stop_device(start);

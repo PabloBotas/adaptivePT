@@ -17,7 +17,8 @@ void stop_device (cudaEvent_t& start);
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    std::vector< Vector4_t<float> >& endpoints,
-                   std::string output_file = std::string());
+                   std::string output_file,
+                   const std::vector< Vector4_t<float> >& orig_endpoints = std::vector< Vector4_t<float> >());
 
 void gpu_raytrace_original (const Patient_Parameters_t &pat,
                             const Patient_Volume_t &ct,

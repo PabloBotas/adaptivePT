@@ -30,6 +30,8 @@ public:
     __device__ void set_direction (float4 d);
     __device__ void set_position (float4 d);
     __device__ void set_position (float3 d);
+    __device__ void print();
+    __device__ void kill();
 
 
 private:

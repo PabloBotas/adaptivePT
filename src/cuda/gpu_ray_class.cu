@@ -68,13 +68,14 @@ __device__ void Ray::set_direction (float3 p)
     dir /= norm;
 }
 
-__device__ void Ray::move (const float step, const float step_water)
+__device__ void Ray::move (const float step,
+                           const float step_water)
 {
     pos += step*dir;
 
     lose_energy(step_water);
     wepl -= step_water;
-    if (energy <= stp_w_min_e || wepl <= _min_wepl)
+    if (energy <= stp_w_min_e)
         _alive = false;
 }
 
@@ -104,7 +105,32 @@ __device__ void Ray::set_energy(float m)
     energy = m;
 }
 
+__device__ void Ray::set_wepl(float m)
+{
+    wepl = m;
+}
+
 __device__ bool Ray::is_alive()
 {
+    _alive = energy > 0;
     return _alive;
 }
+
+__device__ void Ray::kill()
+{
+    energy = 0;
+    _alive = false;
+}
+
+__device__ void Ray::print()
+{
+    printf("Beam ID:   %d\n"
+           "Spot ID:   %d\n"
+           "Position:  %f %f %f\n"
+           "Direction: %f %f %f\n"
+           "Energy:    %f\n"
+           "WEPL:      %f\n",
+           beam_id, spot_id, pos.x, pos.y, pos.z,
+           dir.x, dir.y, dir.z, energy, wepl);
+}
+

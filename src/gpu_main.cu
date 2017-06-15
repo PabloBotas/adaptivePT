@@ -66,12 +66,13 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                     xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer);
 
-    gpu_raytrace (pat, endpoints, output_file);
+    gpu_raytrace (pat, endpoints, output_file, orig_endpoints);
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    std::vector< Vector4_t<float> >& endpoints,
-                   std::string output_file)
+                   std::string output_file,
+                   const std::vector< Vector4_t<float> >& orig_endpoints)
 {
     // Create scorer array
     float4* pos_scorer = NULL;
@@ -80,30 +81,21 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     // Calculate rays
     if (output_file.empty())
     {
-        do_raytrace (pat.spots_per_field, pos_scorer);
+        do_raytrace (pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
     }
     else
     {
         float* traces_scorer = NULL;
         allocate_scorer<float>(traces_scorer, pat.ct.total);
-        do_raytrace (pat.spots_per_field, pos_scorer, traces_scorer);
+        do_raytrace (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
         Patient_Volume_t traces(pat.ct);
         retrieve_scorer<float, float>(&traces.hu[0], traces_scorer, traces.nElements);
         // traces.output("output_volume.mha", "mha");
         traces.output(output_file, "bin");
         gpuErrchk( cudaFree(traces_scorer) );
     }
-    printf("Pointers: %p\n", pos_scorer);
-    printf("Pointers: %p\n", &(endpoints[0].x));
 
     retrieve_scorer<float, float4>(&(endpoints[0].x), pos_scorer, pat.total_spots);
-    float4* temp;
-    temp = (float4*) malloc(sizeof(float4));
-    gpuErrchk( cudaMemcpy(temp, pos_scorer, sizeof(float4), cudaMemcpyDeviceToHost) );
-    // gpuErrchk( cudaMemcpy(&(endpoints[0].x), pos_scorer, sizeof(float4), cudaMemcpyDeviceToHost) );
-
-    printf("ENDPOINT: %f %f %f\n", temp[0].x, temp[0].y, temp[0].z);
-    free(temp);
     // Free memory
     gpuErrchk( cudaFree(pos_scorer) );
     freeCTMemory();

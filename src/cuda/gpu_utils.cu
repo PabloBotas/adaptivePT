@@ -25,14 +25,16 @@ template void retrieve_scorer<float, float>(float*, float*, size_t);
 template void retrieve_scorer<float, float4>(float*, float4*, size_t);
 
 ///////////////////////////////////////
-template <class T>
-void array_to_device(T*& dest, const T* src, size_t n)
+template <class T, class S>
+void array_to_device(T*& dest, const S* src, size_t n)
 {
     gpuErrchk( cudaMalloc((void **) &dest, sizeof(T)*n) );
     gpuErrchk( cudaMemcpy(dest, src, sizeof(T)*n, cudaMemcpyHostToDevice) );
 }
 template void array_to_device<short>(short*&, const short*, size_t);
 template void array_to_device<float2>(float2*&, const float2*, size_t);
+template void array_to_device<float4>(float4*&, const float4*, size_t);
+template void array_to_device<float4, Vector4_t<float> >(float4*&, const Vector4_t<float>*, size_t);
 
 ///////////////////////////////////////
 
