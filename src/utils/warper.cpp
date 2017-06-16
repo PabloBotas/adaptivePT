@@ -186,9 +186,9 @@ to_location_str (const Vector3_t<float>& p,
                  const bool last)
 {
     std::string s;
-    s += " " + std::to_string(p.x) +
-         " " + std::to_string(p.y) +
-         " " + std::to_string(p.z);
+    s += std::to_string(p.x) + " " + 
+         std::to_string(p.y) + " " + 
+         std::to_string(p.z);
     if (!last)
         s += ";";
     return s;
