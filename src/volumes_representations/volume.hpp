@@ -47,7 +47,8 @@ private:
     Vector3_t<float> original_origin;
     Vector3_t<float> original_imgCenter;
     void read_volume();
-    void import_from_metaimage(const float* data);
+    template <class T>
+    void import_from_metaimage(const std::vector<T>& data);
     void export_binary(std::string f);
     void export_header_metaimage(std::string f, std::string ref_file = "LOCAL");
     void export_binary_metaimage(std::string f, std::ios::openmode mode = std::ios::out);

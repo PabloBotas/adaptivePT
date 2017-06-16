@@ -85,24 +85,33 @@ void Patient_Volume_t::read_volume()
             d = reader.spacing;
             origin = reader.origin;
             hu.resize(nElements);
-            import_from_metaimage((float*)reader.data.data());
+            import_from_metaimage<short>(reader.data);
             break;
         }
     }
 }
 
-void Patient_Volume_t::import_from_metaimage(const float* data)
+template <class T>
+void Patient_Volume_t::import_from_metaimage(const std::vector<T>& vec)
 {
+    if (hu.size() != vec.size())
+    {
+        std::cerr << "ERROR! in file " << __FILE__ << ", line " << __LINE__;
+        std::cerr << "\nSizes are incompatible: " << hu.size() << " != " << vec.size();
+        std::cerr << std::endl;
+        exit(EXIT_FAILURE);
+    }
     for (size_t k = 0; k < n.z; k++) {
         for (size_t j = 0; j < n.y; j++) {
             for (size_t i = 0; i < n.x; i++) {
                 size_t in  = i + j*n.x +         k*n.x*n.y;
                 size_t out = i + j*n.x + (n.z-k-1)*n.x*n.y;
-                hu[out] = (float)data[in];
+                hu.at(out) = (float)vec.at(in);
             }
         }
     }
 }
+template void Patient_Volume_t::import_from_metaimage<short>(const std::vector<short>& data);
 
 void Patient_Volume_t::export_binary_metaimage(std::string f,
                                                std::ios::openmode other)
