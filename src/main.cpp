@@ -9,15 +9,28 @@
 #include "volume.hpp"
 #include "warper.hpp"
 
+// DONE Read CT
+// DONE Raytrace endpoints on CT
+// DONE Apply VF to endpoints -> updated endpoints
+// DONE Apply VF to starting points -> updated starting points
+// DONE Projection onto treatment plane
+// DONE Read CBCT
+// DONE Raytrace vf_start_points in CBCT
+// DONE Get energy distance to updated endpoints
+// TODO Convert data back to tramp file
+// TODO Fix mha output's offset to visualize in Slicer
+// TODO Verify that VF probing is correctly done. How?
+// TODO Verify CBCT offsets are correctly updated
 
-// TODO DONE Read CT
-// TODO DONE Get endpoints on CT
-// TODO DONE Apply VF to endpoints -> updated endpoints
-// TODO DONE Read CBCT
-// TODO DONE Projection onto treatment plane
-// TODO Backtrace vf_endpoints in CBCT until initial wepl
-// TODO Get distances to initial endpoint positions
-// TODO Get WEPL and energy distance
+void deal_with_ct(Patient_Parameters_t& patient_data,
+                  const Parser& parser,
+                  std::vector< Vector4_t<float> >& ct_vf_endpoints,
+                  std::vector< Vector4_t<float> >& ct_vf_init_pat_pos);
+
+void deal_with_cbct(Patient_Parameters_t& patient_data,
+                    const Parser& parser,
+                    std::vector< Vector4_t<float> >& ct_vf_endpoints,
+                    std::vector< Vector4_t<float> >& ct_vf_init_pat_pos);
 
 int main(int argc, char** argv)
 {
@@ -34,6 +47,22 @@ int main(int argc, char** argv)
     cudaEvent_t start;
     initialize_device(start);
 
+    std::vector< Vector4_t<float> > ct_vf_endpoints(patient_data.total_spots);
+    std::vector< Vector4_t<float> > ct_vf_init_pat_pos(patient_data.total_spots);
+    deal_with_ct (patient_data, parser, ct_vf_endpoints, ct_vf_init_pat_pos);
+    deal_with_cbct (patient_data, parser, ct_vf_endpoints, ct_vf_init_pat_pos);
+
+    // Stop device
+    stop_device(start);
+
+    exit(EXIT_SUCCESS);
+}
+
+void deal_with_ct(Patient_Parameters_t& patient_data,
+                  const Parser& parser,
+                  std::vector< Vector4_t<float> >& ct_vf_endpoints,
+                  std::vector< Vector4_t<float> >& ct_vf_init_pat_pos)
+{
     // Read CT and launch rays
     Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
     // The CT volume lacks dimensions information
@@ -47,11 +76,11 @@ int main(int argc, char** argv)
                            "output_volume.raw");
     std::vector< Vector4_t<float> > treatment_plane = get_treatment_planes(patient_data.angles);
     // Print results
-    size_t iters = ct_endpoints.size() < 5 ? ct_endpoints.size() : 5;
+    size_t iters = patient_data.total_spots < 5 ? patient_data.total_spots : 5;
 
     // Warp endpoints in CT ---------------------------
-    std::vector< Vector4_t<float> > ct_vf_endpoints = ct_endpoints;
-    std::vector< Vector4_t<float> > ct_vf_init_pat_pos = ct_init_pat_pos;
+    ct_vf_endpoints = ct_endpoints;
+    ct_vf_init_pat_pos = ct_init_pat_pos;
     warp_data (ct_vf_endpoints, ct_vf_init_pat_pos, parser.vf_file,
                patient_data.ct, treatment_plane);
     
@@ -62,31 +91,25 @@ int main(int argc, char** argv)
     std::cout << "Warped patient positions and wepl:" << std::endl;
     for (size_t i = 0; i < iters; i++)
         ct_vf_init_pat_pos.at(i).print();
+}
 
+void deal_with_cbct(Patient_Parameters_t& patient_data,
+                    const Parser& parser,
+                    std::vector< Vector4_t<float> >& ct_vf_endpoints,
+                    std::vector< Vector4_t<float> >& ct_vf_init_pat_pos)
+{
     // Get endpoints in CBCT --------------------
-    std::vector< Vector4_t<float> > cbct_endpoints(patient_data.total_spots, 5);
-    gpu_raytrace_warped (patient_data, ct, ct_vf_endpoints,
+    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
+    patient_data.update_geometry_offsets(cbct);
+
+    std::vector< Vector4_t<float> > cbct_endpoints(patient_data.total_spots);
+    gpu_raytrace_warped (patient_data, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
                          "output_volume_cbct.raw");
 
     // Print results
+    size_t iters = patient_data.total_spots < 5 ? patient_data.total_spots : 5;
     std::cout << "X \t Y \t Z \t Energy adapt" << std::endl;
     for (size_t i = 0; i < iters; i++)
         cbct_endpoints.at(i).print();
-    
-    // std::cout << "X \t Y \t Z \t E" << std::endl;
-
-    // Stop device
-    stop_device(start);
-
-//    // Read CBCT and launch rays
-//    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
-//    patient_data.update_geometry_offsets(cbct);
-//    std::vector<float4> cbct_endpoints = gpu_get_beam_endpoints(patient_data, cbct);
-
-    // Finalize the entire computation
-
-    exit(EXIT_SUCCESS);
 }
-
-
