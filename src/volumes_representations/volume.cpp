@@ -89,6 +89,15 @@ void Patient_Volume_t::read_volume()
             break;
         }
     }
+#if defined __DEBUG_OUTPUT_READ_CT__
+    FILE *output;
+    if (!(output = fopen("raw_ct.dat","wb"))) {
+        std::cerr << "Error opening file \"raw_ct.dat\" for write" << std::endl;
+        exit (EXIT_FAILURE);
+    }
+    fwrite(&hu[0], sizeof(float), nElements, output);
+    fclose(output);
+#endif
 }
 
 template <class T>

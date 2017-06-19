@@ -41,6 +41,10 @@ endif()
 # include_directories ("${CUDA_SDK_ROOT_DIR}")
 
 # Definitions------------------------------------------------
+option(DEBUG_READ_CT "Output a 32bit-float binary file with raw ct values" OFF)
+if(DEBUG_READ_CT)
+  add_definitions(-D__DEBUG_OUTPUT_READ_CT__)
+endif()
 # option(DEBUG_RAYS "Use mode to export a CT volume with the ray paths" OFF)
 # if(DEBUG_RAYS)
 #   add_definitions(-D__OUTPUT_SCORER_VOLUME__)
