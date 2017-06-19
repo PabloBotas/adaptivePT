@@ -21,14 +21,14 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
                    const Array4<float>& orig_endpoints = Array4<float>());
 
 void gpu_raytrace_original (const Patient_Parameters_t &pat,
-                            const Patient_Volume_t &ct,
+                            const Volume_t &ct,
                             Array4<float>& endpoints,
                             Array4<float>& init_pos,
                             Array4<float>& init_pat_pos,
                             std::string output_file = std::string());
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
-                          const Patient_Volume_t &ct,
+                          const Volume_t &ct,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,

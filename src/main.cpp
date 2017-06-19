@@ -64,7 +64,7 @@ void deal_with_ct(Patient_Parameters_t& patient_data,
                   Array4<float>& ct_init_pat_pos)
 {
     // Read CT and launch rays
-    Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
+    Volume_t ct(patient_data.planning_ct_file, Volume_t::Source_type::CTVOLUME);
     // The CT volume lacks dimensions information
     ct.setDims(patient_data.ct);
 
@@ -94,7 +94,7 @@ void deal_with_cbct(Patient_Parameters_t& patient_data,
                     Array4<float>& ct_vf_init_pat_pos)
 {
     // Get endpoints in CBCT --------------------
-    Patient_Volume_t cbct(parser.cbct_file, Patient_Volume_t::Source_type::MHA);
+    Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
     patient_data.update_geometry_offsets(cbct);
 
     Array4<float> cbct_endpoints(patient_data.total_spots);

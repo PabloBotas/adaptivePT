@@ -250,7 +250,7 @@ void Patient_Parameters_t::int_to_ext_coordinates()
     }
 }
 
-void Patient_Parameters_t::update_geometry_offsets(Patient_Volume_t vol)
+void Patient_Parameters_t::update_geometry_offsets(Volume_t vol)
 {
     ct.offset.x = (vol.imgCenter.x - 0.5*vol.n.x*vol.d.x) - ct.isocenter.x;
     ct.offset.y = (vol.imgCenter.y - 0.5*vol.n.y*vol.d.y) - ct.isocenter.y;

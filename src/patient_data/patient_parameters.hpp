@@ -43,7 +43,7 @@ public:
     void add_results_directory(std::string s);
     void ext_to_int_coordinates();
     void int_to_ext_coordinates();
-    void update_geometry_offsets(Patient_Volume_t vol);
+    void update_geometry_offsets(Volume_t vol);
 
 private:
     void exploreBeamDirectories();

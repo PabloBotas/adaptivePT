@@ -17,7 +17,7 @@
 #include <vector>
 
 void gpu_raytrace_original (const Patient_Parameters_t& pat,
-                            const Patient_Volume_t& ct,
+                            const Volume_t& ct,
                             Array4<float>& endpoints,
                             Array4<float>& init_pos,
                             Array4<float>& init_pat_pos,
@@ -49,7 +49,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
-                          const Patient_Volume_t &ct,
+                          const Volume_t &ct,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
@@ -88,8 +88,8 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
         float* traces_scorer = NULL;
         allocate_scorer<float>(traces_scorer, pat.ct.total);
         do_raytrace (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
-        Patient_Volume_t traces(pat.ct);
-        retrieve_scorer<float, float>(&traces.hu[0], traces_scorer, traces.nElements);
+        Volume_t traces(pat.ct);
+        retrieve_scorer<float, float>(&traces.data[0], traces_scorer, traces.nElements);
         // traces.output("output_volume.mha", "mha");
         traces.output(output_file, "bin");
         gpuErrchk( cudaFree(traces_scorer) );

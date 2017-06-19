@@ -11,8 +11,8 @@
 
 #define CM2MM 10
 
-Patient_Volume_t::Patient_Volume_t(const std::string& f,
-                                   const Patient_Volume_t::Source_type& s)
+Volume_t::Volume_t(const std::string& f,
+                                   const Volume_t::Source_type& s)
 {
     file = f;
     source_type = s;
@@ -24,12 +24,12 @@ Patient_Volume_t::Patient_Volume_t(const std::string& f,
     consolidate_originals();
 }
 
-Patient_Volume_t::Patient_Volume_t(const std::string& f,
-                                   const Patient_Volume_t::Source_type& s,
-                                   const unsigned int& nx,
-                                   const unsigned int& ny,
-                                   const unsigned int& nz,
-                                   const float& dx, const float& dy, const float& dz)
+Volume_t::Volume_t(const std::string& f,
+                   const Volume_t::Source_type& s,
+                   const unsigned int& nx,
+                   const unsigned int& ny,
+                   const unsigned int& nz,
+                   const float& dx, const float& dy, const float& dz)
 {
     file = f;
     source_type = s;
@@ -40,22 +40,22 @@ Patient_Volume_t::Patient_Volume_t(const std::string& f,
     consolidate_originals();
 }
 
-Patient_Volume_t::Patient_Volume_t(const CT_Dims_t& dims)
+Volume_t::Volume_t(const CT_Dims_t& dims)
 {
     nElements = dims.total;
-    hu.resize(nElements);
+    data.resize(nElements);
     setDims(dims);
     consolidate_originals();
 }
 
-Patient_Volume_t::Patient_Volume_t(const float* src,
-                                   const CT_Dims_t& dims) :
-                                   Patient_Volume_t(dims)
+Volume_t::Volume_t(const float* src,
+                   const CT_Dims_t& dims) :
+                   Volume_t(dims)
 {
-    std::copy( src, src+nElements, hu.begin() );
+    std::copy( src, src+nElements, data.begin() );
 }
 
-void Patient_Volume_t::consolidate_originals()
+void Volume_t::consolidate_originals()
 {
     original_n = n;
     original_d = d;
@@ -63,7 +63,7 @@ void Patient_Volume_t::consolidate_originals()
     original_imgCenter = imgCenter;
 }
 
-void Patient_Volume_t::read_volume()
+void Volume_t::read_volume()
 {
     switch(source_type)
     {
@@ -72,8 +72,8 @@ void Patient_Volume_t::read_volume()
             Ctvolume_reader_t reader(file);
 
             nElements = reader.nElements;
-            hu.resize(nElements);
-            std::copy( reader.hu.begin(), reader.hu.end(), hu.begin() );
+            data.resize(nElements);
+            std::copy( reader.hu.begin(), reader.hu.end(), data.begin() );
             break;
         }
         case Source_type::MHA:
@@ -84,7 +84,7 @@ void Patient_Volume_t::read_volume()
             n = reader.dim;
             d = reader.spacing;
             origin = reader.origin;
-            hu.resize(nElements);
+            data.resize(nElements);
             import_from_metaimage<short>(reader.data);
             break;
         }
@@ -95,18 +95,18 @@ void Patient_Volume_t::read_volume()
         std::cerr << "Error opening file \"raw_ct.dat\" for write" << std::endl;
         exit (EXIT_FAILURE);
     }
-    fwrite(&hu[0], sizeof(float), nElements, output);
+    fwrite(&data[0], sizeof(float), nElements, output);
     fclose(output);
 #endif
 }
 
 template <class T>
-void Patient_Volume_t::import_from_metaimage(const std::vector<T>& vec)
+void Volume_t::import_from_metaimage(const std::vector<T>& vec)
 {
-    if (hu.size() != vec.size())
+    if (data.size() != vec.size())
     {
         std::cerr << "ERROR! in file " << __FILE__ << ", line " << __LINE__;
-        std::cerr << "\nSizes are incompatible: " << hu.size() << " != " << vec.size();
+        std::cerr << "\nSizes are incompatible: " << data.size() << " != " << vec.size();
         std::cerr << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -115,14 +115,14 @@ void Patient_Volume_t::import_from_metaimage(const std::vector<T>& vec)
             for (size_t i = 0; i < n.x; i++) {
                 size_t in  = i + j*n.x +         k*n.x*n.y;
                 size_t out = i + j*n.x + (n.z-k-1)*n.x*n.y;
-                hu.at(out) = (float)vec.at(in);
+                data.at(out) = (float)vec.at(in);
             }
         }
     }
 }
-template void Patient_Volume_t::import_from_metaimage<short>(const std::vector<short>& data);
+template void Volume_t::import_from_metaimage<short>(const std::vector<short>& data);
 
-void Patient_Volume_t::export_binary_metaimage(std::string f,
+void Volume_t::export_binary_metaimage(std::string f,
                                                std::ios::openmode other)
 {
     std::ios::openmode mode = std::ios::out | std::ios::binary | other;
@@ -140,7 +140,7 @@ void Patient_Volume_t::export_binary_metaimage(std::string f,
             for (size_t i = 0; i < n.z; i++) {
                 size_t in  = i + j*n.z +         k*n.z*n.y;
                 size_t out = i + j*n.z + (n.x-k-1)*n.z*n.y;
-                temp[out] = hu[in];
+                temp[out] = data[in];
             }
         }
     }
@@ -148,7 +148,7 @@ void Patient_Volume_t::export_binary_metaimage(std::string f,
     ofs.close();
 }
 
-void Patient_Volume_t::export_binary(std::string f)
+void Volume_t::export_binary(std::string f)
 {
     std::ofstream ofs;
     ofs.open (f, std::ios::out | std::ios::binary);
@@ -158,11 +158,11 @@ void Patient_Volume_t::export_binary(std::string f)
         exit(EXIT_FAILURE);
     }
 
-    ofs.write (reinterpret_cast<char*>(hu.data()), nElements*sizeof(float));
+    ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
     ofs.close();
 }
 
-void Patient_Volume_t::output(std::string outfile, std::string out_type)
+void Volume_t::output(std::string outfile, std::string out_type)
 {
     if (out_type == "mhd")
     {
@@ -187,7 +187,7 @@ void Patient_Volume_t::output(std::string outfile, std::string out_type)
     // Export file
 }
 
-void Patient_Volume_t::export_header_metaimage(std::string outfile, std::string ref_file)
+void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file)
 {
     // Output header file
     std::ofstream header(outfile, std::ios::out);
@@ -215,14 +215,14 @@ void Patient_Volume_t::export_header_metaimage(std::string outfile, std::string 
     std::cout << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";
 }
 
-void Patient_Volume_t::output(std::string outfile, std::string out_type, const CT_Dims_t& dims)
+void Volume_t::output(std::string outfile, std::string out_type, const CT_Dims_t& dims)
 {
-    Patient_Volume_t temp(dims);
+    Volume_t temp(dims);
     this->interpolate_to_geometry(temp, dims, 0);
     temp.output(outfile, out_type);
 }
 
-void Patient_Volume_t::setDims(const CT_Dims_t& pat_ct, const bool interpolate)
+void Volume_t::setDims(const CT_Dims_t& pat_ct, const bool interpolate)
 {
     setVoxels(pat_ct.n.x, pat_ct.n.y, pat_ct.n.z);
     setSpacing(pat_ct.d.x, pat_ct.d.y, pat_ct.d.z);
@@ -234,34 +234,34 @@ void Patient_Volume_t::setDims(const CT_Dims_t& pat_ct, const bool interpolate)
         interpolate_to_geometry(pat_ct);
 }
 
-void Patient_Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)
+void Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)
 {
     n.x = x;
     n.y = y;
     n.z = z;
 }
 
-void Patient_Volume_t::setSpacing(float x, float y, float z)
+void Volume_t::setSpacing(float x, float y, float z)
 {
     d.x = x;
     d.y = y;
     d.z = z;
 }
 
-void Patient_Volume_t::interpolate_to_geometry(const CT_Dims_t& pat_ct,
+void Volume_t::interpolate_to_geometry(const CT_Dims_t& pat_ct,
                                                const float extrapolationValue)
 {
-    do_interpolate(hu, pat_ct, extrapolationValue);
+    do_interpolate(data, pat_ct, extrapolationValue);
 }
 
-void Patient_Volume_t::interpolate_to_geometry(Patient_Volume_t& pat,
+void Volume_t::interpolate_to_geometry(Volume_t& pat,
                                                const CT_Dims_t& pat_ct,
                                                const float extrapolationValue)
 {
-    do_interpolate(pat.hu, pat_ct, extrapolationValue);
+    do_interpolate(pat.data, pat_ct, extrapolationValue);
 }
 
-void Patient_Volume_t::do_interpolate(std::vector<float>& dest,
+void Volume_t::do_interpolate(std::vector<float>& dest,
                                       const CT_Dims_t& pat_ct,
                                       const float extrapolationValue)
 {
@@ -302,7 +302,7 @@ void Patient_Volume_t::do_interpolate(std::vector<float>& dest,
                         || yvox < 0 || yvox >= (int) this->n.y
                         || zvox < 0 || zvox >= (int) this->n.z)) {
                         // Inside CT grid
-                        ctValue = hu.at(zvox + yvox*this->n.z + xvox*this->n.z*this->n.y);
+                        ctValue = data.at(zvox + yvox*this->n.z + xvox*this->n.z*this->n.y);
                     } else {
                         // Outside CT grid
                         ctValue = extrapolationValue;

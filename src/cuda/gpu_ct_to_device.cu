@@ -15,14 +15,14 @@
 #include "gpu_utils.cuh"
 #include "density_correction.hpp"
 
-void gpu_ct_to_device::sendGeometries(const Patient_Volume_t& ct)
+void gpu_ct_to_device::sendGeometries(const Volume_t& ct)
 {
     gpu_ct_to_device::sendDimensions(ct);
     gpu_ct_to_device::sendDensities(ct);
     gpu_ct_to_device::sendMaterialId(ct);
 }
 
-void gpu_ct_to_device::sendDimensions(const Patient_Volume_t& ct)
+void gpu_ct_to_device::sendDimensions(const Volume_t& ct)
 //  convert external to internal geometry
 {
     std::cout << "Setting CT dimensions in device..." << std::endl;
@@ -34,7 +34,7 @@ void gpu_ct_to_device::sendDimensions(const Patient_Volume_t& ct)
     gpuErrchk( cudaMemcpyToSymbol(ctVox, &ct_n, sizeof(int3), 0, cudaMemcpyHostToDevice) );
 }
 
-void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
+void gpu_ct_to_device::sendDensities(const Volume_t &ct)
 //  generate phantom data based on CT volume
 {
     std::vector<float> densities;
@@ -46,7 +46,7 @@ void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
 //    gpuErrchk( cudaMalloc((void**) &gpu_densities, ct.nElements*sizeof(float)) );
 //    float* gpu_hu = NULL;
 //    gpuErrchk( cudaMalloc((void**) &gpu_hu, ct.nElements*sizeof(float)) );
-//    gpuErrchk( cudaMemcpy(gpu_hu, ct.hu.data(), ct.nElements*sizeof(float), cudaMemcpyHostToDevice) );
+//    gpuErrchk( cudaMemcpy(gpu_hu, ct.data.data(), ct.nElements*sizeof(float), cudaMemcpyHostToDevice) );
 //    float* gpu_correction = NULL;
 //    gpuErrchk( cudaMalloc((void**) &gpu_correction, ct.nElements*sizeof(float)) );
 //    gpuErrchk( cudaMemcpy(gpu_correction, density_correction::factor.data(), ct.nElements*sizeof(float), cudaMemcpyHostToDevice) );
@@ -59,7 +59,7 @@ void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
 
     for(size_t i = 0; i < ct.nElements; i++)
     {
-        short  val = std::max(ct.hu.at(i), -1000.f);
+        short  val = std::max(ct.data.at(i), -1000.f);
         size_t ind = std::min(val+1000, (int)density_correction::factor.size()-1);
         densities.push_back(HU2dens(val)*density_correction::factor.at(ind));
     }
@@ -67,7 +67,7 @@ void gpu_ct_to_device::sendDensities(const Patient_Volume_t &ct)
     sendVectorToTexture(ct.n.z, ct.n.y, ct.n.x, densities, dens, dens_tex);
 }
 
-void gpu_ct_to_device::sendMaterialId(const Patient_Volume_t &ct,
+void gpu_ct_to_device::sendMaterialId(const Volume_t &ct,
                                       const std::vector<int>& hu_indexes)
 //  generate phantom data based on CT volume
 {
@@ -77,14 +77,14 @@ void gpu_ct_to_device::sendMaterialId(const Patient_Volume_t &ct,
 
     for(size_t i = 0; i < ct.nElements; i++)
     {
-        short val = std::max(ct.hu.at(i), -1000.f);
+        short val = std::max(ct.data.at(i), -1000.f);
         materialID[i] = HU2matId(val, hu_indexes);
     }
 
     sendVectorToTexture(ct.n.z, ct.n.y, ct.n.x, materialID, matid, matid_tex);
 }
 
-void gpu_ct_to_device::sendMaterialId(const Patient_Volume_t &ct)
+void gpu_ct_to_device::sendMaterialId(const Volume_t &ct)
 {
     std::vector<int> hu_indexes = {
         -1000, -950, -120, -83, -53, -23, 7,
@@ -105,12 +105,12 @@ void freeCTMemory()
 }
 
 
-//__global__ void ct_to_densities(unsigned int hu_elements, unsigned int d_elements, float* hu, float* densities, float* factor)
+//__global__ void ct_to_densities(unsigned int hu_elements, unsigned int d_elements, float* data, float* densities, float* factor)
 //{
 //    const unsigned int id = blockIdx.x*blockDim.x + threadIdx.x;
 //    if(id < hu_elements)
 //    {
-//        short hu_val = (hu[id] > -1000.f) ? hu[id] : -1000.f;
+//        short hu_val = (data[id] > -1000.f) ? data[id] : -1000.f;
 //        short ind = hu_val + 1000;
 //        ind = (ind > d_elements-1) ? d_elements-1 : ind;
 //        densities[id] = HU2dens(hu_val)*factor[ind];
