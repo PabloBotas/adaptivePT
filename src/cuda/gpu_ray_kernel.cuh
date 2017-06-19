@@ -11,13 +11,4 @@ __device__ size_t get_endpoints_index(const short beam_id,
                                       const short spot_id,
                                       const short* spots_per_beam);
 
-__device__ void getWaterStep(float& step,
-                             float& step_water,
-                             const float max_step,
-                             const float energy,
-                             const float avail_wepl,
-                             const int4& vox);
-
-__device__ float massStpRatio(const float energy, const int4& vox);
-
 #endif
