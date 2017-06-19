@@ -32,7 +32,7 @@ __device__ void get_water_step(float& step,
 }
 
 __device__ float get_residual_range (float const energy)
-// find eloss based on water track length s and initial energy
+// find residual range based on energy
 // Based on Kawrakow, 1999
 {
     // MP, stp_w_delta_e, stp_w_min_e, stp_w_tex and stp_w_b_coeff_tex are globals
