@@ -18,12 +18,11 @@ __device__ void get_water_step(float& step,
     step = max_step;
     step_water = mass_stp_ratio*density*max_step;
     de = get_energy_loss (step_water, energy_in);
-    // Verify it's not too much
-    if (de >= energy_in)
+
+    if (de == energy_in)
     {
-        de = energy_in;
-        step_water = get_residual_range (energy_in);
-        step = step_water/(mass_stp_ratio*density);
+        step_water = get_residual_range (de);
+        step = step_water/(massStpRatio(de/2, vox)*density);
     }
 
     printf("Step: %f %f %f %f %f %f %f\n", step_water,
