@@ -61,13 +61,13 @@ __device__ float get_energy_loss (float const step_water, float const energy)
     float de1 = step_water*tex1D(stp_w_tex, index);
     float b = tex1D(stp_w_b_coeff_tex, index);
 
-    float temp = energy/MP;
+    float tau = energy/MP;
     float eps = de1/energy;
 
     float de = de1*( 1 +
-               eps/(1+temp)/(2+temp) +
-               eps*eps*(2+2*temp+temp*temp)/(1+temp)/(1+temp)/(2+temp)/(2+temp) -
-               b*eps*(0.5+2*eps/3/(1+temp)/(2+temp) +
+               eps/(1+tau)/(2+tau) +
+               eps*eps*(2+2*tau+tau*tau)/(1+tau)/(1+tau)/(2+tau)/(2+tau) -
+               b*eps*(0.5+2*eps/3/(1+tau)/(2+tau) +
                (1-b)*eps/6) );
 
     de = fmin(de, energy);
