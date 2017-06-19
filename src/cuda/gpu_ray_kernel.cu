@@ -27,9 +27,9 @@ __global__ void raytrace_plan_kernel(const int num,
         // ray.print();
         while (ray.is_alive() && vox.w != -1)
         {
-            printf("Pos-dir: %f %f %f - %f %f %f\n",
-                   ray.pos.x, ray.pos.y, ray.pos.z,
-                   ray.dir.x, ray.dir.y, ray.dir.z);
+            printf("Pos-dir: %f %f %f - %f %f %f - ",
+                    ray.pos.x, ray.pos.y, ray.pos.z,
+                    ray.dir.x, ray.dir.y, ray.dir.z);
             if(traces)
                 atomicAdd(&traces[vox.w], 1.0f);
 
@@ -62,7 +62,9 @@ __global__ void raytrace_plan_kernel(const int num,
 
             while (ray.is_alive() && vox.w != -1)
             {
-                float step_water, step;
+                printf("Pos-dir: %f %f %f - %f %f %f - ",
+                        ray.pos.x, ray.pos.y, ray.pos.z,
+                        ray.dir.x, ray.dir.y, ray.dir.z);                float step_water, step;
                 float max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                              vox, voxUpdater, voxStepper,
                                              plan_endpoint);
