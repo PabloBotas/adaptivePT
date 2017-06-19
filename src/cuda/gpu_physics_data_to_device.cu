@@ -1,4 +1,4 @@
-#include "gpu_physics_to_device.cuh"
+#include "gpu_physics_data_to_device.cuh"
 
 #include "gpu_device_globals.cuh"
 #include <iostream>

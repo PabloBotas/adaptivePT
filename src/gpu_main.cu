@@ -3,7 +3,7 @@
 #include "gpu_ct_to_device.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_errorcheck.cuh"
-#include "gpu_physics_to_device.cuh"
+#include "gpu_physics_data_to_device.cuh"
 #include "gpu_run.cuh"
 #include "gpu_source_positioning.cuh"
 #include "gpu_utils.cuh"
