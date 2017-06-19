@@ -27,4 +27,7 @@ public:
     T w;
 };
 
+template <class T>
+using Array4 = std::vector< Vector4_t<T> >;
+
 #endif

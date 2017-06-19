@@ -18,9 +18,9 @@
 
 void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             const Patient_Volume_t& ct,
-                            std::vector< Vector4_t<float> >& endpoints,
-                            std::vector< Vector4_t<float> >& init_pos,
-                            std::vector< Vector4_t<float> >& init_pat_pos,
+                            Array4<float>& endpoints,
+                            Array4<float>& init_pos,
+                            Array4<float>& init_pat_pos,
                             std::string output_file)
 {
     // Set geometry in GPU
@@ -50,9 +50,9 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Patient_Volume_t &ct,
-                          const std::vector< Vector4_t<float> >& orig_endpoints,
-                          const std::vector< Vector4_t<float> >& init_pos,
-                          std::vector< Vector4_t<float> >& endpoints,
+                          const Array4<float>& orig_endpoints,
+                          const Array4<float>& init_pos,
+                          Array4<float>& endpoints,
                           std::string output_file)
 {
     // Set geometry in GPU
@@ -70,9 +70,9 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
-                   std::vector< Vector4_t<float> >& endpoints,
+                   Array4<float>& endpoints,
                    std::string output_file,
-                   const std::vector< Vector4_t<float> >& orig_endpoints)
+                   const Array4<float>& orig_endpoints)
 {
     // Create scorer array
     float4* pos_scorer = NULL;

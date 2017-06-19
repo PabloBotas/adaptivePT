@@ -16,7 +16,7 @@
 void do_raytrace (const std::vector<short>& spots_per_field,
                   float4* positions_scorer,
                   float* traces_scorer,
-                  const std::vector< Vector4_t<float> >& orig_endpoints)
+                  const Array4<float>& orig_endpoints)
 {
     // Set up optional target endpoints
     float4* dev_orig_endpoints = NULL;
@@ -56,9 +56,9 @@ void buffers_to_device(const std::vector<float4>& xbuffer,
     gpuErrchk( cudaMemcpyToSymbol(ixdata, ixbuffer.data(), bytes2, 0, cudaMemcpyHostToDevice) );
 }
 
-void buffers_to_device(const std::vector< Vector4_t<float> >& xbuffer,
-                       const std::vector< Vector4_t<float> >& vxbuffer,
-                       const std::vector< Vector2_t<short> >& ixbuffer)
+void buffers_to_device(const Array4<float>& xbuffer,
+                       const Array4<float>& vxbuffer,
+                       const Array2<short>& ixbuffer)
 {
     size_t s = xbuffer.size();
     std::vector<float4> a(s);

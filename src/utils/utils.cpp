@@ -79,7 +79,7 @@ std::string utils::run_command(const std::string cmd)
 }
 
 
-void utils::cm_to_mm(std::vector< Vector4_t<float> >& vec)
+void utils::cm_to_mm(Array4<float>& vec)
 {
     const int CM2MM = 10;
     for (size_t i = 0; i < vec.size(); i++)

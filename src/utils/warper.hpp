@@ -8,45 +8,45 @@
 #include <vector>
 
 void 
-apply_vf (std::vector< Vector4_t<float> >& p,
-          const std::vector< Vector3_t<float> >& vf);
+apply_vf (Array4<float>& p,
+          const Array3<float>& vf);
 
 void
-flip_positions_X (std::vector< Vector4_t<float> >& vec,
+flip_positions_X (Array4<float>& vec,
                   const CT_Dims_t dims);
 
 void
-flip_direction_X (std::vector< Vector4_t<float> >& vec);
+flip_direction_X (Array4<float>& vec);
 
 void 
-get_unitary_vector (std::vector< Vector3_t<float> >& r,
-                    const std::vector< Vector4_t<float> >& p,
-                    const std::vector< Vector4_t<float> >& p2);
+get_unitary_vector (Array3<float>& r,
+                    const Array4<float>& p,
+                    const Array4<float>& p2);
 
-std::vector< Vector3_t<float> >
+Array3<float>
 get_vf_from_stdout (std::string str);
 
 void
-probe_vf (std::vector< Vector3_t<float> >& vf,
-          const std::vector< Vector4_t<float> >& p,
+probe_vf (Array3<float>& vf,
+          const Array4<float>& p,
           std::string vf_file);
 
-std::vector< Vector3_t<float> >
-probe_vf (const std::vector< Vector4_t<float> >& p,
+Array3<float>
+probe_vf (const Array4<float>& p,
           std::string vf_file);
 
 void 
-project_vector_on_plane (std::vector< Vector3_t<float> >& p,
-                         const std::vector< Vector4_t<float> >& n);
+project_vector_on_plane (Array3<float>& p,
+                         const Array4<float>& n);
 
 std::string
 to_location_str (const Vector3_t<float>& p, const bool last);
 
 void
-warp_data(std::vector< Vector4_t<float> >& endpoints,
-          std::vector< Vector4_t<float> >& init_pos,
+warp_data(Array4<float>& endpoints,
+          Array4<float>& init_pos,
           const std::string vf_file,
           const CT_Dims_t& ct,
-          std::vector< Vector4_t<float> > treatment_plane);
+          Array4<float> treatment_plane);
 
 #endif

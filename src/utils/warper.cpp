@@ -11,17 +11,17 @@
 #include <vector>
 
 void
-warp_data (std::vector< Vector4_t<float> >& endpoints,
-           std::vector< Vector4_t<float> >& init_pos,
+warp_data (Array4<float>& endpoints,
+           Array4<float>& init_pos,
            const std::string vf_file,
            const CT_Dims_t& ct,
-           std::vector< Vector4_t<float> > treatment_plane)
+           Array4<float> treatment_plane)
 {
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
     flip_direction_X(treatment_plane);
 
-    std::vector< Vector3_t<float> > vf;
+    Array3<float> vf;
     probe_vf(vf, endpoints, vf_file);
     apply_vf(endpoints, vf);
     project_vector_on_plane(vf, treatment_plane);
@@ -32,8 +32,8 @@ warp_data (std::vector< Vector4_t<float> >& endpoints,
 }
 
 void 
-apply_vf (std::vector< Vector4_t<float> >& p,
-          const std::vector< Vector3_t<float> >& vf)
+apply_vf (Array4<float>& p,
+          const Array3<float>& vf)
 {
     for (size_t i = 0; i < vf.size(); i++)
     {
@@ -44,9 +44,9 @@ apply_vf (std::vector< Vector4_t<float> >& p,
 }
 
 void 
-get_unitary_vector (std::vector< Vector3_t<float> >& r,
-                    const std::vector< Vector4_t<float> >& p,
-                    const std::vector< Vector4_t<float> >& p2)
+get_unitary_vector (Array3<float>& r,
+                    const Array4<float>& p,
+                    const Array4<float>& p2)
 {
     for (size_t i = 0; i < r.size(); i++)
     {
@@ -63,8 +63,8 @@ get_unitary_vector (std::vector< Vector3_t<float> >& r,
 }
 
 void 
-project_vector_on_plane (std::vector< Vector3_t<float> >& p,
-                         const std::vector< Vector4_t<float> >& n)
+project_vector_on_plane (Array3<float>& p,
+                         const Array4<float>& n)
 {
     for (size_t i = 0; i < p.size(); i++)
     {
@@ -83,8 +83,8 @@ project_vector_on_plane (std::vector< Vector3_t<float> >& p,
 }
 
 void
-probe_vf (std::vector< Vector3_t<float> >& vf,
-          const std::vector< Vector4_t<float> >& p,
+probe_vf (Array3<float>& vf,
+          const Array4<float>& p,
           std::string vf_file)
 {
     //  plastimatch probe --location "0 0 0; 0.5 0.5 0.5; 1 1 1" infile.nrrd
@@ -122,19 +122,19 @@ probe_vf (std::vector< Vector3_t<float> >& vf,
     vf = get_vf_from_stdout(stdout);
 }
 
-std::vector< Vector3_t<float> >
-probe_vf (const std::vector< Vector4_t<float> >& p,
+Array3<float>
+probe_vf (const Array4<float>& p,
           std::string vf_file)
 {
-    std::vector< Vector3_t<float> > vf;
+    Array3<float> vf;
     probe_vf(vf, p, vf_file);
     return vf;
 }
 
-std::vector< Vector3_t<float> >
+Array3<float>
 get_vf_from_stdout (std::string str)
 {
-    std::vector< Vector3_t<float> > v;
+    Array3<float> v;
 
     std::stringstream ss_per_line(str);
     std::string line;
@@ -162,7 +162,7 @@ get_vf_from_stdout (std::string str)
 }
 
 void
-flip_positions_X (std::vector< Vector4_t<float> >& vec,
+flip_positions_X (Array4<float>& vec,
                   const CT_Dims_t dims)
 {
     for (size_t i = 0; i < vec.size(); i++)
@@ -172,7 +172,7 @@ flip_positions_X (std::vector< Vector4_t<float> >& vec,
 }
 
 void
-flip_direction_X (std::vector< Vector4_t<float> >& vec)
+flip_direction_X (Array4<float>& vec)
 {
     for (size_t i = 0; i < vec.size(); i++)
     {

@@ -25,10 +25,10 @@ void virtual_src_to_treatment_plane(const unsigned int& num,
     cudaFree(angles_gpu);
 }
 
-__host__ std::vector< Vector4_t<float> >
+__host__ Array4<float>
 get_treatment_planes (const std::vector<BeamAngles_t>& angles)
 {
-    std::vector< Vector4_t<float> > planes(angles.size());
+    Array4<float> planes(angles.size());
     for (size_t i = 0; i < angles.size(); i++)
     {
         planes.at(i) = rotate(Vector4_t<float>(0, 0, 1, 0),

@@ -15,7 +15,7 @@ namespace utils
                               std::string const& what,
                               std::string const& to_replace);
     std::string run_command(const std::string cmd);
-    void cm_to_mm(std::vector< Vector4_t<float> >& v);
+    void cm_to_mm(Array4<float>& v);
 }
 
 #endif

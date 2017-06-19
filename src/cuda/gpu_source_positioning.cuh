@@ -25,7 +25,7 @@ __device__ __host__ float3 ray_trace_to_CT_volume(const float3& p,
                                                   const int3 nvox,
                                                   const float3 dvox);
 
-__host__ std::vector< Vector4_t<float> >
+__host__ Array4<float>
 get_treatment_planes (const std::vector<BeamAngles_t>& angles);
 
 __device__ __host__ float3 ext_to_int_coordinates(float3 a);

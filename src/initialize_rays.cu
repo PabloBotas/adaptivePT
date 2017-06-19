@@ -61,8 +61,8 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
 }
 
 void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
-                                     const std::vector< Vector4_t<float> >& endpoints,
-                                     const std::vector< Vector4_t<float> >& init_pos,
+                                     const Array4<float>& endpoints,
+                                     const Array4<float>& init_pos,
                                      std::vector<float4>& xbuffer,
                                      std::vector<float4>& vxbuffer,
                                      std::vector<short2>& ixbuffer)
