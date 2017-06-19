@@ -47,10 +47,10 @@ int main(int argc, char** argv)
     cudaEvent_t start;
     initialize_device(start);
 
-    std::vector< Vector4_t<float> > ct_vf_endpoints(patient_data.total_spots);
-    std::vector< Vector4_t<float> > ct_vf_init_pat_pos(patient_data.total_spots);
-    deal_with_ct (patient_data, parser, ct_vf_endpoints, ct_vf_init_pat_pos);
-    deal_with_cbct (patient_data, parser, ct_vf_endpoints, ct_vf_init_pat_pos);
+    std::vector< Vector4_t<float> > ct_endpoints(patient_data.total_spots);
+    std::vector< Vector4_t<float> > ct_init_pat_pos(patient_data.total_spots);
+    deal_with_ct (patient_data, parser, ct_endpoints, ct_init_pat_pos);
+    deal_with_cbct (patient_data, parser, ct_endpoints, ct_init_pat_pos);
 
     // Stop device
     stop_device(start);
@@ -60,8 +60,8 @@ int main(int argc, char** argv)
 
 void deal_with_ct(Patient_Parameters_t& patient_data,
                   const Parser& parser,
-                  std::vector< Vector4_t<float> >& ct_vf_endpoints,
-                  std::vector< Vector4_t<float> >& ct_vf_init_pat_pos)
+                  std::vector< Vector4_t<float> >& ct_endpoints,
+                  std::vector< Vector4_t<float> >& ct_init_pat_pos)
 {
     // Read CT and launch rays
     Patient_Volume_t ct(patient_data.planning_ct_file, Patient_Volume_t::Source_type::CTVOLUME);
@@ -69,8 +69,8 @@ void deal_with_ct(Patient_Parameters_t& patient_data,
     ct.setDims(patient_data.ct);
 
     // Get endpoints in CT ----------------------------
-    std::vector< Vector4_t<float> > ct_endpoints(patient_data.total_spots);
-    std::vector< Vector4_t<float> > ct_init_pat_pos(patient_data.total_spots);
+    ct_endpoints.resize(patient_data.total_spots);
+    ct_init_pat_pos.resize(patient_data.total_spots);
     std::vector< Vector4_t<float> > ct_init_pos(patient_data.total_spots);
     gpu_raytrace_original (patient_data, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
                            "output_volume.raw");
@@ -79,18 +79,13 @@ void deal_with_ct(Patient_Parameters_t& patient_data,
     size_t iters = patient_data.total_spots < 5 ? patient_data.total_spots : 5;
 
     // Warp endpoints in CT ---------------------------
-    ct_vf_endpoints = ct_endpoints;
-    ct_vf_init_pat_pos = ct_init_pat_pos;
-    warp_data (ct_vf_endpoints, ct_vf_init_pat_pos, parser.vf_file,
+    warp_data (ct_endpoints, ct_init_pat_pos, parser.vf_file,
                patient_data.ct, treatment_plane);
     
     // Print results
-    std::cout << "\nPatient positions and wepl:" << std::endl;
-    for (size_t i = 0; i < iters; i++)
-        ct_init_pat_pos.at(i).print();
     std::cout << "Warped patient positions and wepl:" << std::endl;
     for (size_t i = 0; i < iters; i++)
-        ct_vf_init_pat_pos.at(i).print();
+        ct_init_pat_pos.at(i).print();
 }
 
 void deal_with_cbct(Patient_Parameters_t& patient_data,
