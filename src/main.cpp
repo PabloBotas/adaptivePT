@@ -95,7 +95,7 @@ void deal_with_cbct(Patient_Parameters_t& patient_data,
 {
     // Get endpoints in CBCT --------------------
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
-    patient_data.update_geometry_offsets(cbct);
+    patient_data.update_geometry_with_external(cbct);
 
     Array4<float> cbct_endpoints(patient_data.total_spots);
     gpu_raytrace_warped (patient_data, cbct, ct_vf_endpoints,

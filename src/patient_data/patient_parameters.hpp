@@ -31,6 +31,7 @@ public:
     std::vector<short> spots_per_field;
 
     CT_Dims_t ct;
+    CT_Dims_t original_ct;
     std::string planning_ct_file;
     std::vector<Aperture_Dims_t>     apertures;
     std::vector<RangeShifter_Dims_t> range_shifters;
@@ -43,7 +44,7 @@ public:
     void add_results_directory(std::string s);
     void ext_to_int_coordinates();
     void int_to_ext_coordinates();
-    void update_geometry_offsets(Volume_t vol);
+    void update_geometry_with_external(const Volume_t& vol);
 
 private:
     void exploreBeamDirectories();
@@ -55,7 +56,6 @@ private:
     void set_planning_CT_file();
 
     void consolidate_originals();
-    CT_Dims_t original_ct;
     std::vector<BeamAngles_t> original_angles;
     std::vector<float>        original_isocenter_to_beam_distance;
 

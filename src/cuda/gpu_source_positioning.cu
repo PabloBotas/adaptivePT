@@ -25,6 +25,15 @@ void virtual_src_to_treatment_plane(const unsigned int& num,
     cudaFree(angles_gpu);
 }
 
+void correct_offsets(const unsigned int& num,
+                     const float3& offsets,
+                     const float3& original_offsets)
+{
+    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
+    correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, offsets, original_offsets);
+    check_kernel_execution(__FILE__, __LINE__);
+}
+
 __host__ Array4<float>
 get_treatment_planes (const std::vector<BeamAngles_t>& angles)
 {
@@ -65,6 +74,29 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
         pos.x -= ct_offsets.x;
         pos.y -= ct_offsets.y;
         pos.z -= ct_offsets.z;
+
+        // Initialize them inside the CT
+        pos = ray_trace_to_CT_volume(pos, vel);
+        xdata[tid]  = pos;
+        vxdata[tid] = vel;
+    }
+}
+
+__global__ void correct_offsets_kernel(const int num,
+                                       const float3 offsets,
+                                       const float3 original_offsets)
+//  set source direction
+{
+    const int tid = blockIdx.x*blockDim.x + threadIdx.x;
+    if (tid < num)
+    {
+        float4 pos  = xdata[tid];
+        float4 vel  = vxdata[tid];
+
+        // Add offsets
+        pos.x += original_offsets.x - offsets.x;
+        pos.y += original_offsets.y - offsets.y;
+        pos.z += original_offsets.z - offsets.z;
 
         // Initialize them inside the CT
         pos = ray_trace_to_CT_volume(pos, vel);

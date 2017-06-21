@@ -14,6 +14,13 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
 __global__ void treatment_plane_to_virtual_src_kernel(const int num,
                                                       const float2 *angles,
                                                       const float3 ct_offsets);
+void correct_offsets(const unsigned int& num,
+                     const float3& offsets,
+                     const float3& original_offsets);
+__global__ void correct_offsets_kernel(const int num,
+                                       const float3 offsets,
+                                       const float3 original_offsets);
+
 __device__ float4 ray_trace_to_CT_volume(const float4& p,
                                          const float4& v);
 __device__ __host__ float4 ray_trace_to_CT_volume(const float4& p,

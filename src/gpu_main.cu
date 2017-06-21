@@ -65,6 +65,9 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     create_treatment_plane_buffers (pat, orig_endpoints, init_pos,
                                     xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer);
+    correct_offsets (xbuffer.size(), 
+                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                     make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
     gpu_raytrace (pat, endpoints, output_file, orig_endpoints);
 }
