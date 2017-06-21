@@ -63,6 +63,19 @@ void Volume_t::consolidate_originals()
     original_imgCenter = imgCenter;
 }
 
+#if defined __DEBUG_OUTPUT_READ_CT__
+void debug_ct(std::string f, float* data, size_t n)
+{
+    FILE *output;
+    if (!(output = fopen(f.c_str(),"wb"))) {
+        std::cerr << "Error opening file \"" << f << "\" for write" << std::endl;
+        exit (EXIT_FAILURE);
+    }
+    fwrite(data, sizeof(float), n, output);
+    fclose(output);
+}
+#endif
+
 void Volume_t::read_volume()
 {
     switch(source_type)
@@ -74,6 +87,9 @@ void Volume_t::read_volume()
             nElements = reader.nElements;
             data.resize(nElements);
             std::copy( reader.hu.begin(), reader.hu.end(), data.begin() );
+            #if defined __DEBUG_OUTPUT_READ_CT__
+            debug_ct("ctvol_as_read.dat", &data[0], nElements);
+            #endif
             break;
         }
         case Source_type::MHA:
@@ -86,18 +102,12 @@ void Volume_t::read_volume()
             origin = reader.origin;
             data.resize(nElements);
             import_from_metaimage<short>(reader.data);
+            #if defined __DEBUG_OUTPUT_READ_CT__
+            debug_ct("cbctvol_as_read.dat", &data[0], nElements);
+            #endif
             break;
         }
     }
-#if defined __DEBUG_OUTPUT_READ_CT__
-    FILE *output;
-    if (!(output = fopen("raw_ct.dat","wb"))) {
-        std::cerr << "Error opening file \"raw_ct.dat\" for write" << std::endl;
-        exit (EXIT_FAILURE);
-    }
-    fwrite(&data[0], sizeof(float), nElements, output);
-    fclose(output);
-#endif
 }
 
 template <class T>
@@ -160,6 +170,17 @@ void Volume_t::export_binary(std::string f)
 
     ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
     ofs.close();
+}
+
+void Volume_t::ext_to_int_coordinates()
+{
+    std::swap(d.x, d.z);
+    std::swap(n.x, n.z);
+    // Not implemented!!
+    // std::swap(origin.x, origin.z);
+    // std::swap(imgCenter.x, imgCenter.z);
+    // origin.x *= -1;
+    // imgCenter.x *= -1;
 }
 
 void Volume_t::output(std::string outfile, std::string out_type)

@@ -31,6 +31,7 @@ public:
     void setSpacing(float x, float y, float z);
     void output(std::string outfile, std::string out_type);
     void output(std::string outfile, std::string out_type, const CT_Dims_t& dims);
+    void ext_to_int_coordinates();
 
     Volume_t::Source_type source_type;
     std::string file;

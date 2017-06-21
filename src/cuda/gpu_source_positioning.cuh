@@ -17,7 +17,14 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
 void correct_offsets(const unsigned int& num,
                      const float3& offsets,
                      const float3& original_offsets);
+void correct_offsets_endpoints(Array4<float>& orig_endpoints,
+                               const float3& offsets,
+                               const float3& original_offsets);
 __global__ void correct_offsets_kernel(const int num,
+                                       const float3 offsets,
+                                       const float3 original_offsets);
+__global__ void correct_offsets_kernel(const int num,
+                                       float4* dev_orig_endpoints,
                                        const float3 offsets,
                                        const float3 original_offsets);
 

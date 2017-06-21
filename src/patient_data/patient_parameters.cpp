@@ -249,15 +249,8 @@ void Patient_Parameters_t::int_to_ext_coordinates()
     }
 }
 
-void Patient_Parameters_t::update_geometry_with_external(const Volume_t& vol)
+void Patient_Parameters_t::update_geometry_with_external(const Volume_t& v)
 {
-    Volume_t v = vol;
-    std::swap(v.d.x, v.d.z);
-    std::swap(v.n.x, v.n.z);
-    // std::swap(v.origin.x, v.origin.z);
-    // std::swap(v.imgCenter.x, v.imgCenter.z);
-    // v.origin.x *= -1;
-    // v.imgCenter.x *= -1;
     consolidate_originals();
 
     ct.offset = ct.offset + 0.5*(ct.n*ct.d - v.n*v.d);
@@ -268,9 +261,6 @@ void Patient_Parameters_t::update_geometry_with_external(const Volume_t& vol)
     ct.d.y = v.d.y;
     ct.d.z = v.d.z;
     ct.total = v.nElements;
-    // ct.offset.x = (v.imgCenter.x - 0.5*v.n.x*v.d.x) - ct.isocenter.x;
-    // ct.offset.y = (v.imgCenter.y - 0.5*v.n.y*v.d.y) - ct.isocenter.y;
-    // ct.offset.z = (v.imgCenter.z - 0.5*v.n.z*v.d.z) - ct.isocenter.z;
 }
 
 void Patient_Parameters_t::set_spots_per_field()

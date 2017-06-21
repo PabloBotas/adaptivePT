@@ -25,15 +25,6 @@ void virtual_src_to_treatment_plane(const unsigned int& num,
     cudaFree(angles_gpu);
 }
 
-void correct_offsets(const unsigned int& num,
-                     const float3& offsets,
-                     const float3& original_offsets)
-{
-    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
-    correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, offsets, original_offsets);
-    check_kernel_execution(__FILE__, __LINE__);
-}
-
 __host__ Array4<float>
 get_treatment_planes (const std::vector<BeamAngles_t>& angles)
 {
@@ -82,6 +73,15 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
     }
 }
 
+void correct_offsets(const unsigned int& num,
+                     const float3& offsets,
+                     const float3& original_offsets)
+{
+    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
+    correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, offsets, original_offsets);
+    check_kernel_execution(__FILE__, __LINE__);
+}
+
 __global__ void correct_offsets_kernel(const int num,
                                        const float3 offsets,
                                        const float3 original_offsets)
@@ -102,6 +102,39 @@ __global__ void correct_offsets_kernel(const int num,
         pos = ray_trace_to_CT_volume(pos, vel);
         xdata[tid]  = pos;
         vxdata[tid] = vel;
+    }
+}
+
+void correct_offsets_endpoints(Array4<float>& orig_endpoints,
+                               const float3& offsets,
+                               const float3& original_offsets)
+{
+    float4* dev_orig_endpoints = NULL;
+    array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
+
+    size_t num = orig_endpoints.size();
+    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
+    correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num,
+                             dev_orig_endpoints,
+                             offsets,
+                             original_offsets);
+    check_kernel_execution(__FILE__, __LINE__);
+
+    retrieve_scorer<float, float4>(&orig_endpoints[0].x, dev_orig_endpoints, num);
+}
+
+__global__ void correct_offsets_kernel(const int num,
+                                       float4* dev_orig_endpoints,
+                                       const float3 offsets,
+                                       const float3 original_offsets)
+//  set source direction
+{
+    const int tid = blockIdx.x*blockDim.x + threadIdx.x;
+    if (tid < num)
+    {
+        dev_orig_endpoints[tid].x += original_offsets.x - offsets.x;
+        dev_orig_endpoints[tid].y += original_offsets.y - offsets.y;
+        dev_orig_endpoints[tid].z += original_offsets.z - offsets.z;
     }
 }
 

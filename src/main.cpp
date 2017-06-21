@@ -95,6 +95,7 @@ void deal_with_cbct(Patient_Parameters_t& patient_data,
 {
     // Get endpoints in CBCT --------------------
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
+    cbct.ext_to_int_coordinates();
     patient_data.update_geometry_with_external(cbct);
 
     Array4<float> cbct_endpoints(patient_data.total_spots);
