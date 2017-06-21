@@ -25,9 +25,14 @@ __global__ void raytrace_plan_kernel(const int num,
         pos_scorer[ind].w = ray.get_energy();
 
         // ray.print();
+        int i = 0;
+        printf("Pos-dir %d: %f %f %f - %f %f %f\n", i,
+                ray.pos.x, ray.pos.y, ray.pos.z,
+                ray.dir.x, ray.dir.y, ray.dir.z);
         while (ray.is_alive() && vox.w != -1)
         {
-            printf("Pos-dir: %f %f %f - %f %f %f - ",
+            i += 1;
+            printf("Pos-dir %d: %f %f %f - %f %f %f - ", i,
                     ray.pos.x, ray.pos.y, ray.pos.z,
                     ray.dir.x, ray.dir.y, ray.dir.z);
             if(traces)
