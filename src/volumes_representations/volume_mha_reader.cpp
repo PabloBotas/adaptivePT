@@ -45,6 +45,12 @@ void Mha_reader_t::read_header()
     std::string ElType     = getHeaderValue<std::string>(stream);
     ElementDataFile        = getHeaderValue<std::string>(stream);
 
+    origin.x /= 10;
+    origin.y /= 10;
+    origin.z /= 10;
+    spacing.x /= 10;
+    spacing.y /= 10;
+    spacing.z /= 10;
     nElements = dim.x*dim.y*dim.z;
 
     if (ElType.compare("MET_SHORT") == 0) {

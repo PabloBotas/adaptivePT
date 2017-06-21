@@ -12,7 +12,7 @@
 #define CM2MM 10
 
 Volume_t::Volume_t(const std::string& f,
-                                   const Volume_t::Source_type& s)
+                   const Volume_t::Source_type& s)
 {
     file = f;
     source_type = s;
