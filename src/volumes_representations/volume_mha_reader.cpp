@@ -117,8 +117,7 @@ void Mha_reader_t::read_body()
             break;
     }
 
-    std::cout << "Bytes read: ";
-    std::cout << bytes_to_read << std::endl;
+    std::cout << "Bytes read: " << bytes_to_read << std::endl;
 }
 
 

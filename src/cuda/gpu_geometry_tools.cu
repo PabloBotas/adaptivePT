@@ -49,24 +49,24 @@ __device__ float to_boundary(const float3& pos,
                              VoxelStepper& voxStepper,
                              const float3 endpoint)
 {
-    float dist = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
+    float boundary = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
 
-    float3 diff     = endpoint-pos;
-    float step_diff = length(diff);
-    float cos_angle = dot(diff, dir)/step_diff;
+    float3 r = endpoint-pos;
+    float dist = length(r);
+    float cos_to_point = dot(r, dir)/dist;
 
-    assert((cos_angle >  0.9999 && cos_angle < 1.0001) ||
-           (cos_angle > -0.0001 && cos_angle < 0.0001));
+    assert((cos_to_point >  0.9999 && cos_to_point < 1.0001) ||
+          (cos_to_point > -0.0001 && cos_to_point < 0.0001));
 
-    if(cos_angle > 0 && step_diff < dist)
+    if(cos_to_point > 0 && dist < boundary)
     {
-        dist = step_diff;
+        boundary = dist;
         voxUpdater = NONE;
     }
 
-    // printf("Dist to endpoint - step - cos: %f - %f\n", step_diff, dist);
+    // printf("Dist to endpoint - step - cos: %f - %f\n", dist, boundary);
 
-    return dist;
+    return boundary;
 }
 
 __device__ int ahead_or_behind(const float3& dir,

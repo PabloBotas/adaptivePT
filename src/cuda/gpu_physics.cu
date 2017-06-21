@@ -21,20 +21,24 @@ __device__ void get_water_step(float& step,
 
     if (de == energy_in)
     {
-        step_water = get_residual_range (de);
-        step = step_water/(massStpRatio(de/2, vox)*density);
+        step_water = get_residual_range (energy_in);
+        step = step_water/(massStpRatio(energy_in/2, vox)*density);
     }
-
-    printf("Step: %f %f %f %f %f %f %f\n", step_water,
-                                           step, max_step,
-                                           density, mass_stp_ratio,
-                                           de, energy_in);
+    // printf("Step: %f %f %f %f %f %f %f\n", step_water,
+    //                                        step, max_step,
+    //                                        density, mass_stp_ratio,
+    //                                        de, energy_in);
 }
 
 __device__ float get_residual_range (float const energy)
-// find residual range based on energy
-// Based on Kawrakow, 1999
 {
+    // Find range based on half the residual energy,
+    // the get some kind of average stopping power
+
+    // Function based on Kawrakow (1999):
+    // Accurate condense history Monte Carlo simulation of electron transport.
+    // I. EGSnrc, the new EGS4 version
+
     // MP, stp_w_delta_e, stp_w_min_e, stp_w_tex and stp_w_b_coeff_tex are globals
     float index = (energy/2 - stp_w_min_e)/stp_w_delta_e + 0.5f;
     float stop_power = tex1D(stp_w_tex, index);
