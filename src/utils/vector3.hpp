@@ -28,4 +28,120 @@ public:
 template <class T>
 using Array3 = std::vector< Vector3_t<T> >;
 
+inline Vector3_t<float> operator+(const Vector3_t<float>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+inline Vector3_t<float> operator+(const Vector3_t<float>& a, const Vector3_t<int>& b)
+{
+    return Vector3_t<float>(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+inline Vector3_t<float> operator+(const Vector3_t<float>& a, const Vector3_t<unsigned int>& b)
+{
+    return Vector3_t<float>(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+inline Vector3_t<float> operator+(const Vector3_t<int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+inline Vector3_t<float> operator+(const Vector3_t<unsigned int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+inline Vector3_t<float> operator+(const Vector3_t<float>& a, const float& b)
+{
+    return Vector3_t<float>(a.x+b, a.y+b, a.z+b);
+}
+inline Vector3_t<float> operator+(const float& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a+b.x, a+b.y, a+b.z);
+}
+
+inline Vector3_t<float> operator-(const Vector3_t<float>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x-b.x, a.y-b.y, a.z-b.z);
+}
+inline Vector3_t<float> operator-(const Vector3_t<float>& a, const Vector3_t<int>& b)
+{
+    return Vector3_t<float>(a.x-b.x, a.y-b.y, a.z-b.z);
+}
+inline Vector3_t<float> operator-(const Vector3_t<float>& a, const Vector3_t<unsigned int>& b)
+{
+    return Vector3_t<float>(a.x-b.x, a.y-b.y, a.z-b.z);
+}
+inline Vector3_t<float> operator-(const Vector3_t<int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x-b.x, a.y-b.y, a.z-b.z);
+}
+inline Vector3_t<float> operator-(const Vector3_t<unsigned int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x-b.x, a.y-b.y, a.z-b.z);
+}
+inline Vector3_t<float> operator-(const Vector3_t<float>& a, const float& b)
+{
+    return Vector3_t<float>(a.x-b, a.y-b, a.z-b);
+}
+inline Vector3_t<float> operator-(const float& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a-b.x, a-b.y, a-b.z);
+}
+
+inline Vector3_t<float> operator*(const Vector3_t<float>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+inline Vector3_t<float> operator*(const Vector3_t<float>& a, const Vector3_t<int>& b)
+{
+    return Vector3_t<float>(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+inline Vector3_t<float> operator*(const Vector3_t<float>& a, const Vector3_t<unsigned int>& b)
+{
+    return Vector3_t<float>(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+inline Vector3_t<float> operator*(const Vector3_t<int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+inline Vector3_t<float> operator*(const Vector3_t<unsigned int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+inline Vector3_t<float> operator*(const Vector3_t<float>& a, const float& b)
+{
+    return Vector3_t<float>(a.x*b, a.y*b, a.z*b);
+}
+inline Vector3_t<float> operator*(const float& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a*b.x, a*b.y, a*b.z);
+}
+
+inline Vector3_t<float> operator/(const Vector3_t<float>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x/b.x, a.y/b.y, a.z/b.z);
+}
+inline Vector3_t<float> operator/(const Vector3_t<float>& a, const Vector3_t<int>& b)
+{
+    return Vector3_t<float>(a.x/b.x, a.y/b.y, a.z/b.z);
+}
+inline Vector3_t<float> operator/(const Vector3_t<float>& a, const Vector3_t<unsigned int>& b)
+{
+    return Vector3_t<float>(a.x/b.x, a.y/b.y, a.z/b.z);
+}
+inline Vector3_t<float> operator/(const Vector3_t<int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x/b.x, a.y/b.y, a.z/b.z);
+}
+inline Vector3_t<float> operator/(const Vector3_t<unsigned int>& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a.x/b.x, a.y/b.y, a.z/b.z);
+}
+inline Vector3_t<float> operator/(const Vector3_t<float>& a, const float& b)
+{
+    return Vector3_t<float>(a.x/b, a.y/b, a.z/b);
+}
+inline Vector3_t<float> operator/(const float& a, const Vector3_t<float>& b)
+{
+    return Vector3_t<float>(a/b.x, a/b.y, a/b.z);
+}
+
 #endif

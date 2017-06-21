@@ -27,4 +27,120 @@ public:
 template <class T>
 using Array2 = std::vector< Vector2_t<T> >;
 
+inline Vector2_t<float> operator+(const Vector2_t<float>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x+b.x, a.y+b.y);
+}
+inline Vector2_t<float> operator+(const Vector2_t<float>& a, const Vector2_t<int>& b)
+{
+    return Vector2_t<float>(a.x+b.x, a.y+b.y);
+}
+inline Vector2_t<float> operator+(const Vector2_t<float>& a, const Vector2_t<unsigned int>& b)
+{
+    return Vector2_t<float>(a.x+b.x, a.y+b.y);
+}
+inline Vector2_t<float> operator+(const Vector2_t<int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x+b.x, a.y+b.y);
+}
+inline Vector2_t<float> operator+(const Vector2_t<unsigned int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x+b.x, a.y+b.y);
+}
+inline Vector2_t<float> operator+(const Vector2_t<float>& a, const float& b)
+{
+    return Vector2_t<float>(a.x+b, a.y+b);
+}
+inline Vector2_t<float> operator+(const float& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a+b.x, a+b.y);
+}
+
+inline Vector2_t<float> operator-(const Vector2_t<float>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x-b.x, a.y-b.y);
+}
+inline Vector2_t<float> operator-(const Vector2_t<float>& a, const Vector2_t<int>& b)
+{
+    return Vector2_t<float>(a.x-b.x, a.y-b.y);
+}
+inline Vector2_t<float> operator-(const Vector2_t<float>& a, const Vector2_t<unsigned int>& b)
+{
+    return Vector2_t<float>(a.x-b.x, a.y-b.y);
+}
+inline Vector2_t<float> operator-(const Vector2_t<int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x-b.x, a.y-b.y);
+}
+inline Vector2_t<float> operator-(const Vector2_t<unsigned int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x-b.x, a.y-b.y);
+}
+inline Vector2_t<float> operator-(const Vector2_t<float>& a, const float& b)
+{
+    return Vector2_t<float>(a.x-b, a.y-b);
+}
+inline Vector2_t<float> operator-(const float& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a-b.x, a-b.y);
+}
+
+inline Vector2_t<float> operator*(const Vector2_t<float>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x*b.x, a.y*b.y);
+}
+inline Vector2_t<float> operator*(const Vector2_t<float>& a, const Vector2_t<int>& b)
+{
+    return Vector2_t<float>(a.x*b.x, a.y*b.y);
+}
+inline Vector2_t<float> operator*(const Vector2_t<float>& a, const Vector2_t<unsigned int>& b)
+{
+    return Vector2_t<float>(a.x*b.x, a.y*b.y);
+}
+inline Vector2_t<float> operator*(const Vector2_t<int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x*b.x, a.y*b.y);
+}
+inline Vector2_t<float> operator*(const Vector2_t<unsigned int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x*b.x, a.y*b.y);
+}
+inline Vector2_t<float> operator*(const Vector2_t<float>& a, const float& b)
+{
+    return Vector2_t<float>(a.x*b, a.y*b);
+}
+inline Vector2_t<float> operator*(const float& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a*b.x, a*b.y);
+}
+
+inline Vector2_t<float> operator/(const Vector2_t<float>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x/b.x, a.y/b.y);
+}
+inline Vector2_t<float> operator/(const Vector2_t<float>& a, const Vector2_t<int>& b)
+{
+    return Vector2_t<float>(a.x/b.x, a.y/b.y);
+}
+inline Vector2_t<float> operator/(const Vector2_t<float>& a, const Vector2_t<unsigned int>& b)
+{
+    return Vector2_t<float>(a.x/b.x, a.y/b.y);
+}
+inline Vector2_t<float> operator/(const Vector2_t<int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x/b.x, a.y/b.y);
+}
+inline Vector2_t<float> operator/(const Vector2_t<unsigned int>& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a.x/b.x, a.y/b.y);
+}
+inline Vector2_t<float> operator/(const Vector2_t<float>& a, const float& b)
+{
+    return Vector2_t<float>(a.x/b, a.y/b);
+}
+inline Vector2_t<float> operator/(const float& a, const Vector2_t<float>& b)
+{
+    return Vector2_t<float>(a/b.x, a/b.y);
+}
+
 #endif
