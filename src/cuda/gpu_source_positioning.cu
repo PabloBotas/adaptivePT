@@ -121,6 +121,8 @@ void correct_offsets_endpoints(Array4<float>& orig_endpoints,
     check_kernel_execution(__FILE__, __LINE__);
 
     retrieve_scorer<float, float4>(&orig_endpoints[0].x, dev_orig_endpoints, num);
+
+    cudaFree(dev_orig_endpoints);
 }
 
 __global__ void correct_offsets_kernel(const int num,
@@ -135,6 +137,9 @@ __global__ void correct_offsets_kernel(const int num,
         dev_orig_endpoints[tid].x += original_offsets.x - offsets.x;
         dev_orig_endpoints[tid].y += original_offsets.y - offsets.y;
         dev_orig_endpoints[tid].z += original_offsets.z - offsets.z;
+
+        // printf("%d - 0 - %f %f %f\n", 
+               // tid, dev_orig_endpoints[tid].x, dev_orig_endpoints[tid].y, dev_orig_endpoints[tid].z);
     }
 }
 
