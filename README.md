@@ -9,11 +9,11 @@ Patient geometry may change due to positioning or weight loss. Adaptive therapy 
 - [x] Read patient files
     - [x] Read ctvolume.dat
     - [x] Create internal volume representation (float)
-- [ ] Raytrace spots to final positions, output them
-- [ ] Get vector field values at those positions:
-    - [ ] Internally or use `plastimatch probe`?
-- [ ] Apply vector field and get **intended positions**
-- [ ] Save *x,y* as final positions and get WEPL of the correspondent depth. Get new desired energy.
+- [x] Raytrace spots to final positions, output them
+- [x] Get vector field values at those positions:
+    - [x] Internally or use `plastimatch probe`? `plastimatch probe`
+- [x] Apply vector field and get **intended positions**
+- [x] Save *x,y* as final positions and get desired energy.
 - [ ] Save changes to log file for further study
 - [ ] Write new tramps
 
