@@ -21,7 +21,7 @@ __device__ float to_boundary(const float3& pos,
     voxStepper = ifNext ? FORWARD : BACKWARD;
     // Y
     invcos = (dir.y != 0.0f) ? 1.0f/dir.y : INF;
-    ifNext = (invcos > 0.0) ? 1 : 0;
+    ifNext = (invcos > 0.0f) ? 1 : 0;
     float tempstep = ((vox.y+ifNext) * ctVoxSize.y - pos.y) * invcos;
     if (tempstep < step)
     {
@@ -31,7 +31,7 @@ __device__ float to_boundary(const float3& pos,
     }
     // X
     invcos = (dir.x != 0.0f) ? 1.0f/dir.x : INF;
-    ifNext = (invcos > 0.0) ? 1 : 0;
+    ifNext = (invcos > 0.0f) ? 1 : 0;
     tempstep = ((vox.x+ifNext) * ctVoxSize.x - pos.x) * invcos;
     if (tempstep < step)
     {
@@ -40,6 +40,14 @@ __device__ float to_boundary(const float3& pos,
         voxStepper = ifNext ? FORWARD : BACKWARD;
     }
     return fabs(step);
+    // int3 v = make_int3(vox);
+    // float3 invcos = inverse(dir);
+    // int3 ifNext = bigger(invcos, 0.0);
+    // float3 step = ((v+ifNext)*ctVoxSize - pos) * invcos;
+    // int i = find_min(step);
+    // voxUpdater = static_cast<VoxelUpdater>(i);
+    // voxStepper = static_cast<VoxelStepper>(at(ifNext, i));
+    // return(fabs(fminf(step)));
 }
 
 __device__ float to_boundary(const float3& pos,
@@ -47,18 +55,31 @@ __device__ float to_boundary(const float3& pos,
                              const int4& vox,
                              VoxelUpdater& voxUpdater,
                              VoxelStepper& voxStepper,
-                             const float3 endpoint)
+                             const float3& endpoint)
 {
     float boundary = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
 
     float3 r = endpoint-pos;
     float dist = length(r);
-    float cos_to_point = dot(r, dir)/dist;
+    float cos_to_point = dot(r, dir)/(dist*length(dir));
 
-    assert((cos_to_point >  0.9999 && cos_to_point < 1.0001) ||
-          (cos_to_point > -0.0001 && cos_to_point < 0.0001));
+    if(!(cos_to_point >  0.9999 && cos_to_point < 1.0001) &&
+       !(cos_to_point > -0.0001 && cos_to_point < 0.0001))
+    {
+        int i =blockIdx.x*blockDim.x + threadIdx.x;
+        printf("%d - %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
+               i, cos_to_point,
+               xdata[i].x, xdata[i].y, xdata[i].z,
+               vxdata[i].x, vxdata[i].y, vxdata[i].z,
+               pos.x, pos.y, pos.z,
+               dir.x, dir.y, dir.z,
+               endpoint.x, endpoint.y, endpoint.z);
+        assert((cos_to_point >  0.9999 && cos_to_point < 1.0001) ||
+               (cos_to_point > -0.0001 && cos_to_point < 0.0001));
+    }
 
-    if(cos_to_point > 0 && dist < boundary)
+
+    if(cos_to_point > 0.1 && dist < boundary)
     {
         boundary = dist;
         voxUpdater = NONE;
@@ -74,7 +95,7 @@ __device__ int ahead_or_behind(const float3& dir,
                                const float3& pos)
 {
     float3 vector = point - pos;
-    return dot(vector, dir)/length(vector) > 0 ? 1 : -1;
+    return dot(vector, dir) >= 0 ? 1 : -1;
 }
 
 __device__ void changeVoxel(int4& vox,

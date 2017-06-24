@@ -20,7 +20,7 @@ __device__ float to_boundary (const float3& pos,
                               const int4& vox,
                               VoxelUpdater& voxUpdater,
                               VoxelStepper& voxStepper,
-                              const float3 endpoint);
+                              const float3& endpoint);
 __device__ int ahead_or_behind(const float3& dir,
                                const float3& point,
                                const float3& pos);
