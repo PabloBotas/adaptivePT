@@ -14,10 +14,7 @@ void do_raytrace (const std::vector<short>& spots_per_beam,
 
 void buffers_to_device (const std::vector<float4>& xbuffer,
                         const std::vector<float4>& vxbuffer,
-                        const std::vector<short2>& ixbuffer);
-
-void buffers_to_device (const Array4<float>& xbuffer,
-                        const Array4<float>& vxbuffer,
-                        const Array2<short>& ixbuffer);
+                        const std::vector<short2>& ixbuffer,
+                        const bool alloc = true);
 
 #endif  // GPMC_CUH

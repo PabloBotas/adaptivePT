@@ -31,7 +31,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
     create_virtual_source_buffers (pat, xbuffer, vxbuffer, ixbuffer);
-    buffers_to_device (xbuffer, vxbuffer, ixbuffer);
+    buffers_to_device (xbuffer, vxbuffer, ixbuffer, true);
     virtual_src_to_treatment_plane (xbuffer.size(), pat.angles,
                                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
 
@@ -64,7 +64,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     std::vector<short2> ixbuffer;
     create_treatment_plane_buffers (pat, orig_endpoints, init_pos,
                                     xbuffer, vxbuffer, ixbuffer);
-    buffers_to_device (xbuffer, vxbuffer, ixbuffer);
+    buffers_to_device (xbuffer, vxbuffer, ixbuffer, false);
     correct_offsets (xbuffer.size(), 
         make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
         make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
@@ -126,7 +126,7 @@ void initialize_device(cudaEvent_t& start)
 void stop_device(cudaEvent_t& start)
 {
     freePhysicsMemory();
-
+    
     // Get timing
     cudaEvent_t stop;
     cudaEventCreate(&stop);
