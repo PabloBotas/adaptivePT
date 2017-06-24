@@ -76,7 +76,7 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
         float3 start = make_float3(init_pos.at(i).x, init_pos.at(i).y, init_pos.at(i).z);
         float3 end   = make_float3(endpoints.at(i).x, endpoints.at(i).y, endpoints.at(i).z);
         float3 dir   = end - start;
-        float3 dCos  = getDirection(dir);
+        float3 dCos  = dir/length(dir);
         float wepl   = init_pos.at(i).w;
         float energy = endpoints.at(i).w;
         short2 meta  = get_beam_spot_id(i, pat.spots_per_field);
@@ -89,9 +89,12 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
         vxbuffer.at(i) = make_float4(dCos, energy);
         ixbuffer.at(i) = meta;
 
-        // std::cout << start2.x << " " << start.y << " " << start.z << " " << wepl << std::endl;
-        // std::cout << dCos.x << " " << dCos.y << " " << dCos.z << " " << energy << std::endl;
-        // std::cout << meta.x << " " << meta.y <<std::endl;
+        // printf("%d - 0 - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
+        //        i, xbuffer[i].x, xbuffer[i].y, xbuffer[i].z,
+        //        vxbuffer[i].x, vxbuffer[i].y, vxbuffer[i].z,
+        //        xbuffer[i].x, xbuffer[i].y, xbuffer[i].z,
+        //        vxbuffer[i].x, vxbuffer[i].y, vxbuffer[i].z,
+        //        end.x, end.y, end.z);
     }
 }
 
@@ -142,12 +145,6 @@ float3 getDirection(float3 pos, float2 spot)
     };
     dCos.z = sqrt(temp);
     return dCos;
-}
-
-float3 getDirection(float3 dir)
-{
-    float norm = length(dir);
-    return dir/norm;
 }
 
 short2 get_beam_spot_id (const size_t num, const std::vector<short> spots_per_field)
