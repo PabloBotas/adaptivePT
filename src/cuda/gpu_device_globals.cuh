@@ -15,7 +15,7 @@
 #define NBLOCKX 32768
 //      number of threads per block
 #define NTHREAD_PER_BLOCK_SOURCE 256 // set source direction
-#define NTHREAD_PER_BLOCK_RAYS   64  // rays
+#define NTHREAD_PER_BLOCK_RAYS   256  // rays
 
 //==========================================================
 //      mathematical constants
