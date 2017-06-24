@@ -24,10 +24,6 @@ __device__ void get_water_step(float& step,
         step_water = get_residual_range (energy_in);
         step = step_water/(massStpRatio(energy_in/2, vox)*density);
     }
-    // printf("Step: %f %f %f %f %f %f %f\n", step_water,
-    //                                        step, max_step,
-    //                                        density, mass_stp_ratio,
-    //                                        de, energy_in);
 }
 
 __device__ float get_residual_range (float const energy)

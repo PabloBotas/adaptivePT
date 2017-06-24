@@ -20,9 +20,7 @@ public:
     __device__ short get_spot_id ();
     __device__ float get_energy ();
     __device__ float get_wepl ();
-    __device__ void lose_energy (float const step);
-    __device__ void reverse_direction ();
-    __device__ void move (const float step, const float wepl, const float de);
+    __device__ void move (const float& step, const float& wepl, const float& de);
     __device__ bool is_alive ();
     __device__ void set_energy (float e);
     __device__ void set_wepl (float e);

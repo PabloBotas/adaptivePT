@@ -49,13 +49,6 @@ __device__ short Ray::get_spot_id ()
     return spot_id;
 }
 
-__device__ void Ray::reverse_direction ()
-{
-    dir.x = -dir.x;
-    dir.y = -dir.y;
-    dir.z = -dir.z;
-}
-
 __device__ void Ray::set_direction_to_point (float4 p)
 {
     float3 p2 = make_float3(p);
@@ -69,9 +62,9 @@ __device__ void Ray::set_direction_to_point (float3 p)
     dir /= norm;
 }
 
-__device__ void Ray::move (const float step,
-                           const float step_water,
-                           const float de)
+__device__ void Ray::move (const float& step,
+                           const float& step_water,
+                           const float& de)
 {
     pos += step*dir;
     energy -= de;
