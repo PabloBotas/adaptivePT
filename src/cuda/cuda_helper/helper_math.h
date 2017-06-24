@@ -1068,6 +1068,21 @@ inline __host__ __device__ float4 operator/(float b, float4 a)
 // min
 ////////////////////////////////////////////////////////////////////////////////
 
+inline  __host__ __device__ float fminf(float2 a)
+{
+    return fminf(a.x, a.y);
+}
+inline __host__ __device__ float fminf(float3 a)
+{
+    float m = fminf(a.x, a.y);
+    return fminf(m, a.z);
+}
+inline  __host__ __device__ float fminf(float4 a)
+{
+    float m = fminf(a.x, a.y);
+    m = fminf(m, a.z);
+    return fminf(m, a.w);
+}
 inline  __host__ __device__ float2 fminf(float2 a, float2 b)
 {
     return make_float2(fminf(a.x,b.x), fminf(a.y,b.y));
@@ -1105,6 +1120,85 @@ inline __host__ __device__ uint3 min(uint3 a, uint3 b)
 inline __host__ __device__ uint4 min(uint4 a, uint4 b)
 {
     return make_uint4(min(a.x,b.x), min(a.y,b.y), min(a.z,b.z), min(a.w,b.w));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// find min
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ int find_min(int2 a)
+{
+    return a.x < a.y ? 0 : 1;    
+}
+inline __host__ __device__ int find_min(int3 a)
+{
+    if ( a.x < a.y )
+        return a.x < a.z ? 0 : 2;
+    else
+        return a.y < a.z ? 1 : 2;
+}
+inline __host__ __device__ int find_min(int4 a)
+{
+    if ( a.x < a.y )
+        if ( a.x < a.z )
+            return a.x < a.w ? 0 : 3;
+        else
+            return a.z < a.w ? 2 : 3;
+    else
+        if ( a.y < a.z )
+            return a.y < a.w ? 1 : 3;
+        else
+            return a.z < a.w ? 2 : 3;
+}
+
+inline __host__ __device__ int find_min(uint2 a)
+{
+    return a.x < a.y ? 0 : 1;
+}
+inline __host__ __device__ int find_min(uint3 a)
+{
+    if ( a.x < a.y )
+        return a.x < a.z ? 0 : 2;
+    else
+        return a.y < a.z ? 1 : 2;
+}
+inline __host__ __device__ int find_min(uint4 a)
+{
+    if ( a.x < a.y )
+        if ( a.x < a.z )
+            return a.x < a.w ? 0 : 3;
+        else
+            return a.z < a.w ? 2 : 3;
+    else
+        if ( a.y < a.z )
+            return a.y < a.w ? 1 : 3;
+        else
+            return a.z < a.w ? 2 : 3;
+}
+
+inline __host__ __device__ int find_min(float2 a)
+{
+    return a.x < a.y ? 0 : 1;
+}
+inline __host__ __device__ int find_min(float3 a)
+{
+    if ( a.x < a.y )
+        return a.x < a.z ? 0 : 2;
+    else
+        return a.y < a.z ? 1 : 2;
+}
+inline __host__ __device__ int find_min(float4 a)
+{
+    if ( a.x < a.y )
+        if ( a.x < a.z )
+            return a.x < a.w ? 0 : 3;
+        else
+            return a.z < a.w ? 2 : 3;
+    else
+        if ( a.y < a.z )
+            return a.y < a.w ? 1 : 3;
+        else
+            return a.z < a.w ? 2 : 3;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1148,6 +1242,155 @@ inline __host__ __device__ uint3 max(uint3 a, uint3 b)
 inline __host__ __device__ uint4 max(uint4 a, uint4 b)
 {
     return make_uint4(max(a.x,b.x), max(a.y,b.y), max(a.z,b.z), max(a.w,b.w));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// find max
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ int find_max(int2 a)
+{
+    return a.x > a.y ? 0 : 1;    
+}
+inline __host__ __device__ int find_max(int3 a)
+{
+    if ( a.x > a.y )
+        return a.x > a.z ? 0 : 2;
+    else
+        return a.y > a.z ? 1 : 2;
+}
+inline __host__ __device__ int find_max(int4 a)
+{
+    if ( a.x > a.y )
+        if ( a.x > a.z )
+            return a.x > a.w ? 0 : 3;
+        else
+            return a.z > a.w ? 2 : 3;
+    else
+        if ( a.y > a.z )
+            return a.y > a.w ? 1 : 3;
+        else
+            return a.z > a.w ? 2 : 3;
+}
+
+inline __host__ __device__ int find_max(uint2 a)
+{
+    return a.x > a.y ? 0 : 1;
+}
+inline __host__ __device__ int find_max(uint3 a)
+{
+    if ( a.x > a.y )
+        return a.x > a.z ? 0 : 2;
+    else
+        return a.y > a.z ? 1 : 2;
+}
+inline __host__ __device__ int find_max(uint4 a)
+{
+    if ( a.x > a.y )
+        if ( a.x > a.z )
+            return a.x > a.w ? 0 : 3;
+        else
+            return a.z > a.w ? 2 : 3;
+    else
+        if ( a.y > a.z )
+            return a.y > a.w ? 1 : 3;
+        else
+            return a.z > a.w ? 2 : 3;
+}
+
+inline __host__ __device__ int find_max(float2 a)
+{
+    return a.x > a.y ? 0 : 1;
+}
+inline __host__ __device__ int find_max(float3 a)
+{
+    if ( a.x > a.y )
+        return a.x > a.z ? 0 : 2;
+    else
+        return a.y > a.z ? 1 : 2;
+}
+inline __host__ __device__ int find_max(float4 a)
+{
+    if ( a.x > a.y )
+        if ( a.x > a.z )
+            return a.x > a.w ? 0 : 3;
+        else
+            return a.z > a.w ? 2 : 3;
+    else
+        if ( a.y > a.z )
+            return a.y > a.w ? 1 : 3;
+        else
+            return a.z > a.w ? 2 : 3;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// at
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ int at(int2 a, int i)
+{
+    return i == 1 ? a.y : a.x;    
+}
+inline __host__ __device__ int at(int3 a, int i)
+{
+    switch (i) {
+        case 1: return a.y;
+        case 2: return a.z;
+        default: return a.x;
+    }
+}
+inline __host__ __device__ int at(int4 a, int i)
+{
+    switch (i) {
+        case 1: return a.y;
+        case 2: return a.z;
+        case 3: return a.w;
+        default: return a.x;
+    }
+}
+
+inline __host__ __device__ uint at(uint2 a, int i)
+{
+    return i == 1 ? a.y : a.x;    
+}
+inline __host__ __device__ uint at(uint3 a, int i)
+{
+    switch (i) {
+        case 1: return a.y;
+        case 2: return a.z;
+        default: return a.x;
+    }
+}
+inline __host__ __device__ uint at(uint4 a, int i)
+{
+    switch (i) {
+        case 1: return a.y;
+        case 2: return a.z;
+        case 3: return a.w;
+        default: return a.x;
+    }
+}
+
+inline __host__ __device__ float at(float2 a, int i)
+{
+    return i == 1 ? a.y : a.x;    
+}
+inline __host__ __device__ float at(float3 a, int i)
+{
+    switch (i) {
+        case 1: return a.y;
+        case 2: return a.z;
+        default: return a.x;
+    }
+}
+inline __host__ __device__ float at(float4 a, int i)
+{
+    switch (i) {
+        case 1: return a.y;
+        case 2: return a.z;
+        case 3: return a.w;
+        default: return a.x;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1439,6 +1682,61 @@ inline __host__ __device__ int4 abs(int4 v)
 inline __host__ __device__ float3 reflect(float3 i, float3 n)
 {
     return i - 2.0f * n * dot(n,i);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// inverse
+// - returns 1/v
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ float3 inverse(float3 v)
+{
+    const float INF = 1.0e20;
+    float3 res;
+    res.x = v.x != 0 ? 1/v.x : INF;
+    res.y = v.y != 0 ? 1/v.y : INF;
+    res.z = v.z != 0 ? 1/v.z : INF;
+    return res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// bigger or smaller
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ int3 bigger(float3 a, float3 b)
+{
+    int3 res;
+    res.x = a.x > b.x;
+    res.y = a.y > b.y;
+    res.z = a.z > b.z;
+    return res;
+}
+
+inline __host__ __device__ int3 bigger(float3 a, float b)
+{
+    int3 res;
+    res.x = a.x > b;
+    res.y = a.y > b;
+    res.z = a.z > b;
+    return res;
+}
+
+inline __host__ __device__ int3 smaller(float3 a, float3 b)
+{
+    int3 res;
+    res.x = a.x < b.x;
+    res.y = a.y < b.y;
+    res.z = a.z < b.z;
+    return res;
+}
+
+inline __host__ __device__ int3 smaller(float3 a, float b)
+{
+    int3 res;
+    res.x = a.x < b;
+    res.y = a.y < b;
+    res.z = a.z < b;
+    return res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
