@@ -15,7 +15,8 @@ warp_data (Array4<float>& endpoints,
            Array4<float>& init_pos,
            const std::string vf_file,
            const CT_Dims_t& ct,
-           Array4<float> treatment_plane)
+           Array4<float> treatment_plane,
+           const std::vector<short>& spots_per_field)
 {
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
@@ -24,7 +25,7 @@ warp_data (Array4<float>& endpoints,
     Array3<float> vf;
     probe_vf(vf, endpoints, vf_file);
     apply_vf(endpoints, vf);
-    project_vector_on_plane(vf, treatment_plane);
+    project_vector_on_plane(vf, treatment_plane, spots_per_field);
     apply_vf(init_pos, vf);
 
     flip_positions_X(endpoints, ct);
@@ -64,21 +65,24 @@ get_unitary_vector (Array3<float>& r,
 
 void 
 project_vector_on_plane (Array3<float>& p,
-                         const Array4<float>& n)
+                         const Array4<float>& n,
+                         const std::vector<short>& spots_per_field)
 {
-    for (size_t i = 0; i < p.size(); i++)
+    for (size_t i = 0, ibeam = 0; i < p.size(); i++)
     {
-        float inner = p.at(i).x*n.at(i).x +
-                      p.at(i).y*n.at(i).y +
-                      p.at(i).z*n.at(i).z;
-        float mod_squared = n.at(i).x*n.at(i).x +
-                            n.at(i).y*n.at(i).y +
-                            n.at(i).z*n.at(i).z;
+        if (i == (size_t)spots_per_field.at(ibeam))
+            ibeam += 1;
+        float inner = p.at(i).x*n.at(ibeam).x +
+                      p.at(i).y*n.at(ibeam).y +
+                      p.at(i).z*n.at(ibeam).z;
+        float mod_squared = n.at(ibeam).x*n.at(ibeam).x +
+                            n.at(ibeam).y*n.at(ibeam).y +
+                            n.at(ibeam).z*n.at(ibeam).z;
         float norm = inner/mod_squared;
 
-        p.at(i).x -= norm*n.at(i).x;
-        p.at(i).y -= norm*n.at(i).y;
-        p.at(i).z -= norm*n.at(i).z;
+        p.at(i).x -= norm*n.at(ibeam).x;
+        p.at(i).y -= norm*n.at(ibeam).y;
+        p.at(i).z -= norm*n.at(ibeam).z;
     }
 }
 

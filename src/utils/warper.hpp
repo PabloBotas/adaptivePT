@@ -37,7 +37,8 @@ probe_vf (const Array4<float>& p,
 
 void 
 project_vector_on_plane (Array3<float>& p,
-                         const Array4<float>& n);
+                         const Array4<float>& n,
+                         const std::vector<short>& spots_per_field);
 
 std::string
 to_location_str (const Vector3_t<float>& p, const bool last);
@@ -47,6 +48,7 @@ warp_data(Array4<float>& endpoints,
           Array4<float>& init_pos,
           const std::string vf_file,
           const CT_Dims_t& ct,
-          Array4<float> treatment_plane);
+          Array4<float> treatment_plane,
+          const std::vector<short>& spots_per_field);
 
 #endif

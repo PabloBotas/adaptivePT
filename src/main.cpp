@@ -20,7 +20,7 @@
 // TODO Convert data back to tramp file
 // TODO Fix mha output's offset to visualize in Slicer
 // TODO Verify that VF probing is correctly done. How?
-// TODO Verify CBCT offsets are correctly updated
+// Done Verify CBCT offsets are correctly updated
 
 void deal_with_ct(Patient_Parameters_t& patient_data,
                   const Parser& parser,
@@ -80,7 +80,7 @@ void deal_with_ct(Patient_Parameters_t& patient_data,
 
     // Warp endpoints in CT ---------------------------
     warp_data (ct_endpoints, ct_init_pat_pos, parser.vf_file,
-               patient_data.ct, treatment_plane);
+               patient_data.ct, treatment_plane, patient_data.spots_per_field);
     
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;
