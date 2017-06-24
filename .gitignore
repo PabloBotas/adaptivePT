@@ -16,3 +16,5 @@ test/adapt_data_P15/
 *.raw
 
 test/Screenshot\.png
+
+\.Rhistory
