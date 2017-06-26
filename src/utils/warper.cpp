@@ -194,6 +194,6 @@ to_location_str (const Vector3_t<float>& p,
          std::to_string(p.y) + " " + 
          std::to_string(p.z);
     if (!last)
-        s += ";";
+        s += "; ";
     return s;
 }
