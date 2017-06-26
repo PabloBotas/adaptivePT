@@ -88,25 +88,10 @@ void Parser::process_command_line(int argc, char** argv)
 void Parser::print_parameters()
 {
     std::cout << "Parsed parameters:\n";
-    // std::cout << "    - tramp_in_file: " << tramp_in_file << '\n';
-    // std::cout << "    - dvh_file:      " << dvh_file << '\n';
-    // std::cout << "    - target_dose:   " << target_dose << " Gy" << '\n';
-    // if(perform_Bwf_scaling)
-    // {
-    //     std::cout << "    - bwf_in_file:   " << bwf_in_file << '\n';
-    //     std::cout << "    - bwf_out_file:  " << bwf_out_file << '\n';
-    // }
-    // if(perform_operate_volume)
-    // {
-    //     std::cout << "    - dose_in_files (" << dose_in_file.size() << "): \n";
-    //     for (auto i : dose_in_file)
-    //         std::cout << i << ' ';
-    //     std::cout << '\n';
-    //     std::cout << "    - dose_out_file (" << dose_out_file.size() << "): \n";
-    //     for (auto i : dose_out_file)
-    //         std::cout << i << ' ';
-    //     std::cout << '\n';
-    //     std::cout << "    - data_type:     " << data_type.getTypeName() << std::endl;
-    // }
+    std::cout << "    - Patient:      " << patient << '\n';
+    std::cout << "    - Cone-Beam CT: " << cbct_file << '\n';
+    std::cout << "    - Vector field: " << vf_file << '\n';
+    if (!out_dir.empty())
+        std::cout << "    - Out dir:      " << out_dir << '\n';
 }
 
