@@ -147,15 +147,16 @@ float3 getDirection(float3 pos, float2 spot)
     return dCos;
 }
 
-short2 get_beam_spot_id (const size_t num, const std::vector<short> spots_per_field)
+short2 get_beam_spot_id (size_t num, const std::vector<short>& spots_per_field)
 {
-    size_t spotid = 0;
     size_t beamid = 0;
     for (; beamid < spots_per_field.size(); beamid++)
     {
-        spotid += spots_per_field.at(beamid);
-        if (num < spotid)
+        if (num >= spots_per_field.at(beamid))
+            num -= spots_per_field.at(beamid);
+        else
             break;
     }
-    return make_short2(beamid, num);
+    size_t spotid = num;
+    return make_short2(beamid, spotid);
 }

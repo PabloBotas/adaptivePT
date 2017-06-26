@@ -15,7 +15,7 @@ __global__ void raytrace_plan_kernel(const short num,
     if(thread < num)
     {
         Ray ray(xdata[thread], vxdata[thread], ixdata[thread]);
-        size_t ind = get_endpoints_index(ray.get_beam_id(),
+        size_t const ind = get_endpoints_index(ray.get_beam_id(),
                                          ray.get_spot_id(),
                                          spots_per_field);
         int4 vox = get_voxel (ray.get_position());
@@ -56,7 +56,8 @@ __global__ void raytrace_plan_kernel(const short num,
             float3 plan_endpoint = make_float3(orig_endpoints[thread]);
             ray.set_energy(sample_energy); // sample energy
             ray.set_wepl(sample_wepl);     // Janni table for sample energy
-            ray.dir *= ahead_or_behind(ray.dir, plan_endpoint, ray.pos);
+            int sign = ahead_or_behind(ray.dir, plan_endpoint, ray.pos);
+            ray.dir *= sign;
 
             while (ray.is_alive() && vox.w != -1)
             {
@@ -74,7 +75,7 @@ __global__ void raytrace_plan_kernel(const short num,
                     break;
             }
 
-            pos_scorer[ind].w = sample_energy - ray.get_energy();
+            pos_scorer[ind].w = sign*(sample_energy - ray.get_energy());
         }
     }
 
@@ -85,10 +86,9 @@ __device__ size_t get_endpoints_index(const short beam_id,
                                       const short spot_id,
                                       const short* spots_per_field)
 {   
-    unsigned int index = spot_id;
-    for (short ibeam = 0; ibeam < beam_id; ibeam++)
-    {
-        index += spots_per_field[ibeam];
-    }
+    size_t accu_spots = 0;
+    for (short i = 0; i < beam_id; i++)
+        accu_spots += spots_per_field[i];
+    size_t index = accu_spots + spot_id;
     return index;
 }

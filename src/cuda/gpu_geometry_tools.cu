@@ -58,12 +58,14 @@ __device__ float to_boundary(const float3& pos,
                              const float3& endpoint)
 {
     float boundary = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
+    float const min_dist = 0.001;
 
     float3 r = endpoint-pos;
     float dist = length(r);
     float cos_to_point = dot(r, dir)/(dist*length(dir));
 
-    if(!(cos_to_point >  0.9999 && cos_to_point < 1.0001) &&
+    if(dist > min_dist &&
+       !(cos_to_point >  0.9999 && cos_to_point < 1.0001) &&
        !(cos_to_point > -0.0001 && cos_to_point < 0.0001))
     {
         int i =blockIdx.x*blockDim.x + threadIdx.x;
@@ -78,8 +80,12 @@ __device__ float to_boundary(const float3& pos,
                (cos_to_point > -0.0001 && cos_to_point < 0.0001));
     }
 
-
-    if(cos_to_point > 0.1 && dist < boundary)
+    if(dist <= min_dist)
+    {
+        boundary = 0;
+        voxUpdater = NONE;
+    }
+    else if(dist < boundary)
     {
         boundary = dist;
         voxUpdater = NONE;

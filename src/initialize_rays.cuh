@@ -24,5 +24,5 @@ float2 virtual_src_to_iso_pos(float3 pos, float3 cos);
 
 float3 getDirection(float3 pos, float2 spot);
 
-short2 get_beam_spot_id (size_t num, const std::vector<short> spots_per_field);
+short2 get_beam_spot_id (size_t num, const std::vector<short>& spots_per_field);
 #endif
