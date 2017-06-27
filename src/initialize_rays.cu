@@ -110,8 +110,8 @@ float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot)
 float2 virtual_src_to_iso_pos(float3 pos, float2 SAD)
 {
     float2 spot;
-    spot.x = pos.x / ((SAD.x + pos.z) / SAD.x);
-    spot.y = pos.y / ((SAD.y + pos.z) / SAD.y);
+    spot.x = pos.x * SAD.x / (SAD.x + pos.z);
+    spot.y = pos.y * SAD.y / (SAD.y + pos.z);
     return spot;
 }
 
@@ -152,8 +152,8 @@ short2 get_beam_spot_id (size_t num, const std::vector<short>& spots_per_field)
     size_t beamid = 0;
     for (; beamid < spots_per_field.size(); beamid++)
     {
-        if (num >= spots_per_field.at(beamid))
-            num -= spots_per_field.at(beamid);
+        if (num >= (size_t)spots_per_field.at(beamid))
+            num -= (size_t)spots_per_field.at(beamid);
         else
             break;
     }
