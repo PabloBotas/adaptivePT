@@ -38,6 +38,7 @@ public:
 
     std::vector<BeamAngles_t> angles;
     std::vector<float>        isocenter_to_beam_distance;
+    Planes_t                  treatment_planes;
 
     std::string results_dir;
 
@@ -54,6 +55,7 @@ private:
     void set_spots_per_field();
     void set_total_spots();
     void set_planning_CT_file();
+    void get_treatment_planes();
 
     void consolidate_originals();
     std::vector<BeamAngles_t> original_angles;

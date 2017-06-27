@@ -11,6 +11,15 @@ struct BeamAngles_t
     float couch;
 };
 
+// Planes_t ---------------------------------------
+struct Planes_t
+{
+    Array4<float> dir;
+    Array4<float> p;
+    Planes_t() {}
+    Planes_t(size_t n) {dir.resize(n); p.resize(n);}
+};
+
 // CT_Dims_t ---------------------------------------
 struct CT_Dims_t
 {

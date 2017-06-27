@@ -4,6 +4,15 @@
 #include <vector>
 #include <algorithm>
 
+// Planes_t ---------------------------------------
+Planes_t::Planes_t(){}
+
+Planes_t::Planes_t(size_t n)
+{
+    dir.resize(n);
+    p.resize(n);
+}
+
 // Aperture_Dims_t ---------------------------------------
 Aperture_Dims_t::Aperture_Dims_t():
                  exists(false),
