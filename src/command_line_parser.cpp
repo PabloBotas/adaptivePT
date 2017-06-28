@@ -26,16 +26,18 @@ void Parser::process_command_line(int argc, char** argv)
         ("help", "Produce this help message.")
         // Common parameters
         ("patient", po::value<std::string>(&patient)->required(),
-                    "Topas MCAUTO_DICOM.txt file with the plan parameters")
+                    "Topas MCAUTO_DICOM.txt file with the plan parameters.")
         ("cbct",    po::value<std::string>(&cbct_file)->required(),
-                    "CBCT to adapt the plan to")
+                    "CBCT to adapt the plan to.")
         ("vf",      po::value<std::string>(&vf_file)->required(),
                     "Vector field file from CT to CBCT. B-Spline format is not supported.")
         ("outdir",  po::value<std::string>(&out_dir)->default_value("results"),
                     "Output directory to write results to.")
-        ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
-                    "If the energy should be adapted layer by layer instead of with individual spots")
-        ;
+        ("no_energy", po::bool_switch(&no_energy)->default_value(false),
+                     "If only the geometry should be adapted.");
+        // ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
+        //             "If the energy should be adapted layer by layer instead of with individual spots")
+        // ;
 
         po::variables_map vm;        
         po::store(po::parse_command_line(argc, argv, desc), vm);

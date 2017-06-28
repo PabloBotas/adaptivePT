@@ -36,7 +36,7 @@ void deal_with_cbct(Patient_Parameters_t& pat,
                     std::vector<float>& energy_shift);
 
 void export_adapted(Patient_Parameters_t& pat,
-                    const std::string& out_dir,
+                    const Parser& pars,
                     const std::vector<float>& energy_shift,
                     Array4<float>& pat_pos,
                     Array4<float>& pat_pos2);
@@ -48,7 +48,6 @@ int main(int argc, char** argv)
 
     // Read input patient
     Patient_Parameters_t pat(parser.patient);
-    pat.add_results_directory(parser.out_dir);
     pat.print();
     pat.ext_to_int_coordinates();
     pat.set_treatment_planes();
@@ -63,7 +62,7 @@ int main(int argc, char** argv)
     std::vector<float> energy_shift(pat.total_spots);
     deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
-    export_adapted (pat, parser.out_dir, energy_shift, ct_init_pat_pos, ct_endpoints);
+    export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints);
 
     // Stop device
     stop_device(start);
@@ -122,7 +121,7 @@ void deal_with_cbct(Patient_Parameters_t& pat,
 }
 
 void export_adapted(Patient_Parameters_t& pat,
-                    const std::string& out_dir,
+                    const Parser& pars,
                     const std::vector<float>& energy_shift,
                     Array4<float>& pat_pos,
                     Array4<float>& pat_pos2)
@@ -136,9 +135,22 @@ void export_adapted(Patient_Parameters_t& pat,
     // Assign to new spotmap
     for (size_t i = 0; i < pat.nbeams; i++)
     {
+        std::vector<float>::const_iterator f = energy_shift.begin();
+        if (i != 0)
+            f += pat.accu_spots_per_field.at(i-1);
+        std::vector<float>::const_iterator l = energy_shift.begin() + pat.accu_spots_per_field.at(i);
+        std::vector<float> subset_energies(f, l);
+
+        Array4<float>::const_iterator ff = pat_pos.begin();
+        if (i != 0)
+            ff += pat.accu_spots_per_field.at(i-1);
+        Array4<float>::const_iterator ll = pat_pos.begin() + pat.accu_spots_per_field.at(i);
+        Array4<float> subset_pat_pos(ff, ll);
+
         Tramp_t tramp(pat.tramp_files.at(i));
-        tramp.shift_energies(energy_shift);
-        tramp.set_pos(pat_pos);
-        tramp.to_file(pat.tramp_files.at(i), out_dir);
+        if (!pars.no_energy)
+            tramp.shift_energies(subset_energies);
+        tramp.set_pos(subset_pat_pos);
+        tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
     }
 }

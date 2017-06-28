@@ -208,11 +208,6 @@ void Patient_Parameters_t::print()
 
 }
 
-void Patient_Parameters_t::add_results_directory(std::string s)
-{
-    results_dir = s;
-}
-
 void Patient_Parameters_t::ext_to_int_coordinates()
 {
     std::swap(ct.d.x, ct.d.z);
@@ -268,11 +263,14 @@ void Patient_Parameters_t::update_geometry_with_external(const Volume_t& v)
 void Patient_Parameters_t::set_spots_per_field()
 {
     spots_per_field.reserve(nbeams);
+    short acc = 0;
     for(size_t i=0; i < nbeams; i++)
     {
         Tramp_t tramp;
         tramp.read_file_header(tramp_files.at(i));
         spots_per_field.push_back(tramp.nspots);
+        acc += tramp.nspots;
+        accu_spots_per_field.push_back(acc);
     }
 }
 

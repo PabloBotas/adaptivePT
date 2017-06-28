@@ -30,6 +30,7 @@ public:
 
     short total_spots;
     std::vector<short> spots_per_field;
+    std::vector<short> accu_spots_per_field;
 
     CT_Dims_t ct;
     CT_Dims_t original_ct;
@@ -41,9 +42,6 @@ public:
     std::vector<float>        isocenter_to_beam_distance;
     Planes_t                  treatment_planes;
 
-    std::string results_dir;
-
-    void add_results_directory(std::string s);
     void ext_to_int_coordinates();
     void int_to_ext_coordinates();
     void update_geometry_with_external(const Volume_t& vol);

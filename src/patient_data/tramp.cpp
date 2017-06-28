@@ -214,6 +214,14 @@ void Tramp_t::setEnergies()
 
 void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
 {
+    if (e_.size() != nspots)
+    {
+        std::cerr << "Number of energies to shift " << e_.size();
+        std::cerr << " is bigger than the number of spots " << nspots;
+        std::cerr << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     float conv = units ? 1/1e6 : 1;
     for (size_t i = 0; i < nspots; i++)
     {
@@ -224,6 +232,13 @@ void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
 
 void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
 {
+    if (p.size() != nspots)
+    {
+        std::cerr << "Number of positions to set " << p.size();
+        std::cerr << " is bigger than the number of spots " << nspots;
+        std::cerr << std::endl;
+        exit(EXIT_FAILURE);
+    }
     for (size_t i = 0; i < nspots; i++)
     {
         spots.at(i).x = p.at(i).x;

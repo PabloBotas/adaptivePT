@@ -18,6 +18,7 @@ public:
     std::string vf_file;
     std::string out_dir;
     bool if_per_layer;
+    bool no_energy;
 
     void print_parameters();
 
