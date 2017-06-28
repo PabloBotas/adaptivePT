@@ -4,31 +4,6 @@ library(dplyr)
 library(tidyr)
 
 setwd("/opt/utils/adaptSpotEnergies/test/")
-data <- as.data.table(read.table(file = "data.dat", header = FALSE, sep = " ",
-                   colClasses = "numeric",
-                   col.names  = c("start.x", "start.y", "start.z",
-                                  "start2.x", "start2.y", "start2.z",
-                                  "end.x", "end.y", "end.z", "wepl",
-                                  "dCos.x", "dCos.y", "dCos.z",
-                                  "energy", "beamid", "spotid")))
-data <- data %>% mutate(spotid = ifelse(beamid == 1, spotid - 102, spotid))
-data <- data %>% mutate(r.x = end.x - start2.x) %>% mutate(r.y = end.y - start2.y) %>% mutate(r.z = end.z - start2.z)
-data <- data %>% mutate(r = sqrt(r.x^2 + r.y^2 + r.z^2))
-data <- data %>% mutate(dCos = sqrt(dCos.x^2 + dCos.y^2 + dCos.z^2))
-data <- data %>% mutate(trace = sqrt((start.x - start2.x)^2 + (start.y - start2.y)^2 + (start.z - start2.z)^2))
-data <- data %>% mutate(ok = (r.x*dCos.x + r.y*dCos.y + r.z*dCos.z)/(dCos*r))
-
-data$meta.x <- as.factor(data$meta.x)
-
-data <- data %>% mutate(dCos = sqrt(dCos.x^2 + dCos.y^2 + dCos.z^2))
-
-hist(data$dCos, breaks = 10)
-hist(data$trace, breaks = 10)
-plot(data$trace)
-
-ggplot(data = data, aes(x = meta.y, y = trace, color = meta.x)) +
-    geom_line()
-
 ##--------
 ##
 data <- as.data.table(read.table(file = "directions_check.dat", header = FALSE, sep = ",",
@@ -55,3 +30,12 @@ ggplot(data = data_wide, aes(x = spotid, y = r, color = beamid)) +
     geom_line()
 
 data_wide2 <- data_wide %>% filter(tid >= 38 & tid <= 82)
+
+##--------
+##
+data <- as.data.table(read.table(file = "energy_shifts.dat", header = FALSE, sep = ",",
+                                 colClasses = "numeric",
+                                 col.names  = c("energy")))
+data <- data %>% mutate(energy = energy / 1000000)
+ggplot(data, aes(energy)) +
+    geom_histogram(binwidth = 0.5)
