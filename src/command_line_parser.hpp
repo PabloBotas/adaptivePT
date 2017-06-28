@@ -17,6 +17,10 @@ public:
     std::string cbct_file;
     std::string vf_file;
     std::string out_dir;
+    std::string output_shifts;
+    std::string output_vf;
+    std::string output_ct_traces;
+    std::string output_cbct_traces;
     bool if_per_layer;
     bool no_energy;
 

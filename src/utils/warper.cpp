@@ -14,6 +14,7 @@ void
 warp_data (Array4<float>& endpoints,
            Array4<float>& init_pos,
            const std::string vf_file,
+           const std::string output_vf,
            const CT_Dims_t& ct,
            Array4<float> treatment_plane,
            const std::vector<short>& spots_per_field)
@@ -24,12 +25,45 @@ warp_data (Array4<float>& endpoints,
 
     Array3<float> vf;
     probe_vf(vf, endpoints, vf_file);
+    if(!output_vf.empty())
+        export_vf(vf, endpoints, output_vf, spots_per_field);
     apply_vf(endpoints, vf);
     project_vector_on_plane(vf, treatment_plane, spots_per_field);
     apply_vf(init_pos, vf);
 
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
+}
+
+void
+export_vf(const Array3<float>& vf,
+          const Array4<float>& p,
+          const std::string& file,
+          const std::vector<short>& spots_per_field)
+{
+    std::ofstream ofs;
+    ofs.open (file, std::ios::out | std::ios::binary);
+    if( !ofs.is_open() )
+    {
+        std::cerr << "Can not open file " << file << " to write vector field." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::cout << "Writting probed VF to " << file << std::endl;
+
+    int beamid = 0;
+    ofs << "vx vy vz x y z beamid spotid\n";
+    for (size_t i = 0, spotid = 0; i < vf.size(); i++, spotid++)
+    {
+        if (i == (size_t)spots_per_field.at(beamid))
+        {
+            spotid -= spots_per_field.at(beamid);
+            beamid += 1;
+        }
+        ofs << vf.at(i).x << " " << vf.at(i).y << " " << vf.at(i).z << " ";
+        ofs << p.at(i).x << " " << p.at(i).y << " " << p.at(i).z << " ";
+        ofs << beamid << " " << spotid << "\n";
+    }
+    ofs.close();
 }
 
 void 

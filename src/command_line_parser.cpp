@@ -31,10 +31,18 @@ void Parser::process_command_line(int argc, char** argv)
                     "CBCT to adapt the plan to.")
         ("vf",      po::value<std::string>(&vf_file)->required(),
                     "Vector field file from CT to CBCT. B-Spline format is not supported.")
-        ("outdir",  po::value<std::string>(&out_dir)->default_value("results"),
-                    "Output directory to write results to.")
+        ("outdir",  po::value<std::string>(&out_dir)->required(),
+                    "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
         ("no_energy", po::bool_switch(&no_energy)->default_value(false),
-                     "If only the geometry should be adapted.");
+                     "If only the geometry should be adapted.")
+        ("output_vf", po::value<std::string>(&output_vf)->default_value(std::string()),
+                     "If the probed values should be written to a file.")
+        ("output_shifts", po::value<std::string>(&output_shifts)->default_value(std::string()),
+                     "If the pos-energy shifts should be written to a file.")
+        ("output_ct_traces", po::value<std::string>(&output_ct_traces)->default_value(std::string()),
+                     "If the traces on the CT volume should be scored to a file.")
+        ("output_cbct_traces", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
+                     "If the traces on the CBCT volume should be scored to a file.");
         // ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
         //             "If the energy should be adapted layer by layer instead of with individual spots")
         // ;
@@ -51,6 +59,23 @@ void Parser::process_command_line(int argc, char** argv)
     catch(std::exception& e) {
         std::cerr << "ERROR! " << e.what() << std::endl;
         exit(EXIT_FAILURE);
+    }
+
+    if (!out_dir.empty() && !output_shifts.empty() && output_shifts.find('/') == std::string::npos)
+    {
+        output_shifts = out_dir + '/' + output_shifts;
+    }
+    if (!out_dir.empty() && !output_vf.empty() && output_vf.find('/') == std::string::npos)
+    {
+        output_vf = out_dir + '/' + output_vf;
+    }
+    if (!out_dir.empty() && !output_ct_traces.empty() && output_ct_traces.find('/') == std::string::npos)
+    {
+        output_ct_traces = out_dir + '/' + output_ct_traces;
+    }
+    if (!out_dir.empty() && !output_cbct_traces.empty() && output_cbct_traces.find('/') == std::string::npos)
+    {
+        output_cbct_traces = out_dir + '/' + output_cbct_traces;
     }
 }
 

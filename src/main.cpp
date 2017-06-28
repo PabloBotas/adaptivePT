@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <string>
 
 #include "command_line_parser.hpp"
@@ -40,6 +41,11 @@ void export_adapted(Patient_Parameters_t& pat,
                     const std::vector<float>& energy_shift,
                     Array4<float>& pat_pos,
                     Array4<float>& pat_pos2);
+
+void export_shifts(const std::vector<float>& e,
+                   const Array4<float>& p,
+                   const std::string& file,
+                   const short& beamid);
 
 int main(int argc, char** argv)
 {
@@ -85,12 +91,12 @@ void deal_with_ct(Patient_Parameters_t& pat,
     ct_init_pat_pos.resize(pat.total_spots);
     Array4<float> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
-                           std::string());
+                           parser.output_ct_traces);
     // Print results
     size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 
     // Warp endpoints in CT ---------------------------
-    warp_data (ct_endpoints, ct_init_pat_pos, parser.vf_file,
+    warp_data (ct_endpoints, ct_init_pat_pos, parser.vf_file, parser.output_vf,
                pat.ct, pat.treatment_planes.dir, pat.spots_per_field);
     
     // Print results
@@ -113,7 +119,7 @@ void deal_with_cbct(Patient_Parameters_t& pat,
     Array4<float> cbct_endpoints(pat.total_spots);
     gpu_raytrace_warped (pat, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
-                         std::string());
+                         parser.output_cbct_traces);
 
     // Print results ----------------------------
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
@@ -148,9 +154,44 @@ void export_adapted(Patient_Parameters_t& pat,
         Array4<float> subset_pat_pos(ff, ll);
 
         Tramp_t tramp(pat.tramp_files.at(i));
+
+        if (!pars.output_shifts.empty())
+            export_shifts(subset_energies, subset_pat_pos, pars.output_shifts, i);
         if (!pars.no_energy)
             tramp.shift_energies(subset_energies);
         tramp.set_pos(subset_pat_pos);
         tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
     }
 }
+
+void export_shifts(const std::vector<float>& e,
+                   const Array4<float>& p,
+                   const std::string& file,
+                   const short& beamid)
+{
+    std::ofstream ofs;
+    if (beamid != 0)
+        ofs.open (file, std::ios::out | std::ios::app);
+    else
+        ofs.open (file, std::ios::out);
+
+    if( !ofs.is_open() )
+    {
+        std::cerr << "Can not open file " << file << " to write adaptation shifts." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (beamid == 0)
+    {
+        std::cout << "Writting adaptation shifts to " << file << std::endl;
+        ofs << "e x y z beamid spotid\n";
+    }
+
+    for (size_t spotid = 0; spotid < e.size(); spotid++)
+    {
+        ofs << e.at(spotid) << " " << p.at(spotid).x << " ";
+        ofs << p.at(spotid).y << " " << p.at(spotid).z << " ";
+        ofs << beamid << " " << spotid << "\n";
+    }
+}
+
