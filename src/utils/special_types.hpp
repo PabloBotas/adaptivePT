@@ -16,8 +16,8 @@ struct Planes_t
 {
     Array4<float> dir;
     Array4<float> p;
-    Planes_t() {}
-    Planes_t(size_t n) {dir.resize(n); p.resize(n);}
+    Planes_t();
+    Planes_t(size_t n);
 };
 
 // CT_Dims_t ---------------------------------------
