@@ -158,8 +158,7 @@ get_vf_from_stdout (std::string str)
                 ss_per_space >> dummy >> dummy >> dummy;
                 ss_per_space >> this_vf.x >> this_vf.y >> this_vf.z;
             }
-            this_vf.z *= -1;
-            v.push_back(Vector3_t<float>(this_vf.x, this_vf.y, this_vf.z));
+            v.push_back(Vector3_t<float>(this_vf.x/10, this_vf.y/10, this_vf.z/10));
         }
     }
 
