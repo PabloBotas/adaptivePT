@@ -179,7 +179,7 @@ std::vector<float> band_matrix::lu_solve(const std::vector<float>& b,
 // -----------------------
 
 // set default boundary condition to be zero curvature at both ends
-Spline_t::Spline_t(): m_left(second_deriv), m_right(second_deriv),
+Spline_t::Spline_t(): m_b0(0), m_c0(0), m_left(second_deriv), m_right(second_deriv),
                   m_left_value(0.0), m_right_value(0.0),
                   m_force_linear_extrapolation(false)
 {
@@ -217,7 +217,7 @@ void Spline_t::set_points(const std::vector<float>& x,
     m_x=x;
     m_y=y;
     int   n=x.size();
-    // TODO: maybe sort x and y, rather than returning an error
+    // maybe sort x and y, rather than returning an error
     for(int i=0; i<n-1; i++) {
         assert(m_x[i]<m_x[i+1]);
     }
