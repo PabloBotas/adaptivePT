@@ -12,6 +12,7 @@ class Patient_Parameters_t
 {
 public:
     Patient_Parameters_t(std::string directory);
+    void set_treatment_planes();
     void print();
     
     std::string patient_dir;
@@ -55,7 +56,6 @@ private:
     void set_spots_per_field();
     void set_total_spots();
     void set_planning_CT_file();
-    void get_treatment_planes();
 
     void consolidate_originals();
     std::vector<BeamAngles_t> original_angles;

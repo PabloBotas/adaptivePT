@@ -115,6 +115,15 @@ float2 virtual_src_to_iso_pos(float3 pos, float2 SAD)
     return spot;
 }
 
+void virtual_src_to_iso_pos(Array4<float>& pos, SAD_t SAD)
+{
+    for (size_t i = 0; i < pos.size(); i++)
+    {
+        pos.at(i).x = pos.at(i).x * SAD.a / (SAD.a + pos.at(i).z);
+        pos.at(i).y = pos.at(i).y * SAD.b / (SAD.b + pos.at(i).z);
+    }
+}
+
 float2 virtual_src_to_iso_pos(float3 pos, float3 cos)
 {
     float2 spot;

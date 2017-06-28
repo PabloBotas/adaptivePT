@@ -50,7 +50,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Volume_t &ct,
-                          Array4<float>& orig_endpoints,
+                          const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
                           std::string output_file)
@@ -68,11 +68,11 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     correct_offsets (xbuffer.size(), 
         make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
         make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
-    correct_offsets_endpoints (orig_endpoints, 
-        make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-        make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+    Array4<float> off_endpoints = offset_endpoints (orig_endpoints, 
+                                      make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                                      make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
-    gpu_raytrace (pat, endpoints, output_file, orig_endpoints);
+    gpu_raytrace (pat, endpoints, output_file, off_endpoints);
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,

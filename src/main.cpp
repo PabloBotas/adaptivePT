@@ -2,9 +2,11 @@
 #include <string>
 
 #include "command_line_parser.hpp"
+#include "initialize_rays.cuh"
 #include "gpu_main.cuh"
 #include "gpu_source_positioning.cuh"
 #include "patient_parameters.hpp"
+#include "tramp.hpp"
 #include "utils.hpp"
 #include "volume.hpp"
 #include "warper.hpp"
@@ -22,15 +24,22 @@
 // TODO Verify that VF probing is correctly done. How?
 // Done Verify CBCT offsets are correctly updated
 
-void deal_with_ct(Patient_Parameters_t& patient_data,
+void deal_with_ct(Patient_Parameters_t& pat,
                   const Parser& parser,
                   Array4<float>& ct_vf_endpoints,
                   Array4<float>& ct_vf_init_pat_pos);
 
-void deal_with_cbct(Patient_Parameters_t& patient_data,
+void deal_with_cbct(Patient_Parameters_t& pat,
                     const Parser& parser,
-                    Array4<float>& ct_vf_endpoints,
-                    Array4<float>& ct_vf_init_pat_pos);
+                    const Array4<float>& ct_vf_endpoints,
+                    const Array4<float>& ct_vf_init_pat_pos,
+                    std::vector<float>& energy_shift);
+
+void export_adapted(Patient_Parameters_t& pat,
+                    const std::string& out_dir,
+                    const std::vector<float>& energy_shift,
+                    Array4<float>& pat_pos,
+                    Array4<float>& pat_pos2);
 
 int main(int argc, char** argv)
 {
@@ -38,19 +47,23 @@ int main(int argc, char** argv)
     parser.print_parameters();
 
     // Read input patient
-    Patient_Parameters_t patient_data(parser.patient);
-    patient_data.add_results_directory(parser.out_dir);
-    patient_data.print();
-    patient_data.ext_to_int_coordinates();
+    Patient_Parameters_t pat(parser.patient);
+    pat.add_results_directory(parser.out_dir);
+    pat.print();
+    pat.ext_to_int_coordinates();
+    pat.set_treatment_planes();
 
     // Start device
     cudaEvent_t start;
     initialize_device(start);
 
-    Array4<float> ct_endpoints(patient_data.total_spots);
-    Array4<float> ct_init_pat_pos(patient_data.total_spots);
-    deal_with_ct (patient_data, parser, ct_endpoints, ct_init_pat_pos);
-    deal_with_cbct (patient_data, parser, ct_endpoints, ct_init_pat_pos);
+    Array4<float> ct_endpoints(pat.total_spots);
+    Array4<float> ct_init_pat_pos(pat.total_spots);
+    deal_with_ct (pat, parser, ct_endpoints, ct_init_pat_pos);
+    std::vector<float> energy_shift(pat.total_spots);
+    deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
+
+    export_adapted (pat, parser.out_dir, energy_shift, ct_init_pat_pos, ct_endpoints);
 
     // Stop device
     stop_device(start);
@@ -58,29 +71,28 @@ int main(int argc, char** argv)
     exit(EXIT_SUCCESS);
 }
 
-void deal_with_ct(Patient_Parameters_t& patient_data,
+void deal_with_ct(Patient_Parameters_t& pat,
                   const Parser& parser,
                   Array4<float>& ct_endpoints,
                   Array4<float>& ct_init_pat_pos)
 {
     // Read CT and launch rays
-    Volume_t ct(patient_data.planning_ct_file, Volume_t::Source_type::CTVOLUME);
+    Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
     // The CT volume lacks dimensions information
-    ct.setDims(patient_data.ct);
+    ct.setDims(pat.ct);
 
     // Get endpoints in CT ----------------------------
-    ct_endpoints.resize(patient_data.total_spots);
-    ct_init_pat_pos.resize(patient_data.total_spots);
-    Array4<float> ct_init_pos(patient_data.total_spots);
-    gpu_raytrace_original (patient_data, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
+    ct_endpoints.resize(pat.total_spots);
+    ct_init_pat_pos.resize(pat.total_spots);
+    Array4<float> ct_init_pos(pat.total_spots);
+    gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
                            "output_volume.raw");
-    Array4<float> treatment_plane = get_treatment_planes(patient_data.angles);
     // Print results
-    size_t iters = patient_data.total_spots < 5 ? patient_data.total_spots : 5;
+    size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 
     // Warp endpoints in CT ---------------------------
     warp_data (ct_endpoints, ct_init_pat_pos, parser.vf_file,
-               patient_data.ct, treatment_plane, patient_data.spots_per_field);
+               pat.ct, pat.treatment_planes.dir, pat.spots_per_field);
     
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;
@@ -88,24 +100,45 @@ void deal_with_ct(Patient_Parameters_t& patient_data,
         ct_init_pat_pos.at(i).print();
 }
 
-void deal_with_cbct(Patient_Parameters_t& patient_data,
+void deal_with_cbct(Patient_Parameters_t& pat,
                     const Parser& parser,
-                    Array4<float>& ct_vf_endpoints,
-                    Array4<float>& ct_vf_init_pat_pos)
+                    const Array4<float>& ct_vf_endpoints,
+                    const Array4<float>& ct_vf_init_pat_pos,
+                    std::vector<float>& energy_shift)
 {
     // Get endpoints in CBCT --------------------
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
     cbct.ext_to_int_coordinates();
-    patient_data.update_geometry_with_external(cbct);
+    pat.update_geometry_with_external(cbct);
 
-    Array4<float> cbct_endpoints(patient_data.total_spots);
-    gpu_raytrace_warped (patient_data, cbct, ct_vf_endpoints,
+    Array4<float> cbct_endpoints(pat.total_spots);
+    gpu_raytrace_warped (pat, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
                          "output_volume_cbct.raw");
 
-    // Print results
-    size_t iters = patient_data.total_spots < 5 ? patient_data.total_spots : 5;
-    std::cout << "X \t Y \t Z \t Energy adapt" << std::endl;
-    for (size_t i = 0; i < iters; i++)
-        cbct_endpoints.at(i).print();
+    // Print results ----------------------------
+    for (size_t i = 0; i < cbct_endpoints.size(); i++)
+        energy_shift.at(i) = cbct_endpoints.at(i).w;
+}
+
+void export_adapted(Patient_Parameters_t& pat,
+                    const std::string& out_dir,
+                    const std::vector<float>& energy_shift,
+                    Array4<float>& pat_pos,
+                    Array4<float>& pat_pos2)
+{
+    // Go to virtual source pos
+    treatment_plane_to_virtual_src (pat_pos, pat_pos2, pat);
+
+    // From virtual source to iso
+    virtual_src_to_iso_pos(pat_pos, pat.virtualSAD);
+    
+    // Assign to new spotmap
+    for (size_t i = 0; i < pat.nbeams; i++)
+    {
+        Tramp_t tramp(pat.tramp_files.at(i));
+        tramp.shift_energies(energy_shift);
+        tramp.set_pos(pat_pos);
+        tramp.to_file(pat.tramp_files.at(i), out_dir);
+    }
 }

@@ -2,6 +2,7 @@
 #define __UTILS_HPP__
 
 #include "special_types.hpp"
+#include "vector4.hpp"
 
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@ namespace utils
                               std::string const& to_replace);
     std::string run_command(const std::string cmd);
     void cm_to_mm(Array4<float>& v);
+    Vector4_t<float> rotate(const Vector4_t<float>& p, const float& gantry, const float& couch);
 }
 
 #endif

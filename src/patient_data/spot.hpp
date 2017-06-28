@@ -15,7 +15,6 @@ struct Spot_t
     float e;
     float w;
 
-    void ShiftEnergy(float d);
     friend std::ostream& operator<<(std::ostream& os, const Spot_t& s);
 };
 

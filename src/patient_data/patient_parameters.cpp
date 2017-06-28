@@ -1,7 +1,8 @@
 #include "patient_parameters.hpp"
 #include "patient_parameters_parser.hpp"
-#include "gpu_source_positioning.hpp"
 #include "tramp.hpp"
+#include "special_types.hpp"
+#include "utils.hpp"
 
 #include <iostream>
 #include <string>
@@ -21,7 +22,6 @@ Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
     set_spots_per_field();
     set_total_spots();
     set_planning_CT_file();
-    get_treatment_planes();
 }
 
 void Patient_Parameters_t::set_planning_CT_file()
@@ -285,15 +285,15 @@ void Patient_Parameters_t::set_total_spots()
     }
 }
 
-void get_treatment_planes()
+void Patient_Parameters_t::set_treatment_planes()
 {
     treatment_planes.dir.resize(nbeams);
-    treatment_planes.pos.resize(nbeams);
+    treatment_planes.p.resize(nbeams);
     for (size_t i = 0; i < nbeams; i++)
     {
-        treatment_planes.dir.at(i) = rotate(Vector4_t<float>(0, 0, 1, 0),
+        treatment_planes.dir.at(i) = utils::rotate(Vector4_t<float>(0, 0, 1, 0),
                                             angles.at(i).gantry, angles.at(i).couch);
-        treatment_planes.pos.at(i) = rotate(Vector4_t<float>(0, 0, -isocenter_to_beam_distance.at(i), 0),
+        treatment_planes.p.at(i) = utils::rotate(Vector4_t<float>(0, 0, -isocenter_to_beam_distance.at(i), 0),
                                             angles.at(i).gantry, angles.at(i).couch);
     }
 }

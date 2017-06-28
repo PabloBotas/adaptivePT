@@ -1,7 +1,7 @@
 #include "tramp.hpp"
 #include "spot.hpp"
 #include "energy_range.hpp"
-
+#include "vector4.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -12,6 +12,7 @@
 #include <math.h>
 #include <assert.h>
 #include <algorithm>
+#include <sys/stat.h>
 
 #define MM2CM 0.1
 #define CM2MM 10
@@ -169,8 +170,15 @@ void Tramp_t::print(unsigned int n0, unsigned int n1)
 }
 
 
-void Tramp_t::to_file(std::string f)
+void Tramp_t::to_file(std::string f, std::string dir)
 {
+    if(!dir.empty())
+    {
+        mkdir(dir.c_str(), 0774);
+        f = f.substr(f.find_last_of("/"));
+        f = dir + "/" + f;
+    }
+
     std::ofstream os(f);
     os << "# patient_id "              << patient_id             << '\n';
     os << "# patient_first_name "      << patient_first_name     << '\n';
@@ -190,7 +198,7 @@ void Tramp_t::to_file(std::string f)
         Spot_t thisspot = spots.at(i);
         thisspot.x *= CM2MM;
         thisspot.y *= CM2MM;
-        os << thisspot << "\n";
+        os << std::fixed << std::setprecision(6) << thisspot << "\n";
     }
 }
 
@@ -200,6 +208,26 @@ void Tramp_t::setEnergies()
     for (size_t i = 0; i < nspots; i++)
     {
         energies.push_back(spots[i].e);
+    }
+}
+
+
+void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
+{
+    float conv = units ? 1/1e6 : 1;
+    for (size_t i = 0; i < nspots; i++)
+    {
+        energies.at(i) += e_.at(i)*conv;
+        spots.at(i).e += e_.at(i)*conv;
+    }
+}
+
+void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
+{
+    for (size_t i = 0; i < nspots; i++)
+    {
+        spots.at(i).x = p.at(i).x;
+        spots.at(i).y = p.at(i).y;
     }
 }
 

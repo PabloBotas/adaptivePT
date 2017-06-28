@@ -1,5 +1,6 @@
 #include "gpu_source_positioning.cuh"
 
+#include "initialize_rays.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_geometry_tools.cuh"
 #include "gpu_utils.cuh"
@@ -23,19 +24,6 @@ void virtual_src_to_treatment_plane(const unsigned int& num,
     check_kernel_execution(__FILE__, __LINE__);
 
     cudaFree(angles_gpu);
-}
-
-__host__ Array4<float>
-get_treatment_planes (const std::vector<BeamAngles_t>& angles)
-{
-    Array4<float> planes(angles.size());
-    for (size_t i = 0; i < angles.size(); i++)
-    {
-        planes.at(i) = rotate(Vector4_t<float>(0, 0, 1, 0),
-                              angles.at(i).gantry, angles.at(i).couch);
-    }
-
-    return planes;
 }
 
 __global__ void virtual_src_to_treatment_plane_kernel(const int num,
@@ -105,14 +93,15 @@ __global__ void correct_offsets_kernel(const int num,
     }
 }
 
-void correct_offsets_endpoints(Array4<float>& orig_endpoints,
+Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
                                const float3& offsets,
                                const float3& original_offsets)
 {
+    Array4<float> off_endpoints = orig_endpoints;
     float4* dev_orig_endpoints = NULL;
-    array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
+    array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, off_endpoints.data(), orig_endpoints.size());
 
-    size_t num = orig_endpoints.size();
+    size_t num = off_endpoints.size();
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
     correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num,
                              dev_orig_endpoints,
@@ -120,9 +109,11 @@ void correct_offsets_endpoints(Array4<float>& orig_endpoints,
                              original_offsets);
     check_kernel_execution(__FILE__, __LINE__);
 
-    retrieve_scorer<float, float4>(&orig_endpoints[0].x, dev_orig_endpoints, num);
+    retrieve_scorer<float, float4>(&off_endpoints[0].x, dev_orig_endpoints, num);
 
     cudaFree(dev_orig_endpoints);
+
+    return off_endpoints;
 }
 
 __global__ void correct_offsets_kernel(const int num,
@@ -143,21 +134,99 @@ __global__ void correct_offsets_kernel(const int num,
     }
 }
 
+__host__ void treatment_plane_to_virtual_src(Array4<float>& pos,
+                                             const Array4<float>& pos2,
+                                             const Patient_Parameters_t& pat)
+{
+    std::vector<float2> temp(pat.angles.size());
+    for (size_t i = 0; i < pat.nbeams; i++)
+    {
+        temp[i].x = pat.angles.at(i).gantry;
+        temp[i].y = pat.angles.at(i).couch;
+    }
+    float3 offset = make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z);
+    Array4<float> dir = pos2;
+    for (size_t i = 0; i < dir.size(); i++)
+    {
+        // turn dir containing a point to a direction
+        dir.at(i).x -= pos.at(i).x;
+        dir.at(i).y -= pos.at(i).y;
+        dir.at(i).z -= pos.at(i).z;
+        float d = sqrt(dir.at(i).x*dir.at(i).x +
+                       dir.at(i).y*dir.at(i).y +
+                       dir.at(i).z*dir.at(i).z);
+        dir.at(i).x /= d;
+        dir.at(i).y /= d;
+        dir.at(i).z /= d;
+
+        // beam info
+        short2 meta = get_beam_spot_id(i, pat.spots_per_field);
+        pos.at(i).w = meta.x; // beamid
+        dir.at(i).w = meta.y; // spotid
+    }
+
+    float2* angles_gpu;
+    array_to_device<float2>(angles_gpu, temp.data(), pat.nbeams);
+
+    float4* pos_gpu, *dir_gpu;
+    array_to_device<float4>(pos_gpu, pos.data(), pos.size());
+    array_to_device<float4>(dir_gpu, dir.data(), dir.size());
+
+    float4* plane_pos_gpu, *plane_dir_gpu;
+    array_to_device<float4>(plane_pos_gpu, pat.treatment_planes.p.data(), pat.nbeams);
+    array_to_device<float4>(plane_dir_gpu, pat.treatment_planes.dir.data(), pat.nbeams);
+
+    int num = pos.size();
+    int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
+    treatment_plane_to_virtual_src_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(
+                                            num,
+                                            pat.nbeams,
+                                            pos_gpu, dir_gpu,
+                                            angles_gpu,
+                                            plane_dir_gpu,
+                                            plane_pos_gpu,
+                                            offset);
+    check_kernel_execution(__FILE__, __LINE__);
+
+    retrieve_scorer<float, float4>(&pos[0].x, pos_gpu, pos.size());
+
+    cudaFree(angles_gpu);
+    cudaFree(pos_gpu);
+    cudaFree(dir_gpu);
+    cudaFree(plane_pos_gpu);
+    cudaFree(plane_dir_gpu);
+}
+
 __global__ void treatment_plane_to_virtual_src_kernel(const int num,
+                                                      const int nbeams,
+                                                      float4* pos_,
+                                                      const float4* dir_,
                                                       const float2* angles,
+                                                      const float4* plane_dir,
+                                                      const float4* plane_pos,
                                                       const float3 ct_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
     if (tid < num)
     {
-        float4 pos  = xdata[tid];
-        float4 vel  = vxdata[tid];
-        short2 meta = ixdata[tid]; // x = beam_id, y = spot_id
-        short beamid = meta.x;
+        float4 pos  = pos_[tid];
+        float4 vel  = dir_[tid];
+        short beamid = pos_[tid].w;
+        float4 p_pos = plane_pos[beamid];
+        float4 p_dir = plane_dir[beamid];
 
-        // TODO: Ray trace to plane outside of CT volume if necessary????
+        p_pos -= make_float4(ct_offsets);
+        // Ray trace to virtual source plane if necessary
+        float d = dot((p_pos - pos), p_dir) / dot(vel, p_dir);
+        if ( fabs(d) > 0.0001f )
+        {
+            pos.x += d*vel.x;
+            pos.y += d*vel.y;
+            pos.z += d*vel.z;
+        }
 
+        // Add offsets
         pos.x += ct_offsets.x;
         pos.y += ct_offsets.y;
         pos.z += ct_offsets.z;
@@ -166,14 +235,15 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
         float gantry = angles[beamid].x;
         float couch  = angles[beamid].y;
         pos = rotate(pos, -gantry, -couch);
-        vel = rotate(vel, -gantry, -couch);
+        // vel = rotate(vel, -gantry, -couch);
 
         // Adjust to external coordinates
         pos = int_to_ext_coordinates(pos);
-        vel = int_to_ext_coordinates(vel);
+        // vel = int_to_ext_coordinates(vel);
 
-        xdata[tid]  = pos;
-        vxdata[tid] = vel;
+        // Return to array
+        pos_[tid] = pos;
+        // dir_[tid] = vel;
     }
 }
 
@@ -272,22 +342,6 @@ __device__ float4 rotate(const float4& p, const float& gantry, const float& couc
     float s_gantry = __sinf(gantry);
 
     float4 res;
-    res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
-    res.y = p.y*c_gantry - p.z*s_gantry;
-    res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);
-    res.w = p.w;
-
-    return res;
-}
-
-__host__ Vector4_t<float> rotate(const Vector4_t<float>& p, const float& gantry, const float& couch)
-{
-    float c_couch  = cos(couch);
-    float s_couch  = sin(couch);
-    float c_gantry = cos(gantry);
-    float s_gantry = sin(gantry);
-
-    Vector4_t<float> res;
     res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
     res.y = p.y*c_gantry - p.z*s_gantry;
     res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);

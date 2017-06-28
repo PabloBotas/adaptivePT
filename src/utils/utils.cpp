@@ -89,3 +89,19 @@ void utils::cm_to_mm(Array4<float>& vec)
         vec[i].z *= CM2MM;
     }
 }
+
+Vector4_t<float> utils::rotate(const Vector4_t<float>& p, const float& gantry, const float& couch)
+{
+    float c_couch  = cos(couch);
+    float s_couch  = sin(couch);
+    float c_gantry = cos(gantry);
+    float s_gantry = sin(gantry);
+
+    Vector4_t<float> res;
+    res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
+    res.y = p.y*c_gantry - p.z*s_gantry;
+    res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);
+    res.w = p.w;
+
+    return res;
+}
