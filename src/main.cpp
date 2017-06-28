@@ -85,7 +85,7 @@ void deal_with_ct(Patient_Parameters_t& pat,
     ct_init_pat_pos.resize(pat.total_spots);
     Array4<float> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
-                           "output_volume.raw");
+                           std::string());
     // Print results
     size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 
@@ -113,7 +113,7 @@ void deal_with_cbct(Patient_Parameters_t& pat,
     Array4<float> cbct_endpoints(pat.total_spots);
     gpu_raytrace_warped (pat, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
-                         "output_volume_cbct.raw");
+                         std::string());
 
     // Print results ----------------------------
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
