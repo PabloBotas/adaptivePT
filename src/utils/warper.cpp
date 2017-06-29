@@ -119,9 +119,9 @@ void Warper_t::write_to_file(const Array4<float>& p,
 
     int beamid = 0;
     ofs << "vx vy vz x y z beamid spotid\n";
-    for (size_t i = 0, spotid = 0; i < vf.size(); i++, spotid++)
+    for (short i = 0, spotid = 0; i < (short)vf.size(); i++, spotid++)
     {
-        if (i == (size_t)spots_per_field.at(beamid))
+        if (i == spots_per_field.at(beamid))
         {
             spotid -= spots_per_field.at(beamid);
             beamid += 1;
