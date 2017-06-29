@@ -7,54 +7,40 @@
 #include <string>
 #include <vector>
 
-void 
-apply_vf (Array4<float>& p,
-          const Array3<float>& vf);
+class Warper_t
+{
+public:
+    Warper_t(const std::string vf_file,
+             const std::string output_vf);
+    void apply_to (Array4<float>& endpoints,
+                   Array4<float>& init_pos,
+                   const CT_Dims_t& ct,
+                   Array4<float> treatment_plane,
+                   const std::vector<short>& spots_per_field);
+    
+private:
+    // Constructor helpers
+    void set_vf_origins ();
+    // Main functions
+    void probe (const Array4<float>& p);
+    void write_to_file (const Array4<float>& p,
+                        const std::vector<short>& spots_per_field);
+    void warp_points (Array4<float>& p);
+    void project_vf_on_plane (const Array4<float>& n,
+                              const std::vector<short>& spots_per_field);
 
-void
-export_vf(const Array3<float>& vf,
-          const Array4<float>& p,
-          const std::string& file,
-          const std::vector<short>& spots_per_field);
-void
-flip_positions_X (Array4<float>& vec,
-                  const CT_Dims_t dims);
+    // Utils
+    void flip_positions_X (Array4<float>& vec, const CT_Dims_t dims);
+    void flip_direction_X (Array4<float>& vec);
+    std::string to_location_str (const Vector3_t<float>& p, const bool last);
 
-void
-flip_direction_X (Array4<float>& vec);
+    bool exp_file;
+    std::string file;
+    std::string output;
+    Vector3_t<float> origins;
+    Array3<float> vf;
+};
 
-void 
-get_unitary_vector (Array3<float>& r,
-                    const Array4<float>& p,
-                    const Array4<float>& p2);
 
-Array3<float>
-get_vf_from_stdout (std::string str);
-
-void
-probe_vf (Array3<float>& vf,
-          const Array4<float>& p,
-          std::string vf_file);
-
-Array3<float>
-probe_vf (const Array4<float>& p,
-          std::string vf_file);
-
-void 
-project_vector_on_plane (Array3<float>& p,
-                         const Array4<float>& n,
-                         const std::vector<short>& spots_per_field);
-
-std::string
-to_location_str (const Vector3_t<float>& p, const bool last);
-
-void
-warp_data (Array4<float>& endpoints,
-           Array4<float>& init_pos,
-           const std::string vf_file,
-           const std::string output_vf,
-           const CT_Dims_t& ct,
-           Array4<float> treatment_plane,
-           const std::vector<short>& spots_per_field);
 
 #endif
