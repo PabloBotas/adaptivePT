@@ -100,7 +100,6 @@ def analize_tramp(shifts_file, tramp_files, outdir):
 
     for i, f in enumerate(tramp_files, start=0):
         r = np.genfromtxt(f, skip_header=12, names = ['e', 'x', 'y', 'w']).T
-
         e = r['e']
         x = r['x']
         y = r['y']
@@ -117,8 +116,16 @@ def analize_tramp(shifts_file, tramp_files, outdir):
         ax = plt.subplot(2, 1, 1)
         ax.hist(e+de, nbins, alpha = 0.75)
         ax.hist(e, nbins, alpha = 0.75, stacked=True)
+        ax.set_title('Energy layers', fontsize=12)
+        ax.set_xlabel('Energy (MeV)', fontsize=11)
+        ax.annotate('Original energy layers = ' + str(len(np.unique(e))) + '\nAdapted energy layers = ' + str(len(np.unique(de))),
+                    xy=(10, 10), xycoords='figure pixels')
         ax = plt.subplot(2, 1, 2)
-        ax.hist(de, nbins, alpha = 0.75)
+        ax.hist(y+vy, nbins, alpha = 0.75)
+        ax.hist(y, nbins, alpha = 0.75, stacked=True)
+        ax.set_title('Slow dimension layers', fontsize=12)
+        ax.annotate('Original energy layers = ' + str(len(np.unique(e))) + '\nAdapted energy layers = ' + str(len(np.unique(de))),
+                    xy=(10, 10), xycoords='figure pixels')
 
         # ax.set_xlabel('Vector size (mm)', fontsize=11)
         # ax.tick_params(labelsize=6)
