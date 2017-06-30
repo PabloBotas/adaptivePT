@@ -42,7 +42,9 @@ void Parser::process_command_line(int argc, char** argv)
         ("output_ct_traces", po::value<std::string>(&output_ct_traces)->default_value(std::string()),
                      "If the traces on the CT volume should be scored to a file.")
         ("output_cbct_traces", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
-                     "If the traces on the CBCT volume should be scored to a file.");
+                     "If the traces on the CBCT volume should be scored to a file.")
+        ("ct_traces_individual", po::bool_switch(&ct_traces_individual)->default_value(false),
+                     "If the traces should be scored individually.");
         // ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
         //             "If the energy should be adapted layer by layer instead of with individual spots")
         // ;
@@ -53,7 +55,11 @@ void Parser::process_command_line(int argc, char** argv)
             std::cout << desc << std::endl;
             exit(EXIT_SUCCESS);
         }
-
+        if (vm.count("ct_traces_individual")&& ! vm.count("output_ct_traces")) {
+            std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces." << std::endl;
+            std::cerr << "See --help for syntax." << std::endl;
+            exit(EXIT_SUCCESS);
+        }
         po::notify(vm);
     }
     catch(std::exception& e) {

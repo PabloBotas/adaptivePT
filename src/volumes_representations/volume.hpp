@@ -24,12 +24,13 @@ public:
              const float& dx, const float& dy, const float& dz);
     Volume_t(const float* src,
              const CT_Dims_t& dims);
-    Volume_t(const CT_Dims_t& dims);
+    Volume_t(const CT_Dims_t& dims, const bool long = false);
 
     void setDims(const CT_Dims_t& pat_ct, const bool interpolate = false);
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
     void setSpacing(float x, float y, float z);
     void output(std::string outfile, std::string out_type);
+    void output(std::string outfile, std::string out_type, bool split);
     void output(std::string outfile, std::string out_type, const CT_Dims_t& dims);
     void ext_to_int_coordinates();
 
@@ -42,6 +43,7 @@ public:
     unsigned int nElements;
 
     std::vector<float> data;
+    std::vector<double> long_data;
 private:
     Vector3_t<unsigned int> original_n;
     Vector3_t<float> original_d;
@@ -57,7 +59,7 @@ private:
     void interpolate_to_geometry(Volume_t& pat, const CT_Dims_t& pat_ct, const float extrapolationValue = 0);
     void interpolate_to_geometry(const CT_Dims_t& pat_ct, const float extrapolationValue = 0);
     void do_interpolate(std::vector<float>& dest, const CT_Dims_t& pat_ct, const float extrapolationValue = 0);
-
+    bool high_precision = false;
 };
 
 #endif

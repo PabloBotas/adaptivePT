@@ -92,7 +92,7 @@ void deal_with_ct(Patient_Parameters_t& pat,
     ct_init_pat_pos.resize(pat.total_spots);
     Array4<float> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
-                           parser.output_ct_traces);
+                           parser.output_ct_traces, parser.split_traces);
     // Print results
     size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 

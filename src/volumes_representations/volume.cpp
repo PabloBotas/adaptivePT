@@ -40,10 +40,16 @@ Volume_t::Volume_t(const std::string& f,
     consolidate_originals();
 }
 
-Volume_t::Volume_t(const CT_Dims_t& dims)
+Volume_t::Volume_t(const CT_Dims_t& dims, bool long)
 {
     nElements = dims.total;
-    data.resize(nElements);
+    if (long)
+    {
+        long_data.resize(nElements);
+        high_precision = true;
+    }
+    else
+        data.resize(nElements);
     setDims(dims);
     consolidate_originals();
 }
@@ -168,7 +174,10 @@ void Volume_t::export_binary(std::string f)
         exit(EXIT_FAILURE);
     }
 
-    ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
+    if (high_precision)
+        ofs.write (reinterpret_cast<char*>(long_data.data()), nElements*sizeof(double));
+    else
+        ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
     ofs.close();
 }
 
@@ -181,6 +190,30 @@ void Volume_t::ext_to_int_coordinates()
     // std::swap(imgCenter.x, imgCenter.z);
     // origin.x *= -1;
     // imgCenter.x *= -1;
+}
+
+void Volume_t::output(std::string outfile, std::string out_type, bool split)
+{
+    if(split)
+    {
+        output(outfile, out_type);
+        return;
+    }
+
+    
+    std::ofstream ofs;
+    ofs.open (f, std::ios::out | std::ios::binary);
+    if( !ofs.is_open() )
+    {
+        std::cerr << "Can not open file " << f << " to write results." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (high_precision)
+        ofs.write (reinterpret_cast<char*>(long_data.data()), nElements*sizeof(double));
+    else
+        ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
+    ofs.close();
 }
 
 void Volume_t::output(std::string outfile, std::string out_type)
@@ -204,8 +237,6 @@ void Volume_t::output(std::string outfile, std::string out_type)
     }
     else
         std::cerr << "Output type not supported, supported type: mhd" << std::endl;
-
-    // Export file
 }
 
 void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file)
