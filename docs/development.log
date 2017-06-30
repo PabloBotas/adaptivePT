@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2016.10.19)  14 JUN 2017 14:59
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2016.10.19)  28 JUN 2017 08:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -791,63 +791,92 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <8> on input line 17.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 17.
-Package hyperref Info: bookmark level for unknown todo defaults to 0 on input l
-ine 18.
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 46.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 40.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 46.
- [1
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 40.
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] <beam.png, id=45, 331.2375
-pt x 229.85875pt>
+Underfull \hbox (badness 10000) in paragraph at lines 44--46
+
+ []
+
+Package hyperref Info: bookmark level for unknown todo defaults to 0 on input l
+ine 47.
+<energies_original.pdf, id=23, 474.77374pt x 361.35pt>
+File: energies_original.pdf Graphic file (type pdf)
+
+<use energies_original.pdf>
+Package pdftex.def Info: energies_original.pdf used on input line 54.
+(pdftex.def)             Requested size: 212.47617pt x 161.71277pt.
+
+<energies_adapted.pdf, id=24, 474.77374pt x 361.35pt>
+File: energies_adapted.pdf Graphic file (type pdf)
+
+<use energies_adapted.pdf>
+Package pdftex.def Info: energies_adapted.pdf used on input line 55.
+(pdftex.def)             Requested size: 212.47617pt x 161.71277pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[1
+
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+<beam.png, id=49, 331.2375pt x 229.85875pt>
 File: beam.png Graphic file (type png)
-
-<use beam.png>
-Package pdftex.def Info: beam.png used on input line 61.
+ <use beam.png>
+Package pdftex.def Info: beam.png used on input line 71.
 (pdftex.def)             Requested size: 212.47617pt x 147.44579pt.
- <profile.png, id=46, 402.50375pt x 302.12875pt>
-File: profile.png Graphic file (type png)
 
-<use profile.png>
-Package pdftex.def Info: profile.png used on input line 62.
+<profile.png, id=50, 402.50375pt x 302.12875pt>
+File: profile.png Graphic file (type png)
+ <use profile.png>
+Package pdftex.def Info: profile.png used on input line 72.
 (pdftex.def)             Requested size: 212.47617pt x 159.48666pt.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 63.
+(Font)              <7> on input line 73.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 63.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 69.
- [2 <./beam.png> <./profile.png>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 69.
+(Font)              <5> on input line 73.
+
+<pat1_init_dvh.png, id=51, 508.14844pt x 326.72063pt>
+File: pat1_init_dvh.png Graphic file (type png)
+ <use pat1_init_dvh.png>
+Package pdftex.def Info: pat1_init_dvh.png used on input line 86.
+(pdftex.def)             Requested size: 260.17464pt x 167.28836pt.
+
+[2 <./energies_original.pdf> <./energies_adapted.pdf> <./beam.png> <./profile.p
+ng>]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 90.
+ [3 <./pat1_init_dvh.png (PNG copy)>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 90.
  (./development.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 69.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 69.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 90.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 90.
 Package rerunfilecheck Info: File `development.out' has not changed.
-(rerunfilecheck)             Checksum: 59211ED85504BFC000CF39A67BEEC13A;145.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 69.
+(rerunfilecheck)             Checksum: FF3C06E25C4C81BEECB6E94F5F9D6593;204.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 90.
  ) 
 Here is how much of TeX's memory you used:
- 14539 strings out of 495028
- 259004 string characters out of 6181496
- 332279 words of memory out of 5000000
- 17464 multiletter control sequences out of 15000+600000
- 7588 words of font info for 27 fonts, out of 8000000 for 9000
+ 14555 strings out of 495028
+ 259335 string characters out of 6181496
+ 332234 words of memory out of 5000000
+ 17475 multiletter control sequences out of 15000+600000
+ 7280 words of font info for 26 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  63i,7n,80p,430b,577s stack positions out of 5000i,500n,10000p,200000b,80000s
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
-r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on development.pdf (2 pages, 97382 bytes).
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texm
+f-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/public/amsfonts/cm/cmsy10.pfb>
+Output written on development.pdf (3 pages, 123221 bytes).
 PDF statistics:
- 87 PDF objects out of 1000 (max. 8388607)
- 73 compressed objects within 1 object stream
- 25 named destinations out of 1000 (max. 500000)
- 47 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 105 PDF objects out of 1000 (max. 8388607)
+ 86 compressed objects within 1 object stream
+ 28 named destinations out of 1000 (max. 500000)
+ 70 words of extra memory for PDF output out of 10000 (max. 10000000)
 

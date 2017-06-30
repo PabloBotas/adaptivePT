@@ -39,3 +39,21 @@ data <- as.data.table(read.table(file = "energy_shifts.dat", header = FALSE, sep
 data <- data %>% mutate(energy = energy / 1000000)
 ggplot(data, aes(energy)) +
     geom_histogram(binwidth = 0.5)
+
+##--------
+##
+##
+##
+
+adapted <- as.data.table(read.table(file = "P01_135A1_adapted.tramp",
+                                 colClasses = "numeric",
+                                 col.names  = c("energy", "x", "y", "w")))
+
+original <- as.data.table(read.table(file = "P01_135A1.tramp",
+                                    colClasses = "numeric",
+                                    col.names  = c("energy", "x", "y", "w")))
+
+ggplot(adapted, aes(energy)) +
+    geom_histogram(binwidth = 1)
+ggplot(original, aes(energy)) +
+    geom_histogram(binwidth = 1)
