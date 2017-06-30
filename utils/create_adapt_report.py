@@ -10,7 +10,7 @@ import delivery_timing
 from matplotlib.backends.backend_pdf import PdfPages
 
 
-def analize_vf(vf_file, outdir):
+def analize_vf(vf_file):
     r = np.genfromtxt(vf_file, skip_header=1, delimiter=' ',
                       names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid']).T
     vx = r['vx']
@@ -84,7 +84,7 @@ def analize_vf(vf_file, outdir):
     return fig
 
 
-def analize_tramp(shifts_file, tramp_files, outdir):
+def analize_tramp(shifts_file, tramp_files):
     r = np.genfromtxt(shifts_file, skip_header=1, delimiter=' ',
                       names=['e', 'x', 'y', 'z', 'beamid', 'spotid']).T
     all_de = r['e']/1e6
@@ -224,7 +224,7 @@ def analize_tramp(shifts_file, tramp_files, outdir):
                     textcoords='axes fraction', xytext=(0.04, 0.615),
                     xy=(5, min(time)), fontsize=6, bbox=bbox_props_adapt)
 
-        filename = outdir + "/tramp_analysis_" + str(tramp_num) + ".pdf"
+        # filename = outdir + "/tramp_analysis_" + str(tramp_num) + ".pdf"
         # plt.savefig(filename, bbox_inches='tight')
         # plt.close()
 
@@ -246,8 +246,8 @@ def main(argv):
 
     args = parser.parse_args()
 
-    fig_vf = analize_vf(args.vf, args.outdir)
-    figs_tramp = analize_tramp(args.shifts, args.tramps, args.outdir)
+    fig_vf = analize_vf(args.vf)
+    figs_tramp = analize_tramp(args.shifts, args.tramps)
 
     if args.split:
         file = args.outdir + "/vector_field_analysis.pdf"
