@@ -147,7 +147,7 @@ def analize_tramp(shifts_file, tramp_files):
         ax.set_xlabel('Spot number', fontsize=8)
         ax.set_ylabel('Energy (MeV)', fontsize=8)
         ax.annotate('Number spots = ' + str(len(e)) + '\nOriginal energy layers  = ' +
-                    str(len(np.unique(e))) + '\nAdapted energy layers = ' + str(len(np.unique(de))),
+                    str(len(np.unique(e))) + '\nAdapted energy layers = ' + str(len(np.unique(e+de))),
                     xy=(5, min(min(e+de), min(e))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
         ax.tick_params(labelsize=8)
@@ -185,7 +185,7 @@ def analize_tramp(shifts_file, tramp_files):
         ax.set_xlabel('Spot number', fontsize=8)
         ax.set_ylabel('Slow dimension pos (mm)', fontsize=8)
         ax.annotate('Number spots = ' + str(len(e)) + '\nOriginal slow direction layers  = ' +
-                    str(len(np.unique(y))) + '\nAdapted slow direction layers = ' + str(len(np.unique(vy))),
+                    str(len(np.unique(y))) + '\nAdapted slow direction layers = ' + str(len(np.unique(y + vy))),
                     xy=(5, min(min(y + vy), min(y))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
         ax.tick_params(labelsize=8)
@@ -256,7 +256,7 @@ def main(argv):
             file = args.outdir + "/tramp_analysis_" + str(i) + ".pdf"
             plt.savefig(file, bbox_inches='tight')
     else:
-        pp = PdfPages('adapt_report.pdf')
+        pp = PdfPages(args.outdir + "/adapt_report.pdf")
         pp.savefig(fig_vf, bbox_inches='tight')
         for i in figs_tramp:
             pp.savefig(i, bbox_inches='tight')
