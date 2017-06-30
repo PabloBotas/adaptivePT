@@ -66,7 +66,8 @@ int main(int argc, char** argv)
     Array4<float> ct_init_pat_pos(pat.total_spots);
     deal_with_ct (pat, parser, ct_endpoints, ct_init_pat_pos);
     std::vector<float> energy_shift(pat.total_spots);
-    deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
+    if (!parser.no_energy)
+        deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
     export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints);
 
