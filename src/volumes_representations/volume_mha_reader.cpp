@@ -1,5 +1,6 @@
 #include "volume_mha_reader.hpp"
 #include "special_types.hpp"
+#include "utils.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -25,10 +26,7 @@ void Mha_reader_t::read_file()
 void Mha_reader_t::read_header()
 {
     std::ifstream stream(file);
-    if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << file << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(stream, file, std::string());
 
     // Get header values
     ObjectType             = getHeaderValue<std::string>(stream);

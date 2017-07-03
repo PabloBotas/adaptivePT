@@ -1,6 +1,7 @@
 #include "gpu_physics_data_to_device.cuh"
 
 #include "gpu_device_globals.cuh"
+#include "utils.hpp"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -19,10 +20,7 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_star
     std::string file = "/opt/utils/adaptSpotEnergies/src/phys_data/mass_stopping_power_ratio.dat";
     std::cout << "sendMassStoppingPowerRatio: Reading " << file << std::endl;
     std::ifstream stream(file);
-    if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << file << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(stream, file, "to read mass stopping powers.");
 
     std::string line;
     std::string dummy;
@@ -80,10 +78,7 @@ void gpu_physics_to_device::sendWaterRestrictedSPower()
     std::string file = "/opt/utils/adaptSpotEnergies/src/phys_data/nist_stopping_power_water.dat";
     std::cout << "sendWaterRestrictedSPower: Reading " << file << std::endl;
     std::ifstream stream(file);
-    if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << file << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(stream, file, "to read restricted stopping powers.");
 
     std::string line;
     // Two dummy lines 

@@ -13,13 +13,14 @@ SupressStd 1
 
 SourceType FluenceMap
 SimulationType perSpot
+ScoreToCTGrid 1
 
 MCAUTOAstroid 1
-SpotFactor 500000
+SpotFactor 5000000
 Machine TopasMediumSpots
 CTvolume input/ctbinary/ctvolume.dat
 
 ## Output path
-OutputFilePrefix ./out_base_plan
+OutputFilePrefix ./out_base_plan_ct
 
 ClipDoseOutsidePatient 1

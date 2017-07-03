@@ -92,7 +92,7 @@ void deal_with_ct(Patient_Parameters_t& pat,
     ct_init_pat_pos.resize(pat.total_spots);
     Array4<float> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
-                           parser.output_ct_traces);
+                           parser.output_ct_traces, parser.ct_traces_individual);
     // Print results
     size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 
@@ -177,11 +177,7 @@ void export_shifts(const std::vector<float>& e,
     else
         ofs.open (file, std::ios::out);
 
-    if( !ofs.is_open() )
-    {
-        std::cerr << "Can not open file " << file << " to write adaptation shifts." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(ofs, file, "to write adaptation shifts.");
 
     if (beamid == 0)
     {

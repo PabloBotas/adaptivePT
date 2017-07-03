@@ -7,8 +7,27 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <fstream>
 #include <array>
 #include <regex>
+
+void utils::check_fs(const std::ofstream& fs, std::string f, std::string msg)
+{
+    if( !fs.is_open() )
+    {
+        std::cerr << "Can not open file " << f << " " << msg << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+void utils::check_fs(const std::ifstream& fs, std::string f, std::string msg)
+{
+    if( !fs.is_open() )
+    {
+        std::cerr << "Can not open file " << f << " " << msg << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 std::string utils::toLower(std::string s)
 {

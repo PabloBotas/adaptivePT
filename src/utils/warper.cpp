@@ -110,11 +110,7 @@ void Warper_t::write_to_file(const Array4<float>& p,
 {
     std::ofstream ofs;
     ofs.open (output, std::ios::out | std::ios::binary);
-    if( !ofs.is_open() )
-    {
-        std::cerr << "Can't open file " << output << " to write vector field." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(ofs, output, "to write vector field.");
     std::cout << "Writting probed VF to " << output << std::endl;
 
     int beamid = 0;
