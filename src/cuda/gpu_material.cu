@@ -1,4 +1,5 @@
 #include "gpu_material.cuh"
+#include "utils.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -11,10 +12,7 @@ std::vector<float> readDensityCorrect(const std::string file)
 {
     std::cout << "densityCorrect: Reading " << file << std::endl;
     std::ifstream stream(file);
-    if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << file << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(stream, file, "to read densities.");
 
     std::string line;
     std::string dummy;

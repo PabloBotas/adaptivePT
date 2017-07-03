@@ -18,7 +18,7 @@ void stop_device (cudaEvent_t& start);
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    Array4<float>& endpoints,
                    std::string output_file,
-                   bool split_traces,
+                   bool ct_traces_individual,
                    const Array4<float>& orig_endpoints = Array4<float>());
 
 void gpu_raytrace_original (const Patient_Parameters_t &pat,
@@ -27,7 +27,7 @@ void gpu_raytrace_original (const Patient_Parameters_t &pat,
                             Array4<float>& init_pos,
                             Array4<float>& init_pat_pos,
                             std::string output_file,
-                            bool split_traces);
+                            bool ct_traces_individual);
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Volume_t &ct,

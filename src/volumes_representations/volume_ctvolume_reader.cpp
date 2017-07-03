@@ -1,5 +1,7 @@
 #include "volume_ctvolume_reader.hpp"
 
+#include "utils.hpp"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -18,12 +20,7 @@ void Ctvolume_reader_t::read_file(std::string file)
 
     //  open file
     std::ifstream stream(file, std::ios::binary | std::ios::ate);
-    if (!stream.is_open())
-    {
-        std::cerr << "ERROR! Planning CT \"" << file << "\" could not be opened." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
+    utils::check_fs(stream, file, "to read planning CT.");
     nElements = stream.tellg()/sizeof(short);
     size_t bytes_to_read = nElements*sizeof(short);
     stream.seekg(0, std::ios::beg);

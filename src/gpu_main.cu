@@ -22,7 +22,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             Array4<float>& init_pos,
                             Array4<float>& init_pat_pos,
                             std::string output_file,
-                            bool split_traces)
+                            bool ct_traces_individual)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -46,7 +46,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         init_pos.at(i).w = xbuffer[i].w; // wepl
     }
 
-    gpu_raytrace (pat, endpoints, output_file, split_traces);
+    gpu_raytrace (pat, endpoints, output_file, ct_traces_individual);
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
@@ -79,7 +79,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    Array4<float>& endpoints,
                    std::string output_file,
-                   bool split_traces,
+                   bool ct_traces_individual,
                    const Array4<float>& orig_endpoints)
 {
     // Create scorer array
@@ -89,17 +89,17 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     // Calculate rays
     if (output_file.empty())
     {
-        do_raytrace (pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
+        do_raytrace<float> (pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
     }
     else
     {
         unsigned long long int* traces_scorer = NULL;
         allocate_scorer<unsigned long long int>(traces_scorer, pat.ct.total);
-        do_raytrace (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
+        do_raytrace<unsigned long long int> (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
         Volume_t traces(pat.ct, true);
         retrieve_scorer<unsigned long long int, unsigned long long int>(&traces.long_data[0], traces_scorer, traces.nElements);
         // traces.output("output_volume.mha", "mha");
-        traces.output(output_file, "bin", split_traces, pat.spots_per_field);
+        traces.output(output_file, "bin", ct_traces_individual, pat.spots_per_field);
         gpuErrchk( cudaFree(traces_scorer) );
     }
 

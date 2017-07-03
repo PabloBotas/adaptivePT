@@ -5,6 +5,8 @@
 #include "gpu_physics.cuh"
 #include "gpu_ray_class.cuh"
 
+#include <curand_kernel.h>
+
 template<class T>
 __global__ void raytrace_plan_kernel(const short num,
                                      const short* spots_per_field,
@@ -15,6 +17,9 @@ __global__ void raytrace_plan_kernel(const short num,
     const int thread = blockIdx.x*blockDim.x + threadIdx.x;
     if(thread < num)
     {
+        curandState localState;
+        curand_init(0, thread, 0, &localState);
+
         Ray ray(xdata[thread], vxdata[thread], ixdata[thread]);
         size_t const ind = get_endpoints_index(ray.get_beam_id(),
                                          ray.get_spot_id(),
@@ -27,10 +32,10 @@ __global__ void raytrace_plan_kernel(const short num,
         pos_scorer[ind].w = initial_energy;
 
         // ray.print();
-        while (ray.is_alive() && vox.w != -1)
+        while (ray.is_alive() && vox.w >= -1)
         {
             if(traces)
-                score_traces<T>(thread, ray, traces, vox.w);
+                score_traces<T>(vox.w, localState, ray.get_beam_id(), ray.get_spot_id(), traces);
 
             float step_water = 0, step = 0, de = 0;
             float max_step = to_boundary(ray.get_position(), ray.get_direction(),
@@ -80,25 +85,39 @@ __global__ void raytrace_plan_kernel(const short num,
         }
     }
 }
-
+template
+__global__ void raytrace_plan_kernel(const short num,
+                                     const short* spots_per_field,
+                                     const float4* const orig_endpoints,
+                                     float4 *pos_scorer,
+                                     float* traces);
+template
+__global__ void raytrace_plan_kernel(const short num,
+                                     const short* spots_per_field,
+                                     const float4* const orig_endpoints,
+                                     float4 *pos_scorer,
+                                     unsigned long long int* traces);
 
 template<class T>
-__device__ score_traces(const int thread, Ray ray, T *traces, int voxnum)
+__device__ void score_traces(const int& voxnum, curandState& localState,
+                             const short& beamid, const short& spotid, T *traces)
 {
-    curandState localState = cuseed[thread];
-    if (sizeof(traces[curand_uniform(&localState)*ctTotalVoxN]) == 8)
+    int rand_index = curand_uniform(&localState)*ctTotalVoxN;
+    if (sizeof(traces[rand_index]) == sizeof(unsigned long long int))
     {
-        T val = ((T)ray.get_beam_id() |
-                ((T)ray.get_spot_id() << 4) |
-                ((T)voxnum << 15));
-        int index = curand_uniform(&localState)*ctTotalVoxN;
-        atomicExch(&traces[index], val);
+        unsigned long long int val = ((unsigned long long int)beamid) |
+                                     ((unsigned long long int)spotid) << 4 |
+                                     ((unsigned long long int)voxnum) << (4+12);
+        atomicExch(&traces[voxnum], val);
     }
     else
     {
         atomicAdd(&traces[voxnum], 1.0f);
     }
 }
+
+template __device__ void score_traces(const int& voxnum, curandState& localState, const short& beamid, const short& spotid, float *traces);
+template __device__ void score_traces(const int& voxnum, curandState& localState, const short& beamid, const short& spotid, unsigned long long int *traces);
 
 __device__ size_t get_endpoints_index(const short beam_id,
                                       const short spot_id,

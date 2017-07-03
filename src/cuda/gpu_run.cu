@@ -13,9 +13,10 @@
 #include <vector>
 #include <sys/stat.h>
 
+template<class T>
 void do_raytrace (const std::vector<short>& spots_per_field,
                   float4* positions_scorer,
-                  float* traces_scorer,
+                  T* traces_scorer,
                   const Array4<float>& orig_endpoints)
 {
     // Set up optional target endpoints
@@ -39,6 +40,17 @@ void do_raytrace (const std::vector<short>& spots_per_field,
     cudaFree(spf_gpu);
     cudaFree(dev_orig_endpoints);
 }
+template
+void do_raytrace (const std::vector<short>& spots_per_field,
+                  float4* positions_scorer,
+                  float* traces_scorer,
+                  const Array4<float>& orig_endpoints);
+template
+void do_raytrace (const std::vector<short>& spots_per_field,
+                  float4* positions_scorer,
+                  unsigned long long int* traces_scorer,
+                  const Array4<float>& orig_endpoints);
+
 
 void buffers_to_device(const std::vector<float4>& xbuffer,
                        const std::vector<float4>& vxbuffer,

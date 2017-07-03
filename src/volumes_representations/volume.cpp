@@ -2,6 +2,7 @@
 #include "volume_mha_reader.hpp"
 #include "volume_ctvolume_reader.hpp"
 #include "special_types.hpp"
+#include "utils.hpp"
 
 #include <string>
 #include <vector>
@@ -40,10 +41,10 @@ Volume_t::Volume_t(const std::string& f,
     consolidate_originals();
 }
 
-Volume_t::Volume_t(const CT_Dims_t& dims, bool long)
+Volume_t::Volume_t(const CT_Dims_t& dims, bool long_data_)
 {
     nElements = dims.total;
-    if (long)
+    if (long_data_)
     {
         long_data.resize(nElements);
         high_precision = true;
@@ -72,13 +73,10 @@ void Volume_t::consolidate_originals()
 #if defined __DEBUG_OUTPUT_READ_CT__
 void debug_ct(std::string f, float* data, size_t n)
 {
-    FILE *output;
-    if (!(output = fopen(f.c_str(),"wb"))) {
-        std::cerr << "Error opening file \"" << f << "\" for write" << std::endl;
-        exit (EXIT_FAILURE);
-    }
-    fwrite(data, sizeof(float), n, output);
-    fclose(output);
+    std::ofstream ofs;
+    ofs.open(f, std::ios::out | std::ios::binary);
+    utils::check_fs(ofs, f, "for write");
+    ofs.write (reinterpret_cast<char*>(data, n*sizeof(float)));
 }
 #endif
 
@@ -139,17 +137,13 @@ void Volume_t::import_from_metaimage(const std::vector<T>& vec)
 template void Volume_t::import_from_metaimage<short>(const std::vector<short>& data);
 
 void Volume_t::export_binary_metaimage(std::string f,
-                                               std::ios::openmode other)
+                                       std::ios::openmode other)
 {
     std::ios::openmode mode = std::ios::out | std::ios::binary | other;
 
     std::ofstream ofs;
     ofs.open (f, mode);
-    if( !ofs.is_open() )
-    {
-        std::cerr << "Can not open file " << f << " to write results." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(ofs, f, "to write results.");
     std::vector<float> temp(nElements);
     for (size_t k = 0; k < n.x; k++) {
         for (size_t j = 0; j < n.y; j++) {
@@ -168,11 +162,7 @@ void Volume_t::export_binary(std::string f)
 {
     std::ofstream ofs;
     ofs.open (f, std::ios::out | std::ios::binary);
-    if( !ofs.is_open() )
-    {
-        std::cerr << "Can not open file " << f << " to write results." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(ofs, f, "to write results.");
 
     if (high_precision)
         ofs.write (reinterpret_cast<char*>(long_data.data()), nElements*sizeof(double));
@@ -194,33 +184,52 @@ void Volume_t::ext_to_int_coordinates()
 
 void Volume_t::output(std::string outfile, std::string out_type, bool split, std::vector<short> spots_field)
 {
-    if(split)
+    if(!split)
     {
         output(outfile, out_type);
         return;
     }
 
-    
-    for (size_t ibeam = 0; ibeam < spots_field.size(); ibeam++)
-    {
-        for (size_t ispot = 0; ispot < spots_field.at(ibeam); ispot++)
-        {
-            std::ofstream ofs;
-            ofs.open (f, std::ios::out | std::ios::binary);
-            if( !ofs.is_open() )
-            {
-                std::cerr << "Can not open file " << f << " to write results." << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-        
-    }
+    std::vector<float> zeros(nElements);
+    std::vector< std::vector<bool> > cond(spots_field.size());
+    for (size_t i = 0; i < cond.size(); i++)
+        cond.at(i).resize(spots_field.at(i));
 
-    if (high_precision)
-        ofs.write (reinterpret_cast<char*>(long_data.data()), nElements*sizeof(double));
-    else
-        ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
-    ofs.close();
+    unsigned long long int mask_beam = 0x00000000000F;
+    unsigned long long int mask_spot = 0x00000000FFF0;
+    unsigned long long int mask_nvox = 0xFFFFFFFF0000;
+    for (size_t i = 0; i < nElements; i++)
+    {
+        if (long_data.at(i) == 0)
+            continue;
+
+        unsigned long long int beamid = long_data.at(i) & mask_beam;
+        unsigned long long int spotid = (long_data.at(i) & mask_spot) >> 4;
+        unsigned long long int nvoxid = (long_data.at(i) & mask_nvox) >> (4+12);
+
+        std::ofstream ofs;
+        size_t pos = outfile.find_last_of('/');
+        std::string path = "";
+        if (pos != std::string::npos)
+            path = outfile.substr(0, pos) + '/';
+        std::string f = path+"ray.beam."+std::to_string(beamid)+".spot."+std::to_string(spotid)+".dat";
+        if (cond.at(beamid).at(spotid) == false)
+        {
+            // Create file
+            ofs.open (f, std::ios::out | std::ios::binary);
+            utils::check_fs(ofs, f, "to create zero-filled results skeleton.");
+            ofs.write (reinterpret_cast<char*>(zeros.data()), nElements*sizeof(float));
+            cond.at(beamid).at(spotid) = true;
+        }
+        else
+        {
+            ofs.open (f, std::ios::out | std::ios::binary | std::ios::in);
+            utils::check_fs(ofs, f, "to write ray traces results.");
+            ofs.seekp(nvoxid*4);
+            float val = 1.0f;
+            ofs.write ((char*)&val, sizeof(float));
+        }
+    }
 }
 
 void Volume_t::output(std::string outfile, std::string out_type)
@@ -250,11 +259,7 @@ void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file
 {
     // Output header file
     std::ofstream header(outfile, std::ios::out);
-    if( !header.is_open() )
-    {
-        std::cerr << "Can not open file " << outfile << " to write results." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    utils::check_fs(header, outfile, "to write results.");
     header << "ObjectType = Image\n";
     header << "NDims = 3\n";
     header << "BinaryData = True\n";
