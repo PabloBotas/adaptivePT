@@ -192,7 +192,7 @@ void Volume_t::ext_to_int_coordinates()
     // imgCenter.x *= -1;
 }
 
-void Volume_t::output(std::string outfile, std::string out_type, bool split)
+void Volume_t::output(std::string outfile, std::string out_type, bool split, std::vector<short> spots_field)
 {
     if(split)
     {
@@ -201,12 +201,19 @@ void Volume_t::output(std::string outfile, std::string out_type, bool split)
     }
 
     
-    std::ofstream ofs;
-    ofs.open (f, std::ios::out | std::ios::binary);
-    if( !ofs.is_open() )
+    for (size_t ibeam = 0; ibeam < spots_field.size(); ibeam++)
     {
-        std::cerr << "Can not open file " << f << " to write results." << std::endl;
-        exit(EXIT_FAILURE);
+        for (size_t ispot = 0; ispot < spots_field.at(ibeam); ispot++)
+        {
+            std::ofstream ofs;
+            ofs.open (f, std::ios::out | std::ios::binary);
+            if( !ofs.is_open() )
+            {
+                std::cerr << "Can not open file " << f << " to write results." << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        
     }
 
     if (high_precision)

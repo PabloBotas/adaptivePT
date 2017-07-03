@@ -93,13 +93,13 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     }
     else
     {
-        double* traces_scorer = NULL;
-        allocate_scorer<double>(traces_scorer, pat.ct.total);
+        unsigned long long int* traces_scorer = NULL;
+        allocate_scorer<unsigned long long int>(traces_scorer, pat.ct.total);
         do_raytrace (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
         Volume_t traces(pat.ct, true);
-        retrieve_scorer<double, double>(&traces.long_data[0], traces_scorer, traces.nElements);
+        retrieve_scorer<unsigned long long int, unsigned long long int>(&traces.long_data[0], traces_scorer, traces.nElements);
         // traces.output("output_volume.mha", "mha");
-        traces.output(output_file, "bin", split_traces);
+        traces.output(output_file, "bin", split_traces, pat.spots_per_field);
         gpuErrchk( cudaFree(traces_scorer) );
     }
 

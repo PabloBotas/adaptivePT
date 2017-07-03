@@ -15,7 +15,6 @@ __global__ void raytrace_plan_kernel(const short num,
     const int thread = blockIdx.x*blockDim.x + threadIdx.x;
     if(thread < num)
     {
-        curandState localState = cuseed[thread];
         Ray ray(xdata[thread], vxdata[thread], ixdata[thread]);
         size_t const ind = get_endpoints_index(ray.get_beam_id(),
                                          ray.get_spot_id(),
@@ -31,17 +30,7 @@ __global__ void raytrace_plan_kernel(const short num,
         while (ray.is_alive() && vox.w != -1)
         {
             if(traces)
-            {
-                if (sizeof(traces[curand_uniform(&localState)*ctTotalVoxN]) == 8)
-                {
-                    double val = ((double)ray.get_beam_id() |
-                                 ((double)ray.get_spot_id()<<4) |
-                                 ((double)vox.w<<15));
-                    atomicExch(&traces[curand_uniform(&localState)*ctTotalVoxN]], val);
-                }
-                else
-                    atomicAdd(&traces[vox.w], 1.0f);
-            }
+                score_traces<T>(thread, ray, traces, vox.w);
 
             float step_water = 0, step = 0, de = 0;
             float max_step = to_boundary(ray.get_position(), ray.get_direction(),
@@ -90,8 +79,25 @@ __global__ void raytrace_plan_kernel(const short num,
             pos_scorer[ind].w = sign*(sample_energy - ray.get_energy());
         }
     }
+}
 
-    
+
+template<class T>
+__device__ score_traces(const int thread, Ray ray, T *traces, int voxnum)
+{
+    curandState localState = cuseed[thread];
+    if (sizeof(traces[curand_uniform(&localState)*ctTotalVoxN]) == 8)
+    {
+        T val = ((T)ray.get_beam_id() |
+                ((T)ray.get_spot_id() << 4) |
+                ((T)voxnum << 15));
+        int index = curand_uniform(&localState)*ctTotalVoxN;
+        atomicExch(&traces[index], val);
+    }
+    else
+    {
+        atomicAdd(&traces[voxnum], 1.0f);
+    }
 }
 
 __device__ size_t get_endpoints_index(const short beam_id,

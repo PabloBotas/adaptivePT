@@ -13,6 +13,7 @@ void allocate_scorer(T*& s, size_t n)
 template void allocate_scorer<float4>(float4*&, size_t);
 template void allocate_scorer<short2>(short2*&, size_t);
 template void allocate_scorer<float>(float*&, size_t);
+template void allocate_scorer<unsigned long long int>(unsigned long long int*&, size_t);
 
 ///////////////////////////////////////
 template <class S, class T>
@@ -23,6 +24,7 @@ void retrieve_scorer(S* h, T* d, size_t n)
 template void retrieve_scorer<short, short2>(short*, short2*, size_t);
 template void retrieve_scorer<float, float>(float*, float*, size_t);
 template void retrieve_scorer<float, float4>(float*, float4*, size_t);
+template void retrieve_scorer<unsigned long long int, unsigned long long int>(unsigned long long int*, unsigned long long int*, size_t);
 
 ///////////////////////////////////////
 template <class T, class S>
