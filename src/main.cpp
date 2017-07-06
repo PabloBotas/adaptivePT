@@ -2,6 +2,10 @@
 #include <iomanip>
 #include <string>
 
+#define TO_STRING2(X) #X
+#define TO_STRING(X) TO_STRING2(X)
+#define INSTALLATION_PATH TO_STRING(BIN_PATH)
+
 #include "command_line_parser.hpp"
 #include "initialize_rays.cuh"
 #include "gpu_main.cuh"
@@ -47,6 +51,11 @@ void export_shifts(const std::vector<float>& e,
                    const std::string& file,
                    const short& beamid);
 
+void generate_report(const std::string& output_vf,
+                     const std::string& output_shifts,
+                     const std::vector<std::string>& tramp_files);
+
+
 int main(int argc, char** argv)
 {
     Parser parser(argc, argv);
@@ -70,6 +79,9 @@ int main(int argc, char** argv)
         deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
     export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints);
+
+    if (parser.report)
+        generate_report(parser.output_vf, parser.output_shifts, pat.tramp_files);
 
     // Stop device
     stop_device(start);
@@ -121,7 +133,7 @@ void deal_with_cbct(Patient_Parameters_t& pat,
     Array4<float> cbct_endpoints(pat.total_spots);
     gpu_raytrace_warped (pat, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
-                         parser.output_cbct_traces);
+                         parser.output_cbct_traces, parser.ct_traces_individual);
 
     // Print results ----------------------------
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
@@ -193,3 +205,24 @@ void export_shifts(const std::vector<float>& e,
     }
 }
 
+void generate_report(const std::string& output_vf,
+                     const std::string& output_shifts,
+                     const std::vector<std::string>& tramp_files)
+{
+    std::string interp = "python3 ";
+    std::string code   = std::string(INSTALLATION_PATH) + "/src/extra/create_adapt_report.py ";
+    std::string vf     = "--vf " + output_vf + " ";
+    std::string shifts = "--shifts " + output_shifts + " ";
+    std::string tramps = "--tramps ";
+    for (size_t i = 0; i < tramp_files.size(); i++)
+        tramps += tramp_files.at(i) + " ";
+    std::string outdir = "--outdir " + output_vf.substr(0, output_vf.find_last_of('/'));
+    std::string command = interp + code + vf + shifts + tramps + outdir;
+    int res = system(command.c_str());
+
+    if (res)
+    {
+        std::cerr << "ERROR! Reporting failed with error code: " << res << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
