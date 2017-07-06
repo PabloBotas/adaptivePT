@@ -76,7 +76,14 @@ __global__ void raytrace_plan_kernel(const short num,
                                ray.get_energy(), vox);
                 ray.move(step, step_water, de);
                 if (voxUpdater != NONE)
+                {
+                    if (traces)
+                    {
+                        int tempvox = sign < 0 ? -vox.w : vox.w;
+                        score_traces<T>(tempvox, localState, ray.get_beam_id(), ray.get_spot_id(), traces);
+                    }
                     changeVoxel(vox, voxUpdater, voxStepper);
+                }
                 else
                     break;
             }
@@ -99,15 +106,19 @@ __global__ void raytrace_plan_kernel(const short num,
                                      unsigned long long int* traces);
 
 template<class T>
-__device__ void score_traces(const int& voxnum, curandState& localState,
+__device__ void score_traces(int voxnum, curandState& localState,
                              const short& beamid, const short& spotid, T *traces)
 {
+    bool del_content = voxnum < 0;
+    voxnum = abs(voxnum);
     int rand_index = curand_uniform(&localState)*ctTotalVoxN;
     if (sizeof(traces[rand_index]) == sizeof(unsigned long long int))
     {
-        unsigned long long int val = ((unsigned long long int)beamid) |
-                                     ((unsigned long long int)spotid) << 4 |
-                                     ((unsigned long long int)voxnum) << (4+12);
+        unsigned long long int val = 0;
+        if (del_content)
+            val = ((unsigned long long int)beamid) |
+                  ((unsigned long long int)spotid) << 4 |
+                  ((unsigned long long int)voxnum) << (4+12);
         atomicExch(&traces[voxnum], val);
     }
     else
@@ -116,8 +127,8 @@ __device__ void score_traces(const int& voxnum, curandState& localState,
     }
 }
 
-template __device__ void score_traces(const int& voxnum, curandState& localState, const short& beamid, const short& spotid, float *traces);
-template __device__ void score_traces(const int& voxnum, curandState& localState, const short& beamid, const short& spotid, unsigned long long int *traces);
+template __device__ void score_traces(int voxnum, curandState& localState, const short& beamid, const short& spotid, float *traces);
+template __device__ void score_traces(int voxnum, curandState& localState, const short& beamid, const short& spotid, unsigned long long int *traces);
 
 __device__ size_t get_endpoints_index(const short beam_id,
                                       const short spot_id,

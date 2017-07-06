@@ -12,7 +12,7 @@ __global__ void raytrace_plan_kernel(const short num,
                                      T* traces);
 
 template<class T>
-__device__ void score_traces(const int& voxnum, curandState& localState, const short& beamid, const short& spotid, T *traces);
+__device__ void score_traces(int voxnum, curandState& localState, const short& beamid, const short& spotid, T *traces);
 
 __device__ size_t get_endpoints_index(const short beam_id,
                                       const short spot_id,
