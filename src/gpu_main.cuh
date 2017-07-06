@@ -34,7 +34,8 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
-                          std::string output_file);
+                          std::string output_file,
+                          bool ct_traces_individual);
 
 void printDevProp (const int device, bool verbose);
 

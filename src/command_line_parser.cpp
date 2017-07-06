@@ -34,30 +34,24 @@ void Parser::process_command_line(int argc, char** argv)
         ("outdir",  po::value<std::string>(&out_dir)->required(),
                     "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
         ("no_energy", po::bool_switch(&no_energy)->default_value(false),
-                     "If only the geometry should be adapted.")
+                    "If only the geometry should be adapted.")
         ("output_vf", po::value<std::string>(&output_vf)->default_value(std::string()),
-                     "If the probed values should be written to a file.")
+                    "If the probed values should be written to a file.")
         ("output_shifts", po::value<std::string>(&output_shifts)->default_value(std::string()),
-                     "If the pos-energy shifts should be written to a file.")
+                    "If the pos-energy shifts should be written to a file.")
         ("output_ct_traces", po::value<std::string>(&output_ct_traces)->default_value(std::string()),
-                     "If the traces on the CT volume should be scored to a file.")
+                    "If the traces on the CT volume should be scored to a file.")
         ("output_cbct_traces", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
-                     "If the traces on the CBCT volume should be scored to a file.")
+                    "If the traces on the CBCT volume should be scored to a file.")
         ("ct_traces_individual", po::bool_switch(&ct_traces_individual)->default_value(false),
-                     "If the traces should be scored individually.");
-        // ("layer",   po::value<bool>(&if_per_layer)->default_value(false),
-        //             "If the energy should be adapted layer by layer instead of with individual spots")
-        // ;
+                    "If the traces should be scored individually.")
+        ("report", po::bool_switch(&report)->default_value(false),
+                    "If a report should be generated. Requires output_vf and output_shifts");
 
         po::variables_map vm;        
         po::store(po::parse_command_line(argc, argv, desc), vm);
         if (vm.count("help")) {
             std::cout << desc << std::endl;
-            exit(EXIT_SUCCESS);
-        }
-        if (vm.count("ct_traces_individual")&& ! vm.count("output_ct_traces")) {
-            std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces." << std::endl;
-            std::cerr << "See --help for syntax." << std::endl;
             exit(EXIT_SUCCESS);
         }
         po::notify(vm);
@@ -66,23 +60,29 @@ void Parser::process_command_line(int argc, char** argv)
         std::cerr << "ERROR! " << e.what() << std::endl;
         exit(EXIT_FAILURE);
     }
+    unsigned int required = !output_ct_traces.empty() + !output_cbct_traces.empty();
+    if ( ct_traces_individual && required < 1 ) {
+        std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces." << std::endl;
+        std::cerr << "See --help for syntax." << std::endl;
+        exit(EXIT_SUCCESS);
+    }
+    required = !output_shifts.empty() + !output_vf.empty();
+    if ( report && required < 2 )
+    {
+        std::cerr << "ERROR! report option needs shifts and vf output." << std::endl;
+        std::cerr << "See --help for syntax." << std::endl;
+        exit(EXIT_SUCCESS);
+    }
+
 
     if (!out_dir.empty() && !output_shifts.empty() && output_shifts.find('/') == std::string::npos)
-    {
         output_shifts = out_dir + '/' + output_shifts;
-    }
     if (!out_dir.empty() && !output_vf.empty() && output_vf.find('/') == std::string::npos)
-    {
         output_vf = out_dir + '/' + output_vf;
-    }
     if (!out_dir.empty() && !output_ct_traces.empty() && output_ct_traces.find('/') == std::string::npos)
-    {
         output_ct_traces = out_dir + '/' + output_ct_traces;
-    }
     if (!out_dir.empty() && !output_cbct_traces.empty() && output_cbct_traces.find('/') == std::string::npos)
-    {
         output_cbct_traces = out_dir + '/' + output_cbct_traces;
-    }
 }
 
 // bool Parser::check_both_or_none(po::variables_map vm, std::string arg1, std::string arg2)

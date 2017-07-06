@@ -182,11 +182,11 @@ void Volume_t::ext_to_int_coordinates()
     // imgCenter.x *= -1;
 }
 
-void Volume_t::output(std::string outfile, std::string out_type, bool split, std::vector<short> spots_field)
+void Volume_t::output(std::string outfile, bool split, std::vector<short> spots_field)
 {
     if(!split)
     {
-        output(outfile, out_type);
+        output(outfile);
         return;
     }
 
@@ -208,11 +208,16 @@ void Volume_t::output(std::string outfile, std::string out_type, bool split, std
         unsigned long long int nvoxid = (long_data.at(i) & mask_nvox) >> (4+12);
 
         std::ofstream ofs;
-        size_t pos = outfile.find_last_of('/');
-        std::string path = "";
-        if (pos != std::string::npos)
-            path = outfile.substr(0, pos) + '/';
-        std::string f = path+"ray.beam."+std::to_string(beamid)+".spot."+std::to_string(spotid)+".dat";
+        std::string out_type = outfile.substr(outfile.find_last_of(".")+1);
+        std::string file_noext = outfile.substr(0, outfile.find_last_of("."));
+        // Plug beam and spotid before extension
+        std::string f =  file_noext + "_beam_" + std::to_string(beamid) +
+                         "_spot_" + std::to_string(spotid) + ".";
+        if (out_type == "mhd")
+            f += "bin";
+        else
+            f += out_type;
+
         if (cond.at(beamid).at(spotid) == false)
         {
             // Create file
@@ -220,9 +225,25 @@ void Volume_t::output(std::string outfile, std::string out_type, bool split, std
             utils::check_fs(ofs, f, "to create zero-filled results skeleton.");
             ofs.write (reinterpret_cast<char*>(zeros.data()), nElements*sizeof(float));
             cond.at(beamid).at(spotid) = true;
+            // Create header fuile if necessary
+            if (out_type == "mhd")
+            {
+                std::string file_basename = f.substr(0, f.find_last_of("/"));
+                std::string file_noext = f.substr(0, f.find_last_of("."));
+                std::string mhd_header_file = file_noext + ".mhd";
+                std::string mhd_binary_filename = f.substr(f.find_last_of("/")+1);
+                export_header_metaimage(mhd_header_file, mhd_binary_filename);
+            }
         }
         else
         {
+            if (out_type == "mhd" || out_type == "mha")
+            {
+                unsigned int vox_x = nvoxid/(n.y*n.z) % n.x;
+                unsigned int vox_y = nvoxid/n.z % n.y;
+                unsigned int vox_z = nvoxid % n.z;
+                nvoxid = vox_z + vox_y*n.z + (n.x-vox_x-1)*n.z*n.y;
+            }
             ofs.open (f, std::ios::out | std::ios::binary | std::ios::in);
             utils::check_fs(ofs, f, "to write ray traces results.");
             ofs.seekp(nvoxid*4);
@@ -232,22 +253,27 @@ void Volume_t::output(std::string outfile, std::string out_type, bool split, std
     }
 }
 
-void Volume_t::output(std::string outfile, std::string out_type)
+void Volume_t::output(std::string outfile)
 {
+    std::string out_type = outfile.substr(outfile.find_last_of(".")+1);
+    std::cout << "Writting file: " << outfile << std::endl;
     if (out_type == "mhd")
     {
         std::string file_basename = outfile.substr(0, outfile.find_last_of("/"));
         std::string file_noext = outfile.substr(0, outfile.find_last_of("."));
         std::string mhd_header_file = file_noext + ".mhd";
-        export_header_metaimage(mhd_header_file, file_basename);
-        export_binary_metaimage(outfile);
+        std::string mhd_binary_file = file_noext + ".bin";
+        std::string mhd_binary_filename = mhd_binary_file.substr(mhd_binary_file.find_last_of("/")+1);
+        std::cout << "Writting file: " << mhd_binary_file << std::endl;
+        export_header_metaimage(mhd_header_file, mhd_binary_filename);
+        export_binary_metaimage(mhd_binary_file);
     }
     else if(out_type == "mha")
     {
         export_header_metaimage(outfile);
         export_binary_metaimage(outfile, std::ios::app);
     }
-    else if(out_type == "bin" || out_type == "binary")
+    else if(out_type == "bin" || out_type == "dat")
     {
         export_binary(outfile);
     }
@@ -279,11 +305,11 @@ void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file
     std::cout << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";
 }
 
-void Volume_t::output(std::string outfile, std::string out_type, const CT_Dims_t& dims)
+void Volume_t::output(std::string outfile, const CT_Dims_t& dims)
 {
     Volume_t temp(dims);
     this->interpolate_to_geometry(temp, dims, 0);
-    temp.output(outfile, out_type);
+    temp.output(outfile);
 }
 
 void Volume_t::setDims(const CT_Dims_t& pat_ct, const bool interpolate)

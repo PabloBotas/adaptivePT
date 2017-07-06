@@ -26,9 +26,9 @@ public:
     void setDims(const CT_Dims_t& pat_ct, const bool interpolate = false);
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
     void setSpacing(float x, float y, float z);
-    void output(std::string outfile, std::string out_type);
-    void output(std::string outfile, std::string out_type, bool split, std::vector<short> spf);
-    void output(std::string outfile, std::string out_type, const CT_Dims_t& dims);
+    void output(std::string outfile);
+    void output(std::string outfile, bool split, std::vector<short> spf);
+    void output(std::string outfile, const CT_Dims_t& dims);
     void ext_to_int_coordinates();
 
     Volume_t::Source_type source_type;
