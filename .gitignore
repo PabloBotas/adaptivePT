@@ -20,3 +20,5 @@ test/Screenshot\.png
 \.Rhistory
 
 test/P15_base_plan/out_base_plan_ct/
+
+utils/
