@@ -69,7 +69,7 @@ __device__ float to_boundary(const float3& pos,
        !(cos_to_point > -0.001 && cos_to_point < 0.001))
     {
         int i =blockIdx.x*blockDim.x + threadIdx.x;
-        printf("%d - %f %d - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
+        printf("WARNING! %d - %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
                i, cos_to_point, dist,
                xdata[i].x, xdata[i].y, xdata[i].z,
                vxdata[i].x, vxdata[i].y, vxdata[i].z,
