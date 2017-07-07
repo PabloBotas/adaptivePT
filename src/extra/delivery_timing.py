@@ -199,16 +199,12 @@ def get_timing(e, x, y, w):
     # print("============================")
 
     summary = """ Summary (s):
- Number of layers   = {}
- Number of spots    = {}
- Moving beam        = {:.3f}
- Switching Energies = {}
- Delivery time      = {:.3f}
- Signal Delay time  = {:.3f}
- ---------------------------
- Total treatment    = {:.3f}""".format(
-        source.get_number_layers(),
-        source.number_spots,
+ Moving       = {:.3f}
+ Energies     = {}
+ Delivery     = {:.3f}
+ Signal Delay = {:.3f}
+ ---------------------
+ Total        = {:.3f}""".format(
         round(US2S*total_time_moving_beam, 3),
         US2S*total_time_switching_e,
         round(US2S*total_time_delivering, 3),

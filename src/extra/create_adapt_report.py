@@ -9,7 +9,6 @@ from more_itertools import unique_everseen
 import delivery_timing
 from matplotlib.backends.backend_pdf import PdfPages
 
-
 def analize_vf(vf_file):
     r = np.genfromtxt(vf_file, skip_header=1, delimiter=' ',
                       names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid']).T
@@ -112,13 +111,14 @@ def analize_tramp(shifts_file, tramp_files):
         # d = np.sqrt(vx*vx + vy*vy)
         # ang_x = np.arccos(vx/d)
 
+        unique_energies = np.unique(e)[::-1]
+        number_layers = len(unique_energies)
+
         fig_general = plt.figure()
         fig_general.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
 
         ax = fig_general.add_subplot(2, 2, 1)
         accu_len = 0
-        unique_energies = np.unique(e)[::-1]
-        number_layers = len(unique_energies)
         for layer_energy in unique_energies:
             bool_mask = e == layer_energy
             layer = (e+de)[bool_mask]
@@ -199,7 +199,7 @@ def analize_tramp(shifts_file, tramp_files):
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
 
-        ax = fig_general.add_subplot(1, 2, 2)
+        ax = fig_general.add_subplot(2, 2, 2)
         ax.plot(time, color='blue', alpha=0.5)
         ax.plot(time_adapted, color='red')
         accu_len = 0
@@ -222,19 +222,30 @@ def analize_tramp(shifts_file, tramp_files):
         bbox_props = dict(boxstyle="Round", facecolor="blue", alpha=0.1)
         bbox_props_adapt = dict(boxstyle="Round", facecolor="red", alpha=0.1)
         ax.annotate(summary, family='monospace',
-                    textcoords='axes fraction', xytext=(0.04, 0.81),
-                    xy=(5, min(time)), fontsize=6, bbox=bbox_props)
+                    textcoords='axes fraction', xytext=(0.03, 0.77),
+                    xy=(5, min(time)), fontsize=4, bbox=bbox_props)
         ax.annotate(summary_adapted, family='monospace',
-                    textcoords='axes fraction', xytext=(0.04, 0.615),
-                    xy=(5, min(time)), fontsize=6, bbox=bbox_props_adapt)
+                    textcoords='axes fraction', xytext=(0.32, 0.77),
+                    xy=(5, min(time)), fontsize=4, bbox=bbox_props_adapt)
+
+        ax = fig_general.add_subplot(2, 2, 4)
+        ax.scatter(x, y, facecolors='none', edgecolors='black', alpha=0.5)
+        for i in range(len(x)):
+            ax.arrow(0.1 * vx[i] + x[i], 0.1 * vy[i] + y[i],
+                     0.80 * vx[i], 0.80 * vy[i],
+                     fc='k', ec='k', alpha=0.5)
+        ax.scatter(x + vx, y + vy, edgecolor='')
+        ax.tick_params(labelsize=8)
+        ax.set_ylabel('Y (mm)', fontsize=8)
+        ax.set_xlabel('X (mm)', fontsize=8)
+
+        figures.append(fig_general)
 
         # filename = outdir + "/tramp_analysis_" + str(tramp_num) + ".pdf"
         # plt.savefig(filename, bbox_inches='tight')
         # plt.close()
 
-        figures.append(fig_general)
-
-        #### PLOT SPOTS SHIFTS PER LAYER
+        # PLOT SPOTS SHIFTS PER LAYER
         max_ncols = 5
         ncols = min(number_layers, max_ncols)
         max_nrows = 5
@@ -242,26 +253,27 @@ def analize_tramp(shifts_file, tramp_files):
         max_plots_page = nrows*ncols
         fig_spots = plt.figure()
         fig_spots.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
-            tramp_num, 0, min(max_plots_page-1, number_layers-1)))
+                           tramp_num, 0, min(max_plots_page-1, number_layers-1)))
         for layer_num, layer_energy in enumerate(unique_energies):
             subplot_num = layer_num % max_plots_page + 1
-            ax = fig_spots.add_subplot(nrows, ncols, subplot_num)
-            ax.tick_params(labelsize=4)
+            ax_layers = fig_spots.add_subplot(nrows, ncols, subplot_num)
+            ax_layers.tick_params(labelsize=4)
             if subplot_num % ncols == 1:
-                ax.set_ylabel('Y (mm)', fontsize=6)
+                ax_layers.set_ylabel('Y (mm)', fontsize=6)
             if int((subplot_num-1) / ncols) == nrows-1:
-                ax.set_xlabel('X (mm)', fontsize=6)
-            pos_x = x[e == layer_energy]
-            pos_y = y[e == layer_energy]
-            shift_x = vx[e == layer_energy]
-            shift_y = vy[e == layer_energy]
-            ax.scatter(pos_x, pos_y, facecolors='none', edgecolors='black', alpha=0.5)
+                ax_layers.set_xlabel('X (mm)', fontsize=6)
+            bool_mask = e == layer_energy
+            pos_x = x[bool_mask]
+            pos_y = y[bool_mask]
+            shift_x = vx[bool_mask]
+            shift_y = vy[bool_mask]
+            ax_layers.scatter(pos_x, pos_y, facecolors='none', edgecolors='black', alpha=0.5)
             for i in range(len(pos_x)):
-                ax.arrow(0.1*shift_x[i]+pos_x[i], 0.1*shift_y[i]+pos_y[i],
-                         0.80*shift_x[i], 0.80*shift_y[i],
-                         fc='k', ec='k', alpha=0.5)
-            ax.scatter(pos_x+shift_x, pos_y+shift_y, edgecolor='')
-            ax.annotate(str(layer_energy) + ' MeV', xy=(0.05, 0.05), xycoords='axes fraction', fontsize=5)
+                ax_layers.arrow(0.1*shift_x[i]+pos_x[i], 0.1*shift_y[i]+pos_y[i],
+                                0.80*shift_x[i], 0.80*shift_y[i],
+                                fc='k', ec='k', alpha=0.5)
+            ax_layers.scatter(pos_x+shift_x, pos_y+shift_y, edgecolor='')
+            ax_layers.annotate(str(layer_energy) + ' MeV', xy=(0.05, 0.05), xycoords='axes fraction', fontsize=5)
             if layer_num % max_plots_page + 1 == 0 or layer_num+1 == number_layers:
                 figures.append(fig_spots)
                 fig_spots = plt.figure()
@@ -281,7 +293,7 @@ def main(argv):
     parser.add_argument('--ctv',    help='MHA file containing the CTV structure', required=False)
     parser.add_argument('--tramps', nargs='+', help='MHA file containing the CTV structure', required=True)
     parser.add_argument('--outdir', help='Directory to output analysis', default='./')
-    parser.add_argument('--split',  help='If output PDF should be splitted', default=False)
+    parser.add_argument('--split',  help='If output PDF should be split', default=False)
 
     args = parser.parse_args()
 
