@@ -13,12 +13,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 def analize_vf(vf_file):
     r = np.genfromtxt(vf_file, skip_header=1, delimiter=' ',
                       names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid']).T
-    vx = r['vx']
-    vy = r['vy']
-    vz = r['vz']
-    x = r['x']
-    y = r['y']
-    z = r['z']
+    vx = np.array(r['vx'])
+    vy = np.array(r['vy'])
+    vz = np.array(r['vz'])
+    x = np.array(r['x'])
+    y = np.array(r['y'])
+    z = np.array(r['z'])
     # beamid = r['beamid']
     # spotid = r['spotid']
 
@@ -87,10 +87,10 @@ def analize_vf(vf_file):
 def analize_tramp(shifts_file, tramp_files):
     r = np.genfromtxt(shifts_file, skip_header=1, delimiter=' ',
                       names=['e', 'x', 'y', 'z', 'beamid', 'spotid']).T
-    all_de = r['e']/1e6
-    all_vx = r['x']
-    all_vy = r['y']
-    beamid = r['beamid']
+    all_de = np.array(r['e']/1e6)
+    all_vx = np.array(r['x'])
+    all_vy = np.array(r['y'])
+    beamid = np.array(r['beamid'])
     # spotid = r['spotid']
 
     # nbins = 200
@@ -101,10 +101,10 @@ def analize_tramp(shifts_file, tramp_files):
 
     for tramp_num, tramp_file in enumerate(tramp_files, start=0):
         r = np.genfromtxt(tramp_file, skip_header=12, names=['e', 'x', 'y', 'w']).T
-        e = np.array([r['e']])
-        x = np.array([r['x']])
-        y = np.array([r['y']])
-        w = np.array([r['w']])
+        e = np.array(r['e'])
+        x = np.array(r['x'])
+        y = np.array(r['y'])
+        w = np.array(r['w'])
 
         de = np.array(all_de[beamid == tramp_num])
         vx = np.array(all_vx[beamid == tramp_num])
@@ -112,13 +112,16 @@ def analize_tramp(shifts_file, tramp_files):
         # d = np.sqrt(vx*vx + vy*vy)
         # ang_x = np.arccos(vx/d)
 
-        fig = plt.figure()
-        fig.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
+        fig_general = plt.figure()
+        fig_general.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
 
-        ax = fig.add_subplot(2, 2, 1)
+        ax = fig_general.add_subplot(2, 2, 1)
         accu_len = 0
-        for layer_energy in np.unique(e)[::-1]:
-            layer = (e+de)[e == layer_energy]
+        unique_energies = np.unique(e)[::-1]
+        number_layers = len(unique_energies)
+        for layer_energy in unique_energies:
+            bool_mask = e == layer_energy
+            layer = (e+de)[bool_mask]
             average = np.mean(layer)
             pos_text_y = 1.01*max(layer) if max(layer) > 1.05*layer_energy else 1.01*1.05*layer_energy
             ax.annotate("{:.2f} %".format(
@@ -143,16 +146,17 @@ def analize_tramp(shifts_file, tramp_files):
             )
             ax.plot([accu_len, accu_len+len(layer)], [layer_energy, layer_energy], 'k', alpha=0.5)
             accu_len += len(layer)
-        ax.plot(e+de, 'ro',  markersize=2)
+        ax.plot(np.sort(e+de)[::-1], 'ko', markersize=1, alpha=0.2)
+        ax.plot(e+de, 'ro', markersize=2)
         ax.set_xlabel('Spot number', fontsize=8)
         ax.set_ylabel('Energy (MeV)', fontsize=8)
         ax.annotate('Number spots = ' + str(len(e)) + '\nOriginal energy layers  = ' +
-                    str(len(np.unique(e))) + '\nAdapted energy layers = ' + str(len(np.unique(e+de))),
+                    str(number_layers) + '\nAdapted energy layers = ' + str(len(np.unique(e+de))),
                     xy=(5, min(min(e+de), min(e))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
         ax.tick_params(labelsize=8)
 
-        ax = fig.add_subplot(2, 2, 3)
+        ax = fig_general.add_subplot(2, 2, 3)
         accu_len = 0
         previous_layer_energy = 0
         for layer_energy in unique_everseen(y):
@@ -195,11 +199,11 @@ def analize_tramp(shifts_file, tramp_files):
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
 
-        ax = fig.add_subplot(1, 2, 2)
+        ax = fig_general.add_subplot(1, 2, 2)
         ax.plot(time, color='blue', alpha=0.5)
         ax.plot(time_adapted, color='red')
         accu_len = 0
-        for layer_energy in np.unique(e)[::-1]:
+        for layer_energy in unique_energies:
             time_lyr = time[e == layer_energy]
             time_adapted_lyr = time_adapted[e == layer_energy]
             ax.add_patch(
@@ -228,7 +232,42 @@ def analize_tramp(shifts_file, tramp_files):
         # plt.savefig(filename, bbox_inches='tight')
         # plt.close()
 
-        figures.append(fig)
+        figures.append(fig_general)
+
+        #### PLOT SPOTS SHIFTS PER LAYER
+        max_ncols = 5
+        ncols = min(number_layers, max_ncols)
+        max_nrows = 5
+        nrows = min(int(np.ceil(number_layers / ncols)), max_nrows)
+        max_plots_page = nrows*ncols
+        fig_spots = plt.figure()
+        fig_spots.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
+            tramp_num, 0, min(max_plots_page-1, number_layers-1)))
+        for layer_num, layer_energy in enumerate(unique_energies):
+            subplot_num = layer_num % max_plots_page + 1
+            ax = fig_spots.add_subplot(nrows, ncols, subplot_num)
+            ax.tick_params(labelsize=4)
+            if subplot_num % ncols == 1:
+                ax.set_ylabel('Y (mm)', fontsize=6)
+            if int((subplot_num-1) / ncols) == nrows-1:
+                ax.set_xlabel('X (mm)', fontsize=6)
+            pos_x = x[e == layer_energy]
+            pos_y = y[e == layer_energy]
+            shift_x = vx[e == layer_energy]
+            shift_y = vy[e == layer_energy]
+            ax.scatter(pos_x, pos_y, facecolors='none', edgecolors='black', alpha=0.5)
+            for i in range(len(pos_x)):
+                ax.arrow(0.1*shift_x[i]+pos_x[i], 0.1*shift_y[i]+pos_y[i],
+                         0.80*shift_x[i], 0.80*shift_y[i],
+                         fc='k', ec='k', alpha=0.5)
+            ax.scatter(pos_x+shift_x, pos_y+shift_y, edgecolor='')
+            ax.annotate(str(layer_energy) + ' MeV', xy=(0.05, 0.05), xycoords='axes fraction', fontsize=5)
+            if layer_num % max_plots_page + 1 == 0 or layer_num+1 == number_layers:
+                figures.append(fig_spots)
+                fig_spots = plt.figure()
+                fig_spots.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
+                    tramp_num, layer_num, min(layer_num + max_plots_page-1, number_layers-1)))
+
     return figures
 
 
