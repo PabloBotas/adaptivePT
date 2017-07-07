@@ -41,7 +41,7 @@ __global__ void raytrace_plan_kernel(const short num,
             float max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                          vox, voxUpdater, voxStepper);
             get_water_step(step, step_water, de, max_step,
-                       ray.get_energy(), vox);
+                           ray.get_energy(), vox);
 
             ray.move(step, step_water, de);
 
