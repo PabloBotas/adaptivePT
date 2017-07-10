@@ -194,14 +194,16 @@ void export_shifts(const std::vector<float>& e,
     if (beamid == 0)
     {
         std::cout << "Writting adaptation shifts to " << file << std::endl;
-        ofs << "e x y z beamid spotid\n";
+        ofs << "e x y z d beamid spotid\n";
     }
 
     for (size_t spotid = 0; spotid < e.size(); spotid++)
     {
-        ofs << e.at(spotid) << " " << p.at(spotid).x << " ";
-        ofs << p.at(spotid).y << " " << p.at(spotid).z << " ";
-        ofs << beamid << " " << spotid << "\n";
+        float vx = p.at(spotid).x;
+        float vy = p.at(spotid).y;
+        float z = p.at(spotid).z;
+        ofs << e.at(spotid) << " " << vx << " " << vy << " " << z << " ";
+        ofs << sqrt(vx*vx + vy*vy) << " " << beamid << " " << spotid << "\n";
     }
 }
 
@@ -209,6 +211,7 @@ void generate_report(const std::string& output_vf,
                      const std::string& output_shifts,
                      const std::vector<std::string>& tramp_files)
 {
+    std::cout << "Generating report ..." << std::endl;
     std::string interp = "python3 ";
     std::string code   = std::string(INSTALLATION_PATH) + "/src/extra/create_adapt_report.py ";
     std::string vf     = "--vf " + output_vf + " ";
