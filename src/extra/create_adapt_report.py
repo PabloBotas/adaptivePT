@@ -286,10 +286,10 @@ def main(argv):
     # Parse module:
     parser.add_argument('--vf',     help='File with vector field values and locations', required=True)
     parser.add_argument('--shifts', help='File with vector energy and locations shifts', required=True)
-    parser.add_argument('--ctv',    help='MHA file containing the CTV structure', required=False)
+    parser.add_argument('--ctv',    help='MHA file containing the CTV structure')
     parser.add_argument('--tramps', nargs='+', help='MHA file containing the CTV structure', required=True)
     parser.add_argument('--outdir', help='Directory to output analysis', default='./')
-    parser.add_argument('--spots_layer', help='Neglect layer-by-layer plotting of spot position shifts', default=False, required=False)
+    parser.add_argument('--spots_layer', help='Neglect layer-by-layer plotting of spot position shifts', default=False)
 
     args = parser.parse_args(argv)
 
