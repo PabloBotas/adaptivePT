@@ -3,7 +3,6 @@
 import sys
 import argparse
 import numpy as np
-from more_itertools import unique_everseen
 import delivery_timing
 import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
@@ -21,7 +20,8 @@ def add_rectangle(ax, x, y, width, height, color, alpha):
     ax.add_patch(
         patches.Rectangle(
             (x, y), width, height,
-            color=color, alpha=alpha
+            facecolor=color, alpha=alpha,
+            edgecolor='black', linewidth=0.1
         )
     )
 
@@ -133,19 +133,22 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
         # FIGURE 1, PLOT 1 --------------------------------
         ax = fig_general.add_subplot(3, 2, 1)
         accu_len = 0
-        for layer_energy in unique_energies:
+        for i, layer_energy in enumerate(unique_energies):
             bool_mask = tramp_e == layer_energy
             layer = (tramp_e+de)[bool_mask]
             average = np.mean(layer)
             pos_text_y = 1.01*max(layer) if max(layer) > 1.05*layer_energy else 1.01*1.05*layer_energy
             ax.annotate("{:.2f} %".format(
                 100*(average-layer_energy)/layer_energy), xy=(accu_len, pos_text_y), fontsize=4)
-            add_rectangle(ax, accu_len, min(layer), len(layer), max(layer)-min(layer), 'blue', 0.1)
-            add_rectangle(ax, accu_len, 0.95*layer_energy, len(layer), 0.1*layer_energy, 'green', 0.075)
-            ax.plot([accu_len, accu_len+len(layer)], [layer_energy, layer_energy], 'k', alpha=0.5)
+            box_x0 = accu_len-1 if i != 0 else accu_len
+            box_x1 = len(layer) if i != 0 else len(layer)-1
+            add_rectangle(ax, box_x0, min(layer), box_x1, max(layer)-min(layer), 'blue', 0.1)
+            add_rectangle(ax, box_x0, 0.95*layer_energy, box_x1, 0.1*layer_energy, 'green', 0.075)
             accu_len += len(layer)
-        ax.plot(np.sort(tramp_e+de)[::-1], 'ko', markersize=1, alpha=0.2)
-        ax.plot(tramp_e+de, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
+        ax.step(range(len(tramp_e)), tramp_e, color='black', alpha=0.9)
+        ax.plot(np.sort(tramp_e+de)[::-1], linestyle='None', marker='o', color='black',
+                markersize=1, alpha=0.4, markeredgecolor='black', markeredgewidth=0.1)
+        ax.plot(tramp_e+de, linestyle='None', color='red', marker='o', markersize=1.75, markeredgewidth=0.25)
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Energy (MeV)', fontsize=7)
         ax.annotate('Number spots = ' + str(len(tramp_e)) + '\nOriginal energy layers  = ' +
@@ -183,25 +186,15 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
 
         # FIGURE 1, PLOT 5 --------------------------------
         ax = fig_general.add_subplot(3, 2, 5)
-        accu_len = 0
-        previous_layer_energy = 0
-        for layer_energy in unique_everseen(tramp_y):
-            layer = (tramp_y + y)[tramp_y == layer_energy]
-            add_rectangle(ax, accu_len, min(layer), len(layer), max(layer)-min(layer), 'blue', 0.1)
-            add_rectangle(ax, accu_len, 0.95*layer_energy, len(layer), 0.1*layer_energy, 'green', 0.075)
-            ax.plot([accu_len, accu_len + len(layer)], [layer_energy, layer_energy], 'k', alpha=0.5)
-            ax.plot([accu_len, accu_len], [previous_layer_energy, layer_energy],
-                    linestyle=':', color='black', alpha=0.25)
-            previous_layer_energy = layer_energy
-            accu_len += len(layer)
-        ax.plot(tramp_y + y, color='blue', alpha=0.5)
-        ax.plot(tramp_y + y, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
+        ax.step(range(len(tramp_y)), tramp_y, color='black', alpha=0.5)
+        ax.step(range(len(tramp_y)), y, color='blue', alpha=0.5)
+        ax.plot(y, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Slow dimension pos (mm)', fontsize=7)
         ax.annotate('Number spots = ' + str(len(tramp_e)) + '\n' +
-                    'Original slow direction layers  = ' + str(len(np.unique(tramp_y))) + '\n' +
-                    'Adapted slow direction layers = ' + str(len(np.unique(tramp_y + y))),
-                    xy=(5, min(min(tramp_y + y), min(tramp_y))), fontsize=6,
+                    'Original slow layers = ' + str(len(np.unique(tramp_y))) + '\n' +
+                    'Adapted slow layers = ' + str(len(np.unique(y))),
+                    xy=(5, min(min(y), min(tramp_y))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
         time, summary = delivery_timing.get_timing(tramp_e, tramp_x, tramp_y, tramp_w)
