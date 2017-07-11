@@ -101,8 +101,8 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
 float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot)
 {
     float3 p;
-    p.x = ((SAD.x + z) / SAD.x) * spot.x;
-    p.y = ((SAD.y + z) / SAD.y) * spot.y;
+    p.x = ((SAD.x - abs(z)) / SAD.x) * spot.x;
+    p.y = ((SAD.y - abs(z)) / SAD.y) * spot.y;
     p.z = z;
     return p;
 }
@@ -110,8 +110,8 @@ float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot)
 float2 virtual_src_to_iso_pos(float3 pos, float2 SAD)
 {
     float2 spot;
-    spot.x = pos.x * SAD.x / (SAD.x + pos.z);
-    spot.y = pos.y * SAD.y / (SAD.y + pos.z);
+    spot.x = pos.x * SAD.x / (SAD.x - abs(pos.z));
+    spot.y = pos.y * SAD.y / (SAD.y - abs(pos.z));
     return spot;
 }
 
@@ -119,8 +119,8 @@ void virtual_src_to_iso_pos(Array4<float>& pos, SAD_t SAD)
 {
     for (size_t i = 0; i < pos.size(); i++)
     {
-        pos.at(i).x = pos.at(i).x * SAD.a / (SAD.a + pos.at(i).z);
-        pos.at(i).y = pos.at(i).y * SAD.b / (SAD.b + pos.at(i).z);
+        pos.at(i).x = pos.at(i).x * SAD.a / (SAD.a - abs(pos.at(i).z));
+        pos.at(i).y = pos.at(i).y * SAD.b / (SAD.b - abs(pos.at(i).z));
     }
 }
 
