@@ -74,7 +74,7 @@ void Warper_t::set_vf_origins()
 }
 
 void Warper_t::project_vf_on_plane (const Array4<float>& n,
-                                        const std::vector<short>& spots_per_field)
+                                    const std::vector<short>& spots_per_field)
 {
     for (size_t i = 0, ibeam = 0; i < vf.size(); i++)
     {
@@ -178,17 +178,16 @@ void Warper_t::probe (const Array4<float>& p)
         {
             std::istringstream ss_per_space(line);
 
-            Vector3_t<float> this_vf;
+            float z, y, x;
             while (ss_per_space)
             {
                 std::string dummy;
                 ss_per_space >> dummy;
                 ss_per_space >> dummy >> dummy >> dummy;
                 ss_per_space >> dummy >> dummy >> dummy;
-                ss_per_space >> this_vf.x >> this_vf.y >> this_vf.z;
+                ss_per_space >> z >> y >> x;
             }
-            vf.push_back(Vector3_t<float>(this_vf.x/10,
-                                          this_vf.y/10, this_vf.z/10));
+            vf.push_back(Vector3_t<float>(-x/10, -y/10, -z/10));
         }
     }
 }
@@ -216,9 +215,9 @@ std::string Warper_t::to_location_str (const Vector3_t<float>& p,
                                        const bool last)
 {
     std::string s;
-    s += std::to_string(p.x) + " " + 
+    s += std::to_string(p.z) + " " + 
          std::to_string(p.y) + " " + 
-         std::to_string(p.z);
+         std::to_string(p.x);
     if (!last)
         s += "; ";
     return s;
