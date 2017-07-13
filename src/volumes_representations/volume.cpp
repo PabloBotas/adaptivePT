@@ -225,7 +225,7 @@ void Volume_t::output(std::string outfile, bool split, std::vector<short> spots_
             utils::check_fs(ofs, f, "to create zero-filled results skeleton.");
             ofs.write (reinterpret_cast<char*>(zeros.data()), nElements*sizeof(float));
             cond.at(beamid).at(spotid) = true;
-            // Create header fuile if necessary
+            // Create header file if necessary
             if (out_type == "mhd")
             {
                 std::string file_basename = f.substr(0, f.find_last_of("/"));
@@ -246,7 +246,7 @@ void Volume_t::output(std::string outfile, bool split, std::vector<short> spots_
             }
             ofs.open (f, std::ios::out | std::ios::binary | std::ios::in);
             utils::check_fs(ofs, f, "to write ray traces results.");
-            ofs.seekp(nvoxid*4);
+            ofs.seekp(nvoxid*sizeof(float));
             float val = 1.0f;
             ofs.write ((char*)&val, sizeof(float));
         }
