@@ -51,38 +51,39 @@ void Parser::process_command_line(int argc, char** argv)
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
         if (vm.count("help")) {
-            std::cout << desc << std::endl;
+            std::cerr << desc << std::endl;
             exit(EXIT_SUCCESS);
         }
         po::notify(vm);
+    
+        if ( ct_traces_individual ) {
+            if ( !output_ct_traces.empty() && !output_cbct_traces.empty() ) {
+                std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces or output_cbct_traces." << std::endl;
+                std::cerr << desc << std::endl;
+                exit(EXIT_SUCCESS);
+            }
+        }
+        if ( report ) {
+            if ( !output_shifts.empty() || !output_vf.empty() || no_energy) {
+                std::cerr << "ERROR! report option needs energies processing and shifts and vf output." << std::endl;
+                std::cerr << desc << std::endl;
+                exit(EXIT_SUCCESS);
+            }
+        }
+
+        if (!out_dir.empty() && !output_shifts.empty() && output_shifts.find('/') == std::string::npos)
+            output_shifts = out_dir + '/' + output_shifts;
+        if (!out_dir.empty() && !output_vf.empty() && output_vf.find('/') == std::string::npos)
+            output_vf = out_dir + '/' + output_vf;
+        if (!out_dir.empty() && !output_ct_traces.empty() && output_ct_traces.find('/') == std::string::npos)
+            output_ct_traces = out_dir + '/' + output_ct_traces;
+        if (!out_dir.empty() && !output_cbct_traces.empty() && output_cbct_traces.find('/') == std::string::npos)
+            output_cbct_traces = out_dir + '/' + output_cbct_traces;
     }
     catch(std::exception& e) {
         std::cerr << "ERROR! " << e.what() << std::endl;
         exit(EXIT_FAILURE);
     }
-    if ( ct_traces_individual ) {
-        if ( !output_ct_traces.empty() && !output_cbct_traces.empty() ) {
-            std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces or output_cbct_traces." << std::endl;
-            std::cerr << "See --help for syntax." << std::endl;
-            exit(EXIT_SUCCESS);
-        }
-    }
-    if ( report ) {
-        if ( !output_shifts.empty() || !output_vf.empty() || no_energy) {
-            std::cerr << "ERROR! report option needs energies processing and shifts and vf output." << std::endl;
-            std::cerr << "See --help for syntax." << std::endl;
-            exit(EXIT_SUCCESS);
-        }
-    }
-
-    if (!out_dir.empty() && !output_shifts.empty() && output_shifts.find('/') == std::string::npos)
-        output_shifts = out_dir + '/' + output_shifts;
-    if (!out_dir.empty() && !output_vf.empty() && output_vf.find('/') == std::string::npos)
-        output_vf = out_dir + '/' + output_vf;
-    if (!out_dir.empty() && !output_ct_traces.empty() && output_ct_traces.find('/') == std::string::npos)
-        output_ct_traces = out_dir + '/' + output_ct_traces;
-    if (!out_dir.empty() && !output_cbct_traces.empty() && output_cbct_traces.find('/') == std::string::npos)
-        output_cbct_traces = out_dir + '/' + output_cbct_traces;
 }
 
 void Parser::print_parameters()
