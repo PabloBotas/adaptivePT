@@ -115,7 +115,7 @@ __device__ void score_traces(int voxnum, curandState& localState,
     if (sizeof(traces[rand_index]) == sizeof(unsigned long long int))
     {
         unsigned long long int val = 0;
-        if (del_content)
+        if (!del_content)
             val = ((unsigned long long int)beamid) |
                   ((unsigned long long int)spotid) << 4 |
                   ((unsigned long long int)voxnum) << (4+12);
