@@ -48,7 +48,7 @@ void Parser::process_command_line(int argc, char** argv)
         ("report", po::bool_switch(&report)->default_value(false),
                     "If a report should be generated. Requires output_vf and output_shifts");
 
-        po::variables_map vm;        
+        po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
         if (vm.count("help")) {
             std::cout << desc << std::endl;
@@ -60,20 +60,20 @@ void Parser::process_command_line(int argc, char** argv)
         std::cerr << "ERROR! " << e.what() << std::endl;
         exit(EXIT_FAILURE);
     }
-    unsigned int required = !output_ct_traces.empty() + !output_cbct_traces.empty();
-    if ( ct_traces_individual && required < 1 ) {
-        std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces." << std::endl;
-        std::cerr << "See --help for syntax." << std::endl;
-        exit(EXIT_SUCCESS);
+    if ( ct_traces_individual ) {
+        if ( !output_ct_traces.empty() && !output_cbct_traces.empty() ) {
+            std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces or output_cbct_traces." << std::endl;
+            std::cerr << "See --help for syntax." << std::endl;
+            exit(EXIT_SUCCESS);
+        }
     }
-    required = !output_shifts.empty() + !output_vf.empty();
-    if ( report && required < 2 )
-    {
-        std::cerr << "ERROR! report option needs shifts and vf output." << std::endl;
-        std::cerr << "See --help for syntax." << std::endl;
-        exit(EXIT_SUCCESS);
+    if ( report ) {
+        if ( !output_shifts.empty() || !output_vf.empty() || no_energy) {
+            std::cerr << "ERROR! report option needs energies processing and shifts and vf output." << std::endl;
+            std::cerr << "See --help for syntax." << std::endl;
+            exit(EXIT_SUCCESS);
+        }
     }
-
 
     if (!out_dir.empty() && !output_shifts.empty() && output_shifts.find('/') == std::string::npos)
         output_shifts = out_dir + '/' + output_shifts;
@@ -85,46 +85,26 @@ void Parser::process_command_line(int argc, char** argv)
         output_cbct_traces = out_dir + '/' + output_cbct_traces;
 }
 
-// bool Parser::check_both_or_none(po::variables_map vm, std::string arg1, std::string arg2)
-// {
-//     if(vm.count(arg1) != vm.count(arg2))
-//     {
-//         std::stringstream errMsg;
-//         errMsg << arg1 << " and " << arg2 << " must BOTH be specified or omitted." << std::endl;
-//         throw std::invalid_argument( errMsg.str() );
-//     }
-//     bool both = vm.count(arg1);
-//     return both;
-// }
-
-// void Parser::check_vector_sizes(po::variables_map vm, std::string arg1, std::string arg2)
-// {
-//     std::vector<std::string> vec1 = vm[arg1].as< std::vector<std::string> >();
-//     std::vector<std::string> vec2 = vm[arg2].as< std::vector<std::string> >();
-//     if(vec1.size() != vec2.size())
-//     {
-//         for (const auto i: vec1)
-//             std::cout << i << ' ';
-//         std::cout << std::endl;
-
-//         for (const auto i: vec2)
-//             std::cout << i << ' ';
-//         std::cout << std::endl;
-
-//         std::stringstream errMsg;
-//         errMsg << arg1 << " and " << arg2 << " must have the same number of elements." << std::endl;
-//         throw std::invalid_argument( errMsg.str() );
-//     }
-// }
-
-
 void Parser::print_parameters()
 {
     std::cout << "Parsed parameters:\n";
-    std::cout << "    - Patient:      " << patient << '\n';
-    std::cout << "    - Cone-Beam CT: " << cbct_file << '\n';
-    std::cout << "    - Vector field: " << vf_file << '\n';
+    std::cout << "    - Patient:          " << patient << '\n';
+    std::cout << "    - Cone-Beam CT:     " << cbct_file << '\n';
+    std::cout << "    - Vector field:     " << vf_file << '\n';
     if (!out_dir.empty())
-        std::cout << "    - Out dir:      " << out_dir << '\n';
+        std::cout << "    - Out dir:          " << out_dir << '\n';
+    if (no_energy)
+        std::cout << "    - No Energy" << '\n';
+    if (!output_vf.empty())
+        std::cout << "    - Out vf:           " << output_vf << '\n';
+    if (!output_shifts.empty())
+        std::cout << "    - Out shifts:       " << output_shifts << '\n';
+    if (!output_ct_traces.empty())
+        std::cout << "    - Out CT traces:    " << output_ct_traces << '\n';
+    if (!output_cbct_traces.empty())
+        std::cout << "    - Out CBCT traces:  " << output_cbct_traces << '\n';
+    if (ct_traces_individual)
+        std::cout << "    - Traces Individual" << '\n';
+    if (report)
+        std::cout << "    - Report" << '\n';
 }
-
