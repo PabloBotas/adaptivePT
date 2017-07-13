@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <sys/stat.h>
 #include <vector>
 
 Warper_t::Warper_t (const std::string vf_file,
@@ -108,10 +109,12 @@ void Warper_t::warp_points (Array4<float>& p)
 void Warper_t::write_to_file(const Array4<float>& p,
                              const std::vector<short>& spots_per_field)
 {
+    std::string dir = output.substr(0, output.find_last_of('/'));
+    mkdir(dir.c_str(), 0774);
     std::ofstream ofs;
     ofs.open (output, std::ios::out | std::ios::binary);
     utils::check_fs(ofs, output, "to write vector field.");
-    std::cout << "Writting probed VF to " << output << std::endl;
+    std::cout << "Writting probed VF to " << output << " ... ";
 
     int beamid = 0;
     ofs << "vx vy vz x y z beamid spotid\n";
@@ -128,6 +131,7 @@ void Warper_t::write_to_file(const Array4<float>& p,
         ofs << beamid << " " << spotid << "\n";
     }
     ofs.close();
+    std::cout << "done!" << std::endl;
 }
 
 void Warper_t::probe (const Array4<float>& p)
