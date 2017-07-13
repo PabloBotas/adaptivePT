@@ -58,7 +58,7 @@ __device__ float to_boundary(const float3& pos,
                              const float3& endpoint)
 {
     float boundary = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
-    float const min_dist = 0.001;
+    float const min_dist = 0.003;
 
     float3 r = endpoint-pos;
     float dist = length(r);
@@ -76,8 +76,8 @@ __device__ float to_boundary(const float3& pos,
                pos.x, pos.y, pos.z,
                dir.x, dir.y, dir.z,
                endpoint.x, endpoint.y, endpoint.z);
-        assert((cos_to_point >  0.9999 && cos_to_point < 1.0001) ||
-               (cos_to_point > -0.0001 && cos_to_point < 0.0001));
+        assert((cos_to_point >  0.999 && cos_to_point < 1.001) ||
+               (cos_to_point > -0.001 && cos_to_point < 0.001));
     }
 
     if(dist <= min_dist)
