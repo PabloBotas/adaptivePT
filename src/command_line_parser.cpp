@@ -43,10 +43,8 @@ void Parser::process_command_line(int argc, char** argv)
                     "If the traces on the CT volume should be scored to a file.")
         ("output_cbct_traces", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
                     "If the traces on the CBCT volume should be scored to a file.")
-        ("ct_traces_individual", po::bool_switch(&ct_traces_individual)->default_value(false),
-                    "If the traces should be scored individually.")
         ("report", po::bool_switch(&report)->default_value(false),
-                    "If a report should be generated. Requires output_vf and output_shifts");
+                    "If a report should be generated. Requires output_vf and output_shifts, and no geometry only mode");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -56,16 +54,10 @@ void Parser::process_command_line(int argc, char** argv)
         }
         po::notify(vm);
     
-        if ( ct_traces_individual ) {
-            if ( !output_ct_traces.empty() && !output_cbct_traces.empty() ) {
-                std::cerr << "ERROR! ct_traces_individual option needs output_ct_traces or output_cbct_traces." << std::endl;
-                std::cerr << desc << std::endl;
-                exit(EXIT_SUCCESS);
-            }
-        }
         if ( report ) {
-            if ( !output_shifts.empty() || !output_vf.empty() || no_energy) {
+            if ( output_shifts.empty() || output_vf.empty() || no_energy) {
                 std::cerr << "ERROR! report option needs energies processing and shifts and vf output." << std::endl;
+                print_parameters();
                 std::cerr << desc << std::endl;
                 exit(EXIT_SUCCESS);
             }
@@ -104,8 +96,6 @@ void Parser::print_parameters()
         std::cout << "    - Out CT traces:    " << output_ct_traces << '\n';
     if (!output_cbct_traces.empty())
         std::cout << "    - Out CBCT traces:  " << output_cbct_traces << '\n';
-    if (ct_traces_individual)
-        std::cout << "    - Traces Individual" << '\n';
     if (report)
         std::cout << "    - Report" << '\n';
 }

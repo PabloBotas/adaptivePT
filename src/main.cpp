@@ -104,7 +104,7 @@ void deal_with_ct(Patient_Parameters_t& pat,
     ct_init_pat_pos.resize(pat.total_spots);
     Array4<float> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
-                           parser.output_ct_traces, parser.ct_traces_individual);
+                           parser.output_ct_traces);
     // Print results
     size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 
@@ -133,7 +133,7 @@ void deal_with_cbct(Patient_Parameters_t& pat,
     Array4<float> cbct_endpoints(pat.total_spots);
     gpu_raytrace_warped (pat, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
-                         parser.output_cbct_traces, parser.ct_traces_individual);
+                         parser.output_cbct_traces);
 
     // Print results ----------------------------
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
@@ -221,6 +221,7 @@ void generate_report(const std::string& output_vf,
         tramps += tramp_files.at(i) + " ";
     std::string outdir = "--outdir " + output_vf.substr(0, output_vf.find_last_of('/'));
     std::string command = interp + code + vf + shifts + tramps + outdir;
+    std::cout << "Running: " << command << std::endl;
     int res = system(command.c_str());
 
     if (res)

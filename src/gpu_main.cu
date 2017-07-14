@@ -21,8 +21,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             Array4<float>& endpoints,
                             Array4<float>& init_pos,
                             Array4<float>& init_pat_pos,
-                            std::string output_file,
-                            bool ct_traces_individual)
+                            std::string output_file)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -46,7 +45,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         init_pos.at(i).w = xbuffer[i].w; // wepl
     }
 
-    gpu_raytrace (pat, endpoints, output_file, ct_traces_individual);
+    gpu_raytrace (pat, endpoints, output_file);
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
@@ -54,8 +53,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
-                          std::string output_file,
-                          bool ct_traces_individual)
+                          std::string output_file)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -74,13 +72,12 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                       make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
                                       make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
-    gpu_raytrace (pat, endpoints, output_file, ct_traces_individual, off_endpoints);
+    gpu_raytrace (pat, endpoints, output_file, off_endpoints);
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    Array4<float>& endpoints,
                    std::string output_file,
-                   bool ct_traces_individual,
                    const Array4<float>& orig_endpoints)
 {
     // Create scorer array
@@ -90,34 +87,19 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     // Calculate rays
     if (output_file.empty())
     {
-        do_raytrace<float> (pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
+        do_raytrace(pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
     }
     else
     {
-        if (ct_traces_individual)
-        {
-            unsigned long long int* traces_scorer = NULL;
-            allocate_scorer<unsigned long long int>(traces_scorer, pat.ct.total);
-            do_raytrace<unsigned long long int> (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
-            bool long_data = true;
-            Volume_t traces(pat.ct, long_data);
-            retrieve_scorer<unsigned long long int, unsigned long long int>(&traces.long_data[0], traces_scorer, traces.nElements);
-            // traces.output("output_volume.mha");
-            traces.output(output_file, ct_traces_individual, pat.spots_per_field);
-            gpuErrchk( cudaFree(traces_scorer) );
-        }
-        else
-        {
-            float* traces_scorer = NULL;
-            allocate_scorer<float>(traces_scorer, pat.ct.total);
-            do_raytrace<float> (pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
-            bool long_data = false;
-            Volume_t traces(pat.ct, long_data);
-            retrieve_scorer<float, float>(&traces.data[0], traces_scorer, traces.nElements);
-            // traces.output("output_volume.mha");
-            traces.output(output_file, ct_traces_individual, pat.spots_per_field);
-            gpuErrchk( cudaFree(traces_scorer) );
-        }
+        float* traces_scorer = NULL;
+        allocate_scorer<float>(traces_scorer, pat.ct.total);
+        do_raytrace(pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
+        bool long_data = false;
+        Volume_t traces(pat.ct, long_data);
+        retrieve_scorer<float, float>(&traces.data[0], traces_scorer, traces.nElements);
+        // traces.output("output_volume.mha");
+        traces.output(output_file);
+        gpuErrchk( cudaFree(traces_scorer) );
     }
 
     retrieve_scorer<float, float4>(&(endpoints[0].x), pos_scorer, pat.total_spots);

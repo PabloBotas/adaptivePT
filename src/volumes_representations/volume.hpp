@@ -27,7 +27,6 @@ public:
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
     void setSpacing(float x, float y, float z);
     void output(std::string outfile);
-    void output(std::string outfile, bool split, std::vector<short> spf);
     void output(std::string outfile, const CT_Dims_t& dims);
     void ext_to_int_coordinates();
 
