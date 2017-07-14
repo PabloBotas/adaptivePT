@@ -81,17 +81,16 @@ std::string utils::run_command(const std::string cmd)
         std::cout << std::endl << cmd << std::endl;
     }
 
-    int const buff_length = 128;
-    std::array<char, buff_length> buffer;
+    std::array<char, 512> buffer;
     std::string stdout;
-    std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
+    std::shared_ptr<std::FILE> pipe(popen(cmd.c_str(), "r"), pclose);
     if (!pipe)
     {
         std::cerr << "ERROR! popen() failed" << std::endl;
         exit(EXIT_FAILURE);
     }
     while (!feof(pipe.get())) {
-        if (fgets(buffer.data(), buff_length, pipe.get()) != NULL)
+        if (std::fgets(buffer.data(), 512, pipe.get()) != NULL)
             stdout += buffer.data();
     }
     return stdout;
