@@ -26,7 +26,7 @@ def add_rectangle(ax, x, y, width, height, color, alpha):
     )
 
 
-def analize_vf(vf_file):
+def analize_vf(vf_file, outfile):
     r = np.genfromtxt(vf_file, skip_header=1, delimiter=' ',
                       names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid']).T
     vx = np.array(r['vx'])
@@ -38,14 +38,17 @@ def analize_vf(vf_file):
     # beamid = r['beamid']
     # spotid = r['spotid']
 
+    npoints = len(x)
+
     d = np.sqrt(vx*vx + vy*vy + vz*vz)
-    ang_x = np.array([np.arccos(vx[i]/d[i]) if d[i] != 0 else 0 for i in range(len(d))])
-    ang_y = np.array([np.arccos(vy[i]/d[i]) if d[i] != 0 else 0 for i in range(len(d))])
-    ang_z = np.array([np.arccos(vz[i]/d[i]) if d[i] != 0 else 0 for i in range(len(d))])
+    ang_x = np.array([np.arccos(vx[i]/d[i]) if d[i] != 0 else 0 for i in range(npoints)])
+    ang_y = np.array([np.arccos(vy[i]/d[i]) if d[i] != 0 else 0 for i in range(npoints)])
+    ang_z = np.array([np.arccos(vz[i]/d[i]) if d[i] != 0 else 0 for i in range(npoints)])
 
     nbins = 25
     nangles = 360
 
+    pp = PdfPages(outfile)
     fig = plt.figure()
     fig.suptitle('Vector field analysis at endpoints')
 
@@ -73,30 +76,31 @@ def analize_vf(vf_file):
     ax.set_title('Angle z', fontsize=11)
 
     ax = fig.add_subplot(2, 3, 4)
-    dummy = vx if vx.all() == 0. or vy.all() == 0. else 0.00000001
+    dummy = vx if vx.any() or vy.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
     ax.set_xlabel('pos x (mm)', fontsize=8)
     ax.set_ylabel('pos y (mm)', fontsize=8)
 
     ax = fig.add_subplot(2, 3, 5)
-    dummy = vy if vy.all() == 0. or vz.all() == 0. else 0.00000001
+    dummy = vy if vy.any() or vz.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(y, z, dummy, vz, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
     ax.set_xlabel('pos y (mm)', fontsize=8)
     ax.set_ylabel('pos z (mm)', fontsize=8)
 
     ax = fig.add_subplot(2, 3, 6)
-    dummy = vz if vz.all() == 0. or vx.all() == 0. else 0.00000001
+    dummy = vz if vz.any() or vx.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(z, x, dummy, vx, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
     ax.set_xlabel('pos z (mm)', fontsize=8)
     ax.set_ylabel('pos x (mm)', fontsize=8)
 
-    return fig
+    pp.savefig(fig, bbox_inches='tight')
+    pp.close()
 
 
-def analize_tramp(shifts_file, tramp_files, spots_layer):
+def analize_tramp(shifts_file, tramp_files, spots_layer, outfile):
     r = np.genfromtxt(shifts_file, skip_header=1, delimiter=' ',
                       names=['e', 'x', 'y', 'z', 'd', 'beamid', 'spotid']).T
     all_de = np.array(r['e']/1e6)
@@ -107,7 +111,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
     beamid = np.array(r['beamid'])
     # spotid = r['spotid']
 
-    figures = list()
+    pp = PdfPages(outfile)
 
     for tramp_num, tramp_file in enumerate(tramp_files, start=0):
         tramp_r = np.genfromtxt(tramp_file, skip_header=12, names=['e', 'x', 'y', 'w']).T
@@ -127,11 +131,11 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
         number_layers = len(unique_energies)
         layer_id = np.array([int(np.squeeze(np.where(unique_energies == i))) for i in tramp_e])
 
-        fig_general = plt.figure()
-        fig_general.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
+        fig = plt.figure()
+        fig.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
 
         # FIGURE 1, PLOT 1 --------------------------------
-        ax = fig_general.add_subplot(3, 2, 1)
+        ax = fig.add_subplot(3, 2, 1)
         accu_len = 0
         for i, layer_energy in enumerate(unique_energies):
             bool_mask = tramp_e == layer_energy
@@ -157,13 +161,13 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
         # FIGURE 1, PLOT 2 --------------------------------
-        ax = fig_general.add_subplot(3, 2, 2)
+        ax = fig.add_subplot(3, 2, 2)
         nbins = 25
         ax.hist(de, nbins)
         ax.set_xlabel('Shift size (MeV)', fontsize=7)
 
         # FIGURE 1, PLOT 3 --------------------------------
-        ax = fig_general.add_subplot(3, 2, 3)
+        ax = fig.add_subplot(3, 2, 3)
         for i in range(len(tramp_x)):
             if d[i] > 0.001:
                 ax.arrow(0.1 * vx[i] + tramp_x[i], 0.1 * vy[i] + tramp_y[i],
@@ -179,13 +183,16 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
         ax.set_ylabel('Y (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 4 --------------------------------
-        ax = fig_general.add_subplot(3, 2, 4)
+        ax = fig.add_subplot(3, 2, 4)
         nbins = 25
-        ax.hist(d, bins=nbins)
+        if d.max()-d.min() < 0.1:
+            ax.hist(d, bins=nbins, range=(d.min-0.05, d.max+0.05))
+        else:
+            ax.hist(d, bins=nbins)
         ax.set_xlabel('Shift size (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 5 --------------------------------
-        ax = fig_general.add_subplot(3, 2, 5)
+        ax = fig.add_subplot(3, 2, 5)
         ax.step(range(len(tramp_y)), tramp_y, color='black', alpha=0.5)
         ax.step(range(len(tramp_y)), y, color='blue', alpha=0.5)
         ax.plot(y, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
@@ -199,11 +206,18 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
 
         time, summary = delivery_timing.get_timing(tramp_e, tramp_x, tramp_y, tramp_w)
         time_adapted, summary_adapted = delivery_timing.get_timing(tramp_e+de, x, y, tramp_w)
+        max_time = 120. if 120. > time[-1] else 1.5*time[-1]  # s
+        default_energy_switch = 2.5                           # s
+        time_ideal, summary_ideal = delivery_timing.get_timing(tramp_e, x, y, tramp_w, energy_switch_time=False)
+        total_ideal = time_ideal[-1]
+        max_layers = np.floor((max_time - total_ideal)/default_energy_switch)
+        print('Maximum theoretical energy layers: {}'.format(max_layers))
+
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
 
         # FIGURE 1, PLOT 6 --------------------------------
-        ax = fig_general.add_subplot(3, 2, 6)
+        ax = fig.add_subplot(3, 2, 6)
         ax.plot(time, color='blue', alpha=0.5)
         ax.plot(time_adapted, color='red')
         accu_len = 0
@@ -224,7 +238,8 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
                     textcoords='axes fraction', xytext=(0.31, 0.64),
                     xy=(5, min(time)), fontsize=4, bbox=bbox_props_adapt)
 
-        figures.append(fig_general)
+        pp.savefig(fig, bbox_inches='tight')
+        fig.clf()
 
         # FIGURE 2, PLOT 1 --------------------------------
         if spots_layer:
@@ -233,12 +248,12 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
             max_nrows = 5
             nrows = min(int(np.ceil(number_layers / ncols)), max_nrows)
             max_plots_page = nrows*ncols
-            fig_spots = plt.figure()
-            fig_spots.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
+            fig = plt.figure()
+            fig.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
                                tramp_num, 0, min(max_plots_page-1, number_layers-1)))
             for layer_num, layer_energy in enumerate(unique_energies):
                 subplot_num = layer_num % max_plots_page + 1
-                ax_layers = fig_spots.add_subplot(nrows, ncols, subplot_num)
+                ax_layers = fig.add_subplot(nrows, ncols, subplot_num)
                 ax_layers.tick_params(labelsize=4)
                 if subplot_num % ncols == 1:
                     ax_layers.set_ylabel('Y (mm)', fontsize=6)
@@ -265,12 +280,12 @@ def analize_tramp(shifts_file, tramp_files, spots_layer):
 
                 ax_layers.annotate(str(layer_energy) + ' MeV', xy=(0.05, 0.05), xycoords='axes fraction', fontsize=5)
                 if layer_num % max_plots_page + 1 == 0 or layer_num+1 == number_layers:
-                    figures.append(fig_spots)
-                    fig_spots = plt.figure()
-                    fig_spots.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
+                    pp.savefig(fig, bbox_inches='tight')
+                    fig.clf()
+                    fig.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
                         tramp_num, layer_num, min(layer_num + max_plots_page-1, number_layers-1)))
 
-    return figures
+        pp.close()
 
 
 def main(argv):
@@ -283,17 +298,17 @@ def main(argv):
     parser.add_argument('--tramps', nargs='+', help='MHA file containing the CTV structure', required=True)
     parser.add_argument('--outdir', help='Directory to output analysis', default='./')
     parser.add_argument('--spots_layer', help='Neglect layer-by-layer plotting of spot position shifts', default=False)
+    parser.add_argument('--outfile', help='Report file name. It will be forced to be a pdf.',
+                        default='adapt_report.pdf')
 
     args = parser.parse_args(argv)
 
-    fig_vf = analize_vf(args.vf)
-    figs_tramp = analize_tramp(args.shifts, args.tramps, args.spots_layer)
+    if not args.outfile.endswith('.pdf'):
+        args.outfile += '.pdf'
 
-    pp = PdfPages(args.outdir + "/adapt_report.pdf")
-    pp.savefig(fig_vf, bbox_inches='tight')
-    for i in figs_tramp:
-        pp.savefig(i, bbox_inches='tight')
-    pp.close()
+    analize_vf(args.vf, args.outdir + "/" + args.outfile)
+    analize_tramp(args.shifts, args.tramps, args.spots_layer, args.outdir + "/" + args.outfile)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

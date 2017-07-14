@@ -15,7 +15,7 @@ MP = float(938.27)      # proton rest mass in MeV/c^2
 
 # USER PARAMETERS
 maxBeamCurrent = float(2)           # nA
-switchEnergyTime = float(2.5*S2US)  # us
+# switchEnergyTime = float(2.5*S2US)  # us
 signalOnDelay = float(0.5*MS2US)    # us
 signalOffDelay = float(0.5*MS2US)   # us
 spotSettlingTimeX = float(8*MS2US)  # us
@@ -71,7 +71,7 @@ def get_travel_time(distance, speed):
     return S2US*abs(distance)*MM2M / speed
 
 
-def get_timing(e, x, y, w):
+def get_timing(e, x, y, w, energy_switch_time=True):
     """
     Assigns time and phase to each spot in tramp file.
     
@@ -120,6 +120,10 @@ def get_timing(e, x, y, w):
         -------------------------------
         Total treatment    =   90.448 s
     """
+
+    switchEnergyTime = float(2.5 * S2US)  # us
+    if not energy_switch_time:
+        switchEnergyTime = 0.
 
     source = tramp.Tramp(e=e, x=x, y=y, w=w)
 
