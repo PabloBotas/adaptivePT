@@ -26,3 +26,7 @@ utils/
 src/extra/\.idea/
 
 test/
+
+src/extra/__pycache__/
+
+testadaptation/
