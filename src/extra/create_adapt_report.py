@@ -26,7 +26,7 @@ def add_rectangle(ax, x, y, width, height, color, alpha):
     )
 
 
-def analize_vf(vf_file, outfile):
+def analize_vf(vf_file, pp):
     r = np.genfromtxt(vf_file, skip_header=1, delimiter=' ',
                       names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid']).T
     vx = np.array(r['vx'])
@@ -48,7 +48,6 @@ def analize_vf(vf_file, outfile):
     nbins = 25
     nangles = 360
 
-    pp = PdfPages(outfile)
     fig = plt.figure()
     fig.suptitle('Vector field analysis at endpoints')
 
@@ -97,10 +96,9 @@ def analize_vf(vf_file, outfile):
     ax.set_ylabel('pos x (mm)', fontsize=8)
 
     pp.savefig(fig, bbox_inches='tight')
-    pp.close()
 
 
-def analize_tramp(shifts_file, tramp_files, spots_layer, outfile):
+def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     r = np.genfromtxt(shifts_file, skip_header=1, delimiter=' ',
                       names=['e', 'x', 'y', 'z', 'd', 'beamid', 'spotid']).T
     all_de = np.array(r['e']/1e6)
@@ -110,8 +108,6 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, outfile):
     # all_d  = np.array(r['d'])
     beamid = np.array(r['beamid'])
     # spotid = r['spotid']
-
-    pp = PdfPages(outfile)
 
     for tramp_num, tramp_file in enumerate(tramp_files, start=0):
         tramp_r = np.genfromtxt(tramp_file, skip_header=12, names=['e', 'x', 'y', 'w']).T
@@ -248,7 +244,6 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, outfile):
             max_nrows = 5
             nrows = min(int(np.ceil(number_layers / ncols)), max_nrows)
             max_plots_page = nrows*ncols
-            fig = plt.figure()
             fig.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
                                tramp_num, 0, min(max_plots_page-1, number_layers-1)))
             for layer_num, layer_energy in enumerate(unique_energies):
@@ -285,8 +280,6 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, outfile):
                     fig.suptitle('Spot movement per layer. Beam: {}. Layers: {}-{}'.format(
                         tramp_num, layer_num, min(layer_num + max_plots_page-1, number_layers-1)))
 
-        pp.close()
-
 
 def main(argv):
     # Define the top-level parser
@@ -305,9 +298,11 @@ def main(argv):
 
     if not args.outfile.endswith('.pdf'):
         args.outfile += '.pdf'
-
-    analize_vf(args.vf, args.outdir + "/" + args.outfile)
-    analize_tramp(args.shifts, args.tramps, args.spots_layer, args.outdir + "/" + args.outfile)
+    outfile = args.outdir + "/" + args.outfile
+    pp = PdfPages(outfile)
+    analize_vf(args.vf, pp)
+    analize_tramp(args.shifts, args.tramps, args.spots_layer, pp)
+    pp.close()
 
 
 if __name__ == "__main__":
