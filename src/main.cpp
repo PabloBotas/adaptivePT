@@ -111,7 +111,7 @@ void deal_with_ct(Patient_Parameters_t& pat,
     // Warp endpoints in CT ---------------------------
     Warper_t warp(parser.vf_file, parser.output_vf);
     warp.apply_to(ct_endpoints, ct_init_pat_pos,
-                  pat.ct, pat.treatment_planes.dir, pat.spots_per_field);
+                  pat.ct, pat.treatment_planes, pat.spots_per_field);
     
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;

@@ -27,7 +27,7 @@ Warper_t::Warper_t (const std::string vf_file,
 void Warper_t::apply_to (Array4<float>& endpoints,
            Array4<float>& init_pos,
            const CT_Dims_t& ct,
-           Array4<float> treatment_plane,
+           const Planes_t treatment_plane,
            const std::vector<short>& spots_per_field)
 {
     flip_positions_X (endpoints, ct);
@@ -38,8 +38,8 @@ void Warper_t::apply_to (Array4<float>& endpoints,
     if(exp_file)
         write_to_file (endpoints, spots_per_field);
     warp_points (endpoints);
-    project_vf_on_plane (treatment_plane, spots_per_field);
-    warp_points (init_pos);
+    warp_init_points (treatment_plane, spots_per_field, init_pos);
+    correct_warp_points (init_pos);
 
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
@@ -74,24 +74,58 @@ void Warper_t::set_vf_origins()
     origins.z /= 10;
 }
 
-void Warper_t::project_vf_on_plane (const Array4<float>& n,
+
+void Warper_t::pos_on_treatment_plane (Array4<float>& init_pos,
+                                       const Planes_t& pln,
+                                       const std::vector<short>& spots_per_field)
+{
+    project_vf_on_plane (treatment_plane, spots_per_field);
+
+    for (size_t i = 0; i < vf.size(); i++)
+    {
+        // Get coordinates and angles
+        Vector3_t<float> r_ab(probe.x-initial.x, probe.y-initial.y, probe.z-initial.z);
+        Vector3_t<float> r_0a(initial.x-pln.p.x, initial.y-pln.p.y, initial.z-pln.p.z);
+        
+        float angle = arccos((pln.dir.x*r_ab.x + pln.dir.y*r_ab.y + pln.dir.z*r_ab.z) /
+                             ( sqrt(pln.dir.x*pln.dir.x + pln.dir.y*pln.dir.y + pln.dir.z*pln.dir.z) *
+                               sqrt(r_ab.x*r_ab.x + r_ab.y*r_ab.y + r_ab.z*r_ab.z)));
+
+        float z1 = sqrt(r_0a.x*r_0a.x + r_0a.y*r_0a.y + r_0a.z*r_0a.z)/tan(angle);
+        float z2 = sqrt(r_ab.x*r_ab.x + r_ab.y*r_ab.y + r_ab.z*r_ab.z)*cos(angle);
+        float SAD = z1 + z2;
+
+        std::cout << "VF is changing from (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")";
+
+        init_pos.at(i).x = (SAD-z2)/SAD * (vf.x+probe.x)
+        init_pos.at(i).y = (SAD-z2)/SAD * (vf.y+probe.y)
+        init_pos.at(i).z = (SAD-z2)/SAD * (vf.z+probe.z)
+
+        vf = (SAD-z2)/SAD * make_float3(vf.x+probe.x, vf.y+probe.y, vf.z+probe.z) - make_float3()
+        std::cout << " to (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")" <<std::endl;
+
+    }
+}
+
+
+void Warper_t::project_vf_on_plane (const Planes_t& pln,
                                     const std::vector<short>& spots_per_field)
 {
     for (size_t i = 0, ibeam = 0; i < vf.size(); i++)
     {
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
-        float inner = vf.at(i).x*n.at(ibeam).x +
-                      vf.at(i).y*n.at(ibeam).y +
-                      vf.at(i).z*n.at(ibeam).z;
-        float mod_squared = n.at(ibeam).x*n.at(ibeam).x +
-                            n.at(ibeam).y*n.at(ibeam).y +
-                            n.at(ibeam).z*n.at(ibeam).z;
+        float inner = vf.at(i).x*pln.dir.at(ibeam).x +
+                      vf.at(i).y*pln.dir.at(ibeam).y +
+                      vf.at(i).z*pln.dir.at(ibeam).z;
+        float mod_squared = n.at(ibeam).x*pln.dir.at(ibeam).x +
+                            n.at(ibeam).y*pln.dir.at(ibeam).y +
+                            n.at(ibeam).z*pln.dir.at(ibeam).z;
         float norm = inner/mod_squared;
 
-        vf.at(i).x -= norm*n.at(ibeam).x;
-        vf.at(i).y -= norm*n.at(ibeam).y;
-        vf.at(i).z -= norm*n.at(ibeam).z;
+        vf.at(i).x -= norm*pln.dir.at(ibeam).x;
+        vf.at(i).y -= norm*pln.dir.at(ibeam).y;
+        vf.at(i).z -= norm*pln.dir.at(ibeam).z;
     }
 }
 
@@ -134,20 +168,22 @@ void Warper_t::write_to_file(const Array4<float>& p,
     std::cout << "done!" << std::endl;
 }
 
+void Warper_t::set_probes (const Array4<float>& p)
+{
+    vf.resize(p.size());
+    for (size_t i = 0; i < p.size(); i++)
+    {
+        probes.at(i).x = p.at(i).x;
+        probes.at(i).y = p.at(i).y;
+        probes.at(i).z = p.at(i).z;
+    }
+}
+
 void Warper_t::probe (const Array4<float>& p)
 {
-    // plastimatch probe --location "0 0 0; 0.5 0.5 0.5; 1 1 1" infile.nrrd
-    // Build command
-    std::string locations;
-    size_t elements = p.size();
-    for (size_t i = 0; i < elements; i++)
-    {
-        Vector4_t<float> temp;
-        temp.x = p.at(i).x + origins.x;
-        temp.y = p.at(i).y + origins.y;
-        temp.z = p.at(i).z + origins.z;
-        locations += to_location_str(temp, i+1 == elements);
-    }
+    set_probes(p);
+
+    std::cout << "Probing vector field ..." << std::endl;
 
     // Get vector field image
     if ( ! (utils::ends_with_string(file, ".mha") || 
@@ -164,17 +200,35 @@ void Warper_t::probe (const Array4<float>& p)
         std::cout << temp << std::endl;
     }
 
-    std::string cmd = "plastimatch probe --location \"";
-    cmd += locations + "\" ";
-    cmd += file;
+    // plastimatch probe --location "0 0 0; 0.5 0.5 0.5; 1 1 1" infile.nrrd
+    // Build command
+    std::string str;
+    size_t elements = probes.size();
+    const size_t locs_per_batch = 3000;
+    size_t nbatches = size_t(elements/locs_per_batch)+1;
+    for (size_t batch = 0; batch < nbatches; batch++)
+    {
+        std::string locations;
+        for (size_t i = batch*locs_per_batch; i < elements && i < (batch+1)*locs_per_batch; i++)
+        {
+            Vector4_t<float> temp;
+            temp.x = probes.at(i).x + origins.x;
+            temp.y = probes.at(i).y + origins.y;
+            temp.z = probes.at(i).z + origins.z;
+            locations += to_location_str(temp, i+1 == elements && i+1 == (batch+1)*locs_per_batch);
+        }
+        std::string cmd = "plastimatch probe --location \"";
+        cmd += locations + "\" ";
+        cmd += file + " 2>&1";
 
-    // Run command
-    std::string str = utils::run_command(cmd);
-    // std::cout << str << std::endl;
+        // Run command
+        str += utils::run_command(cmd);
+    }
 
     // Get vf from stdout
     std::stringstream ss_per_line(str);
     std::string line;
+    vf.reserve(p.size());
 
     if (!str.empty())
     {

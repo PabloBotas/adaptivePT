@@ -15,7 +15,7 @@ public:
     void apply_to (Array4<float>& endpoints,
                    Array4<float>& init_pos,
                    const CT_Dims_t& ct,
-                   Array4<float> treatment_plane,
+                   const Planes_t& treatment_plane,
                    const std::vector<short>& spots_per_field);
     
 private:
@@ -25,20 +25,22 @@ private:
     void probe (const Array4<float>& p);
     void write_to_file (const Array4<float>& p,
                         const std::vector<short>& spots_per_field);
-    void warp_points (Array4<float>& p);
-    void project_vf_on_plane (const Array4<float>& n,
+    void warp_endpoints (Array4<float>& p);
+    void project_vf_on_plane (const Planes_t& pln,
                               const std::vector<short>& spots_per_field);
 
     // Utils
     void flip_positions_X (Array4<float>& vec, const CT_Dims_t dims);
     void flip_direction_X (Array4<float>& vec);
     std::string to_location_str (const Vector3_t<float>& p, const bool last);
+    void set_probes (const Array4<float>& p);
 
     bool exp_file;
     std::string file;
     std::string output;
     Vector3_t<float> origins;
     Array3<float> vf;
+    Array3<float> probes;
 };
 
 
