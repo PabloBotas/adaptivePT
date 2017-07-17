@@ -19,6 +19,8 @@ public:
     Vector3_t(const Vector2_t<T> &obj);
     Vector3_t(const Vector4_t<T> &obj);
     void print();
+    float length();
+    void normalize();
 
     T x;
     T y;

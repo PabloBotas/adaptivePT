@@ -55,9 +55,24 @@ Vector3_t<T>::Vector3_t(const Vector4_t<T> &obj)
 template<class T>
 void Vector3_t<T>::print()
 {
-        std::cout << x << "\t";
-        std::cout << y << "\t";
-        std::cout << z << std::endl;
+    std::cout << x << "\t";
+    std::cout << y << "\t";
+    std::cout << z << std::endl;
+}
+
+template<class T>
+float Vector3_t<T>::length()
+{
+    return srqt(x*x + y*y + z*z);
+}
+
+template<class T>
+void Vector3_t<T>::normalize()
+{
+    float d = this->length();
+    x = x/d;
+    y = y/d;
+    z = z/d;
 }
 
 
