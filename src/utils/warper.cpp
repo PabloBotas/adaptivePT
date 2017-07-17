@@ -79,21 +79,26 @@ void Warper_t::pos_on_treatment_plane (Array4<float>& init_pos,
                                        const Planes_t& pln,
                                        const std::vector<short>& spots_per_field)
 {
+    /* 
+    */
     project_vf_on_plane (treatment_plane, spots_per_field);
 
     for (size_t i = 0; i < vf.size(); i++)
     {
-        // Get coordinates and angles
-        Vector3_t<float> r_ab(probe.x-initial.x, probe.y-initial.y, probe.z-initial.z);
-        Vector3_t<float> r_0a(initial.x-pln.p.x, initial.y-pln.p.y, initial.z-pln.p.z);
-        
-        float angle = arccos((pln.dir.x*r_ab.x + pln.dir.y*r_ab.y + pln.dir.z*r_ab.z) /
-                             ( sqrt(pln.dir.x*pln.dir.x + pln.dir.y*pln.dir.y + pln.dir.z*pln.dir.z) *
-                               sqrt(r_ab.x*r_ab.x + r_ab.y*r_ab.y + r_ab.z*r_ab.z)));
 
-        float z1 = sqrt(r_0a.x*r_0a.x + r_0a.y*r_0a.y + r_0a.z*r_0a.z)/tan(angle);
-        float z2 = sqrt(r_ab.x*r_ab.x + r_ab.y*r_ab.y + r_ab.z*r_ab.z)*cos(angle);
-        float SAD = z1 + z2;
+        Vector3_t<float> a = pln.p;
+        Vector3_t<float> b;
+        b.x = init_pos.at(i).x;
+        b.y = init_pos.at(i).y;
+        b.z = init_pos.at(i).z;
+        Vector3_t<float> c = probes.at(i);
+        Vector3_t<float> d = probes.at(i) + vf.at(i);
+
+        Vector3_t<float> u = pln.dir;
+
+        
+        
+        
 
         std::cout << "VF is changing from (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")";
 
