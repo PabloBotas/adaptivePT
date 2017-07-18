@@ -82,6 +82,35 @@ void Vector3_t<T>::normalize()
     z /= d;
 }
 
+template<class T>
+void Vector3_t<T>::rotate(const float& gantry, const float& couch)
+{
+    float c_couch  = cos(couch);
+    float s_couch  = sin(couch);
+    float c_gantry = cos(gantry);
+    float s_gantry = sin(gantry);
+
+    Vector3_t<T> temp(x, y, z);
+    x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    y = temp.y*c_gantry - temp.z*s_gantry;
+    z = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+}
+
+template<class T>
+const T& Vector3_t<T>::operator [](int idx) const
+{
+    if (idx < 0)
+        idx = 3 + (idx % 3);
+    
+    idx = idx % 3;
+    if (idx == 0)
+        return x;
+    if (idx == 1)
+        return y;
+    if (idx == 2)
+        return z;
+    return x; // it will never get to this line
+}
 
 template class Vector3_t<int>;
 template class Vector3_t<unsigned int>;

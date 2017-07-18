@@ -23,6 +23,8 @@ public:
     Vector4_t operator-(const Vector4_t& rhs);
     Vector4_t operator*(const Vector4_t& rhs);
     Vector4_t operator/(const Vector4_t& rhs);
+    void rotate(const float& gantry, const float& couch);
+    const T& operator [](int idx) const;
     void print();
 
     T x;

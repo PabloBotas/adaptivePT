@@ -22,6 +22,8 @@ public:
     float length();
     Vector3_t<T> cross(const Vector3_t<T>& v) const;
     void normalize();
+    void rotate(const float& gantry, const float& couch);
+    const T& operator [](int idx) const;
 
     T x;
     T y;

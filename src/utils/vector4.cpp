@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 // Vector4_t ---------------------------------------
 template<class T>
@@ -74,6 +75,39 @@ void Vector4_t<T>::print()
     std::cout << y << "\t";
     std::cout << z << "\t";
     std::cout << w << std::endl;
+}
+
+template<class T>
+void Vector4_t<T>::rotate(const float& gantry, const float& couch)
+{
+    float c_couch  = cos(couch);
+    float s_couch  = sin(couch);
+    float c_gantry = cos(gantry);
+    float s_gantry = sin(gantry);
+
+    Vector4_t<T> temp(x, y, z, w);
+    x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    y = temp.y*c_gantry - temp.z*s_gantry;
+    z = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    w = temp.w;
+}
+
+template<class T>
+const T& Vector4_t<T>::operator [](int idx) const
+{
+    if (idx < 0)
+        idx = 4 + (idx % 4);
+    
+    idx = idx % 4;
+    if (idx == 0)
+        return x;
+    if (idx == 1)
+        return y;
+    if (idx == 2)
+        return z;
+    if (idx == 3)
+        return w;
+    return x; // it will never get to this line
 }
 
 template class Vector4_t<float>;
