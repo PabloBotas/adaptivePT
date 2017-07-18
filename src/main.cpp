@@ -29,7 +29,7 @@
 // TODO Verify that VF probing is correctly done. How?
 // Done Verify CBCT offsets are correctly updated
 
-void deal_with_ct(Patient_Parameters_t& pat,
+void deal_with_ct(const Patient_Parameters_t& pat,
                   const Parser& parser,
                   Array4<float>& ct_vf_endpoints,
                   Array4<float>& ct_vf_init_pat_pos);
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     exit(EXIT_SUCCESS);
 }
 
-void deal_with_ct(Patient_Parameters_t& pat,
+void deal_with_ct(const Patient_Parameters_t& pat,
                   const Parser& parser,
                   Array4<float>& ct_endpoints,
                   Array4<float>& ct_init_pat_pos)
@@ -105,16 +105,15 @@ void deal_with_ct(Patient_Parameters_t& pat,
     Array4<float> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
                            parser.output_ct_traces);
-    // Print results
-    size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
 
     // Warp endpoints in CT ---------------------------
     Warper_t warp(parser.vf_file, parser.output_vf);
     warp.apply_to(ct_endpoints, ct_init_pat_pos,
                   pat.ct, pat.treatment_planes, pat.spots_per_field);
-    
+
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;
+    size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
     for (size_t i = 0; i < iters; i++)
         ct_init_pat_pos.at(i).print();
 }
