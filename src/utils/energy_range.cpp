@@ -60,6 +60,7 @@ float Energy_Range_Calculator_t::operator()(float& x)
             return table.getVal("energy", "range", x);
             break;
     }
+    return 0.f;
 }
 
 //std::vector<float> r80 = { 30.710, 33.260, 35.820, 38.360, 40.920, 43.480, 45.980,
