@@ -18,7 +18,10 @@ namespace utils
                               std::string const& to_replace);
     std::string run_command(const std::string cmd);
     void cm_to_mm(Array4<float>& v);
-    Vector4_t<float> rotate(const Vector4_t<float>& p, const float& gantry, const float& couch);
+    Vector3_t<float> intersect(const Vector3_t<float>& a,
+                               const Vector3_t<float>& u,
+                               const Vector3_t<float>& b,
+                               const Vector3_t<float>& v);
     void check_fs(const std::ofstream& ofs, std::string f, std::string msg);
     void check_fs(const std::ifstream& ofs, std::string f, std::string msg);
 }

@@ -25,21 +25,21 @@ Warper_t::Warper_t (const std::string vf_file,
 }
 
 void Warper_t::apply_to (Array4<float>& endpoints,
-           Array4<float>& init_pos,
-           const CT_Dims_t& ct,
-           const Planes_t treatment_plane,
-           const std::vector<short>& spots_per_field)
+                         Array4<float>& init_pos,
+                         const CT_Dims_t& ct,
+                         Planes_t treatment_plane,
+                         const std::vector<short>& spots_per_field)
 {
     flip_positions_X (endpoints, ct);
     flip_positions_X (init_pos, ct);
-    flip_direction_X (treatment_plane);
+    flip_direction_X (treatment_plane.dir);
 
     probe (endpoints);
     if(exp_file)
         write_to_file (endpoints, spots_per_field);
+
     warp_points (endpoints);
-    warp_init_points (treatment_plane, spots_per_field, init_pos);
-    correct_warp_points (init_pos);
+    warp_init_points (init_pos, treatment_plane, spots_per_field);
 
     flip_positions_X(endpoints, ct);
     flip_positions_X(init_pos, ct);
@@ -75,39 +75,83 @@ void Warper_t::set_vf_origins()
 }
 
 
-void Warper_t::pos_on_treatment_plane (Array4<float>& init_pos,
-                                       const Planes_t& pln,
-                                       const std::vector<short>& spots_per_field)
+void Warper_t::warp_init_points (Array4<float>& init_pos,
+                                 const Planes_t& pln,
+                                 const std::vector<short>& spots_per_field)
 {
-    /* 
-    */
-    project_vf_on_plane (treatment_plane, spots_per_field);
+    /*      a_ray    O2 The initial position (b) has to be shifted taking into account the source position (O).
+     * O ---a--|-->--|  The angle theta describes the triangle OO'd. Once this is obtained, the point ? can be
+          \`   | u   |  determined. The initial data is a, b, c, d and the vector describing the plane.
+           \ ` |b    |
+            \  `     |
+             \ | `   |   r_xy is the unitary vector going from x to y.
+              \|   ` |
+               o     |c
+             X? \    |
+                 \   |
+                  \  |
+                   \ |
+                    \|d
+     */
 
-    for (size_t i = 0; i < vf.size(); i++)
+    std::cout << "Working warp_init_points" << std::endl;
+    project_vf_on_plane (pln, spots_per_field);
+
+    for (size_t i = 0, ibeam = 0; i < vf.size(); i++)
     {
+        if (i == (size_t)spots_per_field.at(ibeam))
+            ibeam += 1;
 
-        Vector3_t<float> a = pln.p;
-        Vector3_t<float> b;
+        Vector3_t<float> a; // has not been raytraced to CT volume
+        a.x = pln.p.at(ibeam).x;
+        a.y = pln.p.at(ibeam).y;
+        a.z = pln.p.at(ibeam).z;
+        Vector3_t<float> b; // has been raytraced to CT volume
         b.x = init_pos.at(i).x;
         b.y = init_pos.at(i).y;
         b.z = init_pos.at(i).z;
         Vector3_t<float> c = probes.at(i);
         Vector3_t<float> d = probes.at(i) + vf.at(i);
 
-        Vector3_t<float> u = pln.dir;
+        Vector3_t<float> u;
+        u.x = pln.dir.at(ibeam).x;
+        u.y = pln.dir.at(ibeam).y;
+        u.z = pln.dir.at(ibeam).z;
 
+        Vector3_t<float> r_cb = b-c;
+        r_cb.normalize();
+        std::cout << "pln_src_a: " << pln.source_a.at(ibeam).x << " " << pln.source_a.at(ibeam).y << " " << pln.source_a.at(ibeam).z << std::endl;
+        std::cout << "pln_src_b: " << pln.source_b.at(ibeam).x << " " << pln.source_b.at(ibeam).y << " " << pln.source_b.at(ibeam).z << std::endl;
+        std::cout << std::endl << "Point O" << std::endl;
+        Vector3_t<float> O = utils::intersect(a, u, b, r_cb);
+        std::cout << std::endl << "Point O2" << std::endl;
+        Vector3_t<float> vf_dir = vf.at(i);
+        vf_dir.normalize();
+        Vector3_t<float> O2 = utils::intersect(a, u, c, vf_dir);
         
-        
-        
+        // The vector O2-c is parallel to the vector
+        // between b and the raytraced a (a_ray)
+        Vector3_t<float> r_ba_ray = O2-c;
+        r_ba_ray.normalize();
+        std::cout << std::endl << "Point a_ray" << std::endl;
+        Vector3_t<float> a_ray = utils::intersect(a, u, b, r_ba_ray);
 
-        std::cout << "VF is changing from (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")";
+        // Calculate distances to use Thales
+        Vector3_t<float> r_Oa_ray = a_ray-O;
+        Vector3_t<float> r_OO2 = O2-O;
 
-        init_pos.at(i).x = (SAD-z2)/SAD * (vf.x+probe.x)
-        init_pos.at(i).y = (SAD-z2)/SAD * (vf.y+probe.y)
-        init_pos.at(i).z = (SAD-z2)/SAD * (vf.z+probe.z)
+        Vector3_t<float> X = r_Oa_ray * d/r_OO2;
+        std::cout << "X: " << X.x << " " << X.y << " " << X.z << std::endl;
+        std::cout << std::endl;
 
-        vf = (SAD-z2)/SAD * make_float3(vf.x+probe.x, vf.y+probe.y, vf.z+probe.z) - make_float3()
-        std::cout << " to (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")" <<std::endl;
+        // std::cout << "VF is changing from (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")";
+
+        // init_pos.at(i).x = (SAD-z2)/SAD * (vf.x+probe.x)
+        // init_pos.at(i).y = (SAD-z2)/SAD * (vf.y+probe.y)
+        // init_pos.at(i).z = (SAD-z2)/SAD * (vf.z+probe.z)
+
+        // vf = (SAD-z2)/SAD * make_float3(vf.x+probe.x, vf.y+probe.y, vf.z+probe.z) - make_float3()
+        // std::cout << " to (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")" <<std::endl;
 
     }
 }
@@ -123,9 +167,9 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
         float inner = vf.at(i).x*pln.dir.at(ibeam).x +
                       vf.at(i).y*pln.dir.at(ibeam).y +
                       vf.at(i).z*pln.dir.at(ibeam).z;
-        float mod_squared = n.at(ibeam).x*pln.dir.at(ibeam).x +
-                            n.at(ibeam).y*pln.dir.at(ibeam).y +
-                            n.at(ibeam).z*pln.dir.at(ibeam).z;
+        float mod_squared = pln.dir.at(ibeam).x*pln.dir.at(ibeam).x +
+                            pln.dir.at(ibeam).y*pln.dir.at(ibeam).y +
+                            pln.dir.at(ibeam).z*pln.dir.at(ibeam).z;
         float norm = inner/mod_squared;
 
         vf.at(i).x -= norm*pln.dir.at(ibeam).x;
@@ -175,7 +219,7 @@ void Warper_t::write_to_file(const Array4<float>& p,
 
 void Warper_t::set_probes (const Array4<float>& p)
 {
-    vf.resize(p.size());
+    probes.resize(p.size());
     for (size_t i = 0; i < p.size(); i++)
     {
         probes.at(i).x = p.at(i).x;

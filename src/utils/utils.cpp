@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstdio>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -108,18 +109,44 @@ void utils::cm_to_mm(Array4<float>& vec)
     }
 }
 
-Vector4_t<float> utils::rotate(const Vector4_t<float>& p, const float& gantry, const float& couch)
+Vector3_t<float> utils::intersect(const Vector3_t<float>& a,
+                                  const Vector3_t<float>& u,
+                                  const Vector3_t<float>& b,
+                                  const Vector3_t<float>& v)
 {
-    float c_couch  = cos(couch);
-    float s_couch  = sin(couch);
-    float c_gantry = cos(gantry);
-    float s_gantry = sin(gantry);
+    // Check they are coplanar
+    Vector3_t<float> cross = u.cross(v);
+    if (cross.length() == 0.f)
+    {
+        std::cout << "WARNING! Intersect received non-coplanar lines!" << std::endl;
+        std::cout << "Detected: F: " << __FILE__ << ". L: " << __LINE__ << std::endl;
+        return Vector3_t<float>(NAN, NAN, NAN);
+    }
 
-    Vector4_t<float> res;
-    res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
-    res.y = p.y*c_gantry - p.z*s_gantry;
-    res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);
-    res.w = p.w;
+    // Some direction components may be zero
+    // I find the largest one to be used as denominator
+    // Then I just select the next one in the container
+    // (operator[] has recursive nature in VectorN_t class)
+    int ind_max = (u.x > u.y) ? (u.x > u.z ? 0 : 2) : (u.y > u.z ? 1 : 2);
+    int ind_min = (u.x < u.y) ? (u.x < u.z ? 0 : 2) : (u.y < u.z ? 1 : 2);
+    double u_ratio = u[ind_min]/u[ind_max];
+    
+    double s = ((a[ind_min]-b[ind_min]) + (b[ind_max]-a[ind_max])*u_ratio) / (v[ind_min] - v[ind_max]*u_ratio); // line parameter of b,v
+    double t = ((b[ind_max]-a[ind_max]) + s*v[ind_max])/u[ind_max];
+    Vector3_t<float> A = a + t*u;
+    Vector3_t<float> B = b + s*v;
 
-    return res;
+    std::cout << "ind_max: " << ind_max << std::endl;
+    std::cout << "ind_min: " << ind_min << std::endl;
+    std::cout << "a: " << a.x << " " << a.y << " " << a.z << std::endl;
+    std::cout << "u: " << u.x << " " << u.y << " " << u.z << std::endl;
+    std::cout << "b: " << b.x << " " << b.y << " " << b.z << std::endl;
+    std::cout << "v: " << v.x << " " << v.y << " " << v.z << std::endl;
+    std::cout << "t: " << t << std::endl;
+    std::cout << "s: " << s << std::endl;
+    std::cout << "A: " << A.x << " " << A.y << " " << A.z << std::endl;
+    std::cout << "B: " << B.x << " " << B.y << " " << B.z << std::endl;
+
+    return A;
 }
+

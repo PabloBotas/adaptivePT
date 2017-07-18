@@ -15,7 +15,7 @@ public:
     void apply_to (Array4<float>& endpoints,
                    Array4<float>& init_pos,
                    const CT_Dims_t& ct,
-                   const Planes_t& treatment_plane,
+                   Planes_t treatment_plane,
                    const std::vector<short>& spots_per_field);
     
 private:
@@ -25,7 +25,8 @@ private:
     void probe (const Array4<float>& p);
     void write_to_file (const Array4<float>& p,
                         const std::vector<short>& spots_per_field);
-    void warp_endpoints (Array4<float>& p);
+    void warp_points (Array4<float>& p);
+    void warp_init_points (Array4<float>& init_pos, const Planes_t& pln, const std::vector<short>& spots_per_field);
     void project_vf_on_plane (const Planes_t& pln,
                               const std::vector<short>& spots_per_field);
 
