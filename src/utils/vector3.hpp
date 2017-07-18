@@ -20,6 +20,7 @@ public:
     Vector3_t(const Vector4_t<T> &obj);
     void print();
     float length();
+    Vector3_t<T> cross(const Vector3_t<T>& v) const;
     void normalize();
 
     T x;
