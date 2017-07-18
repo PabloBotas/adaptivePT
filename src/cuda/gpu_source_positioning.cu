@@ -216,7 +216,7 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
         float4 p_pos = plane_pos[beamid];
         float4 p_dir = plane_dir[beamid];
 
-        p_pos -= make_float4(ct_offsets);
+        // p_pos -= make_float4(ct_offsets);
         // Ray trace to virtual source plane if necessary
         float d = dot((p_pos - pos), p_dir) / dot(vel, p_dir);
         if ( fabs(d) > 0.0001f )
