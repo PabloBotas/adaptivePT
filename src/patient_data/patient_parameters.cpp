@@ -285,13 +285,20 @@ void Patient_Parameters_t::set_total_spots()
 
 void Patient_Parameters_t::set_treatment_planes()
 {
+    // External to internal coordinates would do: x -> -y; y -> -x, they are all 0 here.
     treatment_planes.dir.resize(nbeams);
     treatment_planes.p.resize(nbeams);
+    treatment_planes.SAD_a.resize(nbeams);
+    treatment_planes.SAD_b.resize(nbeams);
     for (size_t i = 0; i < nbeams; i++)
     {
         treatment_planes.dir.at(i) = utils::rotate(Vector4_t<float>(0, 0, 1, 0),
-                                            angles.at(i).gantry, angles.at(i).couch);
+                                                   angles.at(i).gantry, angles.at(i).couch);
         treatment_planes.p.at(i) = utils::rotate(Vector4_t<float>(0, 0, -isocenter_to_beam_distance.at(i), 0),
-                                            angles.at(i).gantry, angles.at(i).couch);
+                                                 angles.at(i).gantry, angles.at(i).couch);
+        treatment_planes.SAD_a.at(i) = utils::rotate(Vector4_t<float>(0, 0, -abs(virtualSAD.a), 0),
+                                                     angles.at(i).gantry, angles.at(i).couch);
+        treatment_planes.SAD_b.at(i) = utils::rotate(Vector4_t<float>(0, 0, -abs(virtualSAD.b), 0),
+                                                     angles.at(i).gantry, angles.at(i).couch);
     }
 }
