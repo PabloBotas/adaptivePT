@@ -16,8 +16,8 @@ struct Planes_t
 {
     Array4<float> dir;
     Array4<float> p;
-    Array4<float> SAD_a;
-    Array4<float> SAD_b;
+    Array4<float> source_a;
+    Array4<float> source_b;
     Planes_t();
     Planes_t(size_t n);
 };

@@ -11,6 +11,8 @@ Planes_t::Planes_t(size_t n)
 {
     dir.resize(n);
     p.resize(n);
+    source_a.resize(n);
+    source_b.resize(n);
 }
 
 // Aperture_Dims_t ---------------------------------------
