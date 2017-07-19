@@ -68,6 +68,18 @@ double Vector3_t<T>::length()
 }
 
 template<class T>
+double Vector3_t<T>::length2()
+{
+    return x*x + y*y + z*z;
+}
+
+template<class T>
+double Vector3_t<T>::dot(const Vector3_t<T>& a)
+{
+    return x*a.x + y*a.y + z*a.z;
+}
+
+template<class T>
 Vector3_t<T> Vector3_t<T>::cross (const Vector3_t<T>& v) const
 {
     return Vector3_t<T>(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x);
@@ -112,6 +124,7 @@ const T& Vector3_t<T>::operator [](int idx) const
     return x; // it will never get to this line
 }
 
+template class Vector3_t<bool>;
 template class Vector3_t<int>;
 template class Vector3_t<unsigned int>;
 template class Vector3_t<float>;

@@ -20,6 +20,8 @@ public:
     Vector3_t(const Vector4_t<T> &obj);
     void print();
     double length();
+    double length2();
+    double dot(const Vector3_t<T>& a);
     Vector3_t<T> cross(const Vector3_t<T>& v) const;
     void normalize();
     void rotate(const double& gantry, const double& couch);
