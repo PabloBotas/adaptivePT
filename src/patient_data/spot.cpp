@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <cmath>
 
 Spot_t::~Spot_t()
 {
@@ -47,16 +48,16 @@ std::ostream& operator<<(std::ostream& os, const Spot_t& s)
     std::string delim_x = " ";
     if (s.x > 0)
         delim_x += " ";
-    if (abs(s.x) < 100.f)
+    if (std::abs(s.x) < 100.f)
         delim_x += " ";
-    if (abs(s.x) < 10.f)
+    if (std::abs(s.x) < 10.f)
         delim_x += " ";
     std::string delim_y = " ";
     if (s.y > 0)
         delim_y += " ";
-    if (abs(s.y) < 100.f)
+    if (std::abs(s.y) < 100.f)
         delim_y += " ";
-    if (abs(s.y) < 10.f)
+    if (std::abs(s.y) < 10.f)
         delim_y += " ";
     std::string delim_w = "   ";
     os << delim_e << s.e << delim_x << s.x << delim_y << s.y << delim_w << s.w;

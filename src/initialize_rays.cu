@@ -5,6 +5,7 @@
 #include "spot.hpp"
 #include "helper_math.h"
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 #include <cuda_runtime.h>
@@ -101,8 +102,8 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
 double3 iso_to_virtual_src_pos(double z, double2 SAD, double2 spot)
 {
     double3 p;
-    p.x = ((SAD.x - abs(z)) / SAD.x) * spot.x;
-    p.y = ((SAD.y - abs(z)) / SAD.y) * spot.y;
+    p.x = ((SAD.x - std::abs(z)) / SAD.x) * spot.x;
+    p.y = ((SAD.y - std::abs(z)) / SAD.y) * spot.y;
     p.z = z;
     return p;
 }
@@ -110,8 +111,8 @@ double3 iso_to_virtual_src_pos(double z, double2 SAD, double2 spot)
 double2 virtual_src_to_iso_pos(double3 pos, double2 SAD)
 {
     double2 spot;
-    spot.x = pos.x * SAD.x / (SAD.x - abs(pos.z));
-    spot.y = pos.y * SAD.y / (SAD.y - abs(pos.z));
+    spot.x = pos.x * SAD.x / (SAD.x - std::abs(pos.z));
+    spot.y = pos.y * SAD.y / (SAD.y - std::abs(pos.z));
     return spot;
 }
 
@@ -119,24 +120,24 @@ void virtual_src_to_iso_pos(Array4<double>& pos, SAD_t SAD)
 {
     for (size_t i = 0; i < pos.size(); i++)
     {
-        pos.at(i).x = pos.at(i).x * SAD.a / (SAD.a - abs(pos.at(i).z));
-        pos.at(i).y = pos.at(i).y * SAD.b / (SAD.b - abs(pos.at(i).z));
+        pos.at(i).x = pos.at(i).x * SAD.a / (SAD.a - std::abs(pos.at(i).z));
+        pos.at(i).y = pos.at(i).y * SAD.b / (SAD.b - std::abs(pos.at(i).z));
     }
 }
 
 double2 virtual_src_to_iso_pos(double3 pos, double3 cos)
 {
     double2 spot;
-    spot.x = pos.x + abs(pos.z)*cos.x / sqrt(1-cos.x*cos.x);
-    spot.y = pos.y + abs(pos.z)*cos.y / sqrt(1-cos.y*cos.y);
+    spot.x = pos.x + std::abs(pos.z)*cos.x / sqrt(1-cos.x*cos.x);
+    spot.y = pos.y + std::abs(pos.z)*cos.y / sqrt(1-cos.y*cos.y);
     return spot;
 }
 
 double3 getDirection(double3 pos, double2 spot)
 {
     double3 dCos;
-    double a = (spot.x-pos.x)/abs(pos.z);
-    double b = (spot.y-pos.y)/abs(pos.z);
+    double a = (spot.x-pos.x)/std::abs(pos.z);
+    double b = (spot.y-pos.y)/std::abs(pos.z);
     double norm = sqrt(a*a + b*b + 1.f);
     dCos.x = a/norm;
     dCos.y = b/norm;

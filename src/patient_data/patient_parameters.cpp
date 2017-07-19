@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
 #include <cstring>
 #include <vector>
 #include <dirent.h>
@@ -295,8 +296,8 @@ void Patient_Parameters_t::set_treatment_planes()
         // Set default
         treatment_planes.p.at(i) = Vector4_t<double>(0, 0, -isocenter_to_beam_distance.at(i), 0);
         treatment_planes.dir.at(i) = Vector4_t<double>(0, 0, 1, 0);
-        treatment_planes.source_a.at(i) = Vector4_t<double>(0, 0, -abs(virtualSAD.a), 0);
-        treatment_planes.source_b.at(i) = Vector4_t<double>(0, 0, -abs(virtualSAD.b), 0);
+        treatment_planes.source_a.at(i) = Vector4_t<double>(0, 0, -std::abs(virtualSAD.a), 0);
+        treatment_planes.source_b.at(i) = Vector4_t<double>(0, 0, -std::abs(virtualSAD.b), 0);
         // Rotate
         treatment_planes.p.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
         treatment_planes.dir.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
