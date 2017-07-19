@@ -30,19 +30,12 @@ void Warper_t::apply_to (Array4<double>& endpoints,
                          Planes_t treatment_plane,
                          const std::vector<short>& spots_per_field)
 {
-    flip_positions_X (endpoints, ct);
-    flip_positions_X (init_pos, ct);
-    flip_direction_X (treatment_plane.dir);
-
-    probe (endpoints);
+    probe (endpoints, ct);
     if(exp_file)
         write_to_file (endpoints, spots_per_field);
 
     warp_points (endpoints);
     warp_init_points (init_pos, treatment_plane, spots_per_field);
-
-    flip_positions_X(endpoints, ct);
-    flip_positions_X(init_pos, ct);
 }
 
 void Warper_t::set_vf_origins()
@@ -88,7 +81,7 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
               \|   ` |
                o     |c
              X? \    |
-                 \   |
+                 \   | This part is not necessarily coplanar with the top part
                   \  |
                    \ |
                     \|d
@@ -120,29 +113,53 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
 
         Vector3_t<double> r_cb = b-c;
         r_cb.normalize();
-        std::cout << "pln_src_a: " << pln.source_a.at(ibeam).x << " " << pln.source_a.at(ibeam).y << " " << pln.source_a.at(ibeam).z << std::endl;
-        std::cout << "pln_src_b: " << pln.source_b.at(ibeam).x << " " << pln.source_b.at(ibeam).y << " " << pln.source_b.at(ibeam).z << std::endl;
-        std::cout << std::endl << "Point O" << std::endl;
-        Vector3_t<double> O = utils::intersect(a, u, b, r_cb);
-        std::cout << std::endl << "Point O2" << std::endl;
-        Vector3_t<double> vf_dir = vf.at(i);
-        vf_dir.normalize();
-        Vector3_t<double> O2 = utils::intersect(a, u, c, vf_dir);
-        
-        // The vector O2-c is parallel to the vector
-        // between b and the raytraced a (a_ray)
-        Vector3_t<double> r_ba_ray = O2-c;
-        r_ba_ray.normalize();
-        std::cout << std::endl << "Point a_ray" << std::endl;
-        Vector3_t<double> a_ray = utils::intersect(a, u, b, r_ba_ray);
+
+        double src1 = (pln.source_a.at(ibeam).z - b.z)/r_cb.z;
+        double src2 = (pln.source_b.at(ibeam).z - b.z)/r_cb.z;
+        Vector3_t<double> O_src1 = b + src1*r_cb;
+        Vector3_t<double> O_src2 = b + src2*r_cb;
+        if (i == 0)
+        {
+            std::cout << "pln_src_a: " << pln.source_a.at(ibeam).x << " " << pln.source_a.at(ibeam).y << " " << pln.source_a.at(ibeam).z << std::endl;
+            std::cout << "pln_src_b: " << pln.source_b.at(ibeam).x << " " << pln.source_b.at(ibeam).y << " " << pln.source_b.at(ibeam).z << std::endl;
+            std::cout << "a: " << a.x << " " << a.y << " " << a.z << std::endl;
+            std::cout << "b: " << b.x << " " << b.y << " " << b.z << std::endl;
+            std::cout << "c: " << c.x << " " << c.y << " " << c.z << std::endl;
+            std::cout << "u: " << u.x << " " << u.y << " " << u.z << std::endl;
+            std::cout << "O_src1: " << O_src1.x << " " << O_src1.y << " " << O_src1.z << std::endl;
+            std::cout << "O_src2: " << O_src2.x << " " << O_src2.y << " " << O_src2.z << std::endl;
+        }
+        Vector3_t<bool> opts1(O_src1.x == a.x, O_src1.y == a.y, O_src1.z == a.z);
+        Vector3_t<bool> opts2(O_src2.x == a.x, O_src2.y == a.y, O_src2.z == a.z);
+
+        // Vector3_t<double> O = utils::intersect(a, u, b, r_cb, i);
+        Vector3_t<double> O2 = a + (u.dot(c-a)/u.length2())*u;
+        if (i == 0)
+        {
+            std::cout << std::endl << "Point O2" << std::endl;
+            std::cout << "O2: " << O2.x << " " << O2.y << " " << O2.z << std::endl;
+        }
+
+        Vector3_t<double> a_ray = a + (u.dot(b-a)/u.length2())*u;
+        if (i == 0)
+        {
+            std::cout << std::endl << "Point a_ray" << std::endl;
+            std::cout << "a_ray: " << a_ray.x << " " << a_ray.y << " " << a_ray.z << std::endl;
+        }
 
         // Calculate distances to use Thales
-        Vector3_t<double> r_Oa_ray = a_ray-O;
-        Vector3_t<double> r_OO2 = O2-O;
+        Vector3_t<double> r_O_src1a_ray = a_ray-O_src1;
+        Vector3_t<double> r_O_src2a_ray = a_ray-O_src2;
+        Vector3_t<double> r_O_src1O2 = O2-O_src1;
+        Vector3_t<double> r_O_src2O2 = O2-O_src2;
 
-        Vector3_t<double> X = r_Oa_ray * d/r_OO2;
-        std::cout << "X: " << X.x << " " << X.y << " " << X.z << std::endl;
-        std::cout << std::endl;
+        Vector3_t<double> X1 = r_O_src1a_ray * d/r_O_src1O2;
+        Vector3_t<double> X2 = r_O_src2a_ray * d/r_O_src2O2;
+        if (i == 0)
+        {
+            std::cout << "X1: " << X1.x << " " << X1.y << " " << X1.z << std::endl;
+            std::cout << "X2: " << X2.x << " " << X2.y << " " << X2.z << std::endl << std::endl;
+        }
 
         // std::cout << "VF is changing from (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")";
 
@@ -228,7 +245,7 @@ void Warper_t::set_probes (const Array4<double>& p)
     }
 }
 
-void Warper_t::probe (const Array4<double>& p)
+void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
 {
     set_probes(p);
 
@@ -261,7 +278,7 @@ void Warper_t::probe (const Array4<double>& p)
         for (size_t i = batch*locs_per_batch; i < elements && i < (batch+1)*locs_per_batch; i++)
         {
             Vector4_t<double> temp;
-            temp.x = probes.at(i).x + origins.x;
+            temp.x = ct.n.x*ct.d.x - probes.at(i).x + origins.x;
             temp.y = probes.at(i).y + origins.y;
             temp.z = probes.at(i).z + origins.z;
             locations += to_location_str(temp, i+1 == elements && i+1 == (batch+1)*locs_per_batch);
@@ -294,7 +311,7 @@ void Warper_t::probe (const Array4<double>& p)
                 ss_per_space >> dummy >> dummy >> dummy;
                 ss_per_space >> z >> y >> x;
             }
-            vf.push_back(Vector3_t<double>(-x/10, -y/10, -z/10));
+            vf.push_back(Vector3_t<double>(x/10, -y/10, -z/10));
         }
     }
 }

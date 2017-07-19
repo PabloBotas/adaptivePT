@@ -21,7 +21,8 @@ namespace utils
     Vector3_t<double> intersect(const Vector3_t<double>& a,
                                 const Vector3_t<double>& u,
                                 const Vector3_t<double>& b,
-                                const Vector3_t<double>& v);
+                                const Vector3_t<double>& v,
+                                int i);
     void check_fs(const std::ofstream& ofs, std::string f, std::string msg);
     void check_fs(const std::ifstream& ofs, std::string f, std::string msg);
 }

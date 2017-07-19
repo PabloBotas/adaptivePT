@@ -22,7 +22,7 @@ private:
     // Constructor helpers
     void set_vf_origins ();
     // Main functions
-    void probe (const Array4<double>& p);
+    void probe (const Array4<double>& p, const CT_Dims_t& ct);
     void write_to_file (const Array4<double>& p,
                         const std::vector<short>& spots_per_field);
     void warp_points (Array4<double>& p);

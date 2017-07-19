@@ -112,9 +112,10 @@ void utils::cm_to_mm(Array4<double>& vec)
 Vector3_t<double> utils::intersect(const Vector3_t<double>& a,
                                    const Vector3_t<double>& u,
                                    const Vector3_t<double>& b,
-                                   const Vector3_t<double>& v)
+                                   const Vector3_t<double>& v,
+                                   int i)
 {
-    // Check they are coplanar
+    // // Check they are coplanar
     Vector3_t<double> cross = u.cross(v);
     if (cross.length() == 0.f)
     {
@@ -125,27 +126,40 @@ Vector3_t<double> utils::intersect(const Vector3_t<double>& a,
 
     // Some direction components may be zero
     // I find the largest one to be used as denominator
-    // Then I just select the next one in the container
-    // (operator[] has recursive nature in VectorN_t class)
-    int ind_max = (u.x > u.y) ? (u.x > u.z ? 0 : 2) : (u.y > u.z ? 1 : 2);
-    int ind_min = (u.x < u.y) ? (u.x < u.z ? 0 : 2) : (u.y < u.z ? 1 : 2);
-    double u_ratio = u[ind_min]/u[ind_max];
+    int ind1 = (u.x > u.y) ? (u.x > u.z ? 0 : 2) : (u.y > u.z ? 1 : 2);
+    int ind2 = 0;
+    if (ind1 == 0)
+        ind2 = (v.y > v.z) ? 1 : 2;
+    else if (ind2 == 1)
+        ind2 = (v.x > v.z) ? 0 : 2;
+    else
+        ind2 = (v.x > v.y) ? 0 : 1;
+    double u_ratio = u[ind2]/u[ind1];
     
-    double s = ((a[ind_min]-b[ind_min]) + (b[ind_max]-a[ind_max])*u_ratio) / (v[ind_min] - v[ind_max]*u_ratio); // line parameter of b,v
-    double t = ((b[ind_max]-a[ind_max]) + s*v[ind_max])/u[ind_max];
+    double s = ((a[ind2]-b[ind2]) + (b[ind1]-a[ind1])*u_ratio) / (v[ind2] - v[ind1]*u_ratio); // line parameter of b,v
+    double t = ((b[ind1]-a[ind1]) + s*v[ind1])/u[ind1];
     Vector3_t<double> A = a + t*u;
     Vector3_t<double> B = b + s*v;
 
-    std::cout << "ind_max: " << ind_max << std::endl;
-    std::cout << "ind_min: " << ind_min << std::endl;
-    std::cout << "a: " << a.x << " " << a.y << " " << a.z << std::endl;
-    std::cout << "u: " << u.x << " " << u.y << " " << u.z << std::endl;
-    std::cout << "b: " << b.x << " " << b.y << " " << b.z << std::endl;
-    std::cout << "v: " << v.x << " " << v.y << " " << v.z << std::endl;
-    std::cout << "t: " << t << std::endl;
-    std::cout << "s: " << s << std::endl;
-    std::cout << "A: " << A.x << " " << A.y << " " << A.z << std::endl;
-    std::cout << "B: " << B.x << " " << B.y << " " << B.z << std::endl;
+    if (i==0)
+    {
+        std::cout << "ind1: " << ind1 << std::endl;
+        std::cout << "ind2: " << ind2 << std::endl;
+        std::cout << "a: " << a.x << " " << a.y << " " << a.z << std::endl;
+        std::cout << "u: " << u.x << " " << u.y << " " << u.z << std::endl;
+        std::cout << "t: " << t << std::endl;
+        std::cout << "b: " << b.x << " " << b.y << " " << b.z << std::endl;
+        std::cout << "v: " << v.x << " " << v.y << " " << v.z << std::endl;
+        std::cout << "s: " << s << std::endl;
+        std::cout << "A: " << A.x << " " << A.y << " " << A.z << std::endl;
+        std::cout << "B: " << B.x << " " << B.y << " " << B.z << std::endl;
+    }
+    
+    if (std::abs(A.x-B.x) > 0.001 || std::abs(A.y-B.y) > 0.001 || std::abs(A.z-B.z) > 0.001)
+    {
+        std::cerr << "Points are not consistent!!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     return A;
 }
