@@ -128,8 +128,8 @@ void virtual_src_to_iso_pos(Array4<double>& pos, SAD_t SAD)
 double2 virtual_src_to_iso_pos(double3 pos, double3 cos)
 {
     double2 spot;
-    spot.x = pos.x + std::abs(pos.z)*cos.x / sqrt(1-cos.x*cos.x);
-    spot.y = pos.y + std::abs(pos.z)*cos.y / sqrt(1-cos.y*cos.y);
+    spot.x = pos.x + std::abs(pos.z)*cos.x / std::sqrt(1-cos.x*cos.x);
+    spot.y = pos.y + std::abs(pos.z)*cos.y / std::sqrt(1-cos.y*cos.y);
     return spot;
 }
 
@@ -138,7 +138,7 @@ double3 getDirection(double3 pos, double2 spot)
     double3 dCos;
     double a = (spot.x-pos.x)/std::abs(pos.z);
     double b = (spot.y-pos.y)/std::abs(pos.z);
-    double norm = sqrt(a*a + b*b + 1.f);
+    double norm = std::sqrt(a*a + b*b + 1.f);
     dCos.x = a/norm;
     dCos.y = b/norm;
 
@@ -153,7 +153,7 @@ double3 getDirection(double3 pos, double2 spot)
         std::cerr << "    spot y:  " << spot.y << std::endl;
         exit(EXIT_FAILURE);
     };
-    dCos.z = sqrt(temp);
+    dCos.z = std::sqrt(temp);
     return dCos;
 }
 

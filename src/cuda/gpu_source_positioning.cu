@@ -152,9 +152,9 @@ __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
         dir.at(i).x -= pos.at(i).x;
         dir.at(i).y -= pos.at(i).y;
         dir.at(i).z -= pos.at(i).z;
-        double d = sqrt(dir.at(i).x*dir.at(i).x +
-                       dir.at(i).y*dir.at(i).y +
-                       dir.at(i).z*dir.at(i).z);
+        double d = std::sqrt(dir.at(i).x*dir.at(i).x +
+                             dir.at(i).y*dir.at(i).y +
+                             dir.at(i).z*dir.at(i).z);
         dir.at(i).x /= d;
         dir.at(i).y /= d;
         dir.at(i).z /= d;

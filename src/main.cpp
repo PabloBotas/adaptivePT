@@ -202,7 +202,7 @@ void export_shifts(const std::vector<double>& e,
         double vy = p.at(spotid).y;
         double z = p.at(spotid).z;
         ofs << e.at(spotid) << " " << vx << " " << vy << " " << z << " ";
-        ofs << sqrt(vx*vx + vy*vy) << " " << beamid << " " << spotid << "\n";
+        ofs << std::sqrt(vx*vx + vy*vy) << " " << beamid << " " << spotid << "\n";
     }
 }
 
