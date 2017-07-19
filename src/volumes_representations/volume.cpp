@@ -30,7 +30,7 @@ Volume_t::Volume_t(const std::string& f,
                    const unsigned int& nx,
                    const unsigned int& ny,
                    const unsigned int& nz,
-                   const float& dx, const float& dy, const float& dz)
+                   const double& dx, const double& dy, const double& dz)
 {
     file = f;
     source_type = s;
@@ -165,7 +165,7 @@ void Volume_t::export_binary(std::string f)
     utils::check_fs(ofs, f, "to write results.");
 
     if (high_precision)
-        ofs.write (reinterpret_cast<char*>(long_data.data()), nElements*sizeof(double));
+        ofs.write (reinterpret_cast<char*>(long_data.data()), nElements*sizeof(float));
     else
         ofs.write (reinterpret_cast<char*>(data.data()), nElements*sizeof(float));
     ofs.close();
@@ -260,124 +260,122 @@ void Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)
     n.z = z;
 }
 
-void Volume_t::setSpacing(float x, float y, float z)
+void Volume_t::setSpacing(double x, double y, double z)
 {
     d.x = x;
     d.y = y;
     d.z = z;
 }
 
-void Volume_t::interpolate_to_geometry(const CT_Dims_t& pat_ct,
-                                               const float extrapolationValue)
-{
-    do_interpolate(data, pat_ct, extrapolationValue);
-}
-
-void Volume_t::interpolate_to_geometry(Volume_t& pat,
-                                               const CT_Dims_t& pat_ct,
-                                               const float extrapolationValue)
-{
-    do_interpolate(pat.data, pat_ct, extrapolationValue);
-}
-
-void Volume_t::do_interpolate(std::vector<float>& dest,
-                                      const CT_Dims_t& pat_ct,
-                                      const float extrapolationValue)
-{
-    for (size_t tid = 0; tid < pat_ct.total; tid++)
-    {
-        size_t zInd = tid%pat_ct.n.z;
-        size_t yInd = (tid/pat_ct.n.z)%pat_ct.n.y;
-        size_t xInd = tid/pat_ct.n.z/pat_ct.n.y;
-
-        // 3d volumetric interpolation
-        float fraction, interpolatedValue = 0.0f, mass = 0.0f;
-        Vector3_t<float> inf, sup;
-        //calculate the position of the scoring grid boundary
-        inf.x = xInd*pat_ct.d.x + pat_ct.offset.x;
-        inf.y = yInd*pat_ct.d.y + pat_ct.offset.y;
-        inf.z = zInd*pat_ct.d.z + pat_ct.offset.z;
-        sup.x = xInd*(pat_ct.d.x + 1) + pat_ct.offset.x;
-        sup.y = yInd*(pat_ct.d.y + 1) + pat_ct.offset.y;
-        sup.z = zInd*(pat_ct.d.z + 1) + pat_ct.offset.z;
-
-        //calculate the nearest CT grid walls
-        Vector3_t<int> infCT, supCT;
-        infCT.x = (int) floorf(inf.x/this->d.x);
-        infCT.y = (int) floorf(inf.y/this->d.y);
-        infCT.z = (int) floorf(inf.z/this->d.z);
-        supCT.x = (int) floorf(sup.x/this->d.x);
-        supCT.y = (int) floorf(sup.y/this->d.y);
-        supCT.z = (int) floorf(sup.z/this->d.z);
-
-        //loop over the CT grid voxels which overlap with the current interpolated grid voxel
-        for(int zvox = infCT.z; zvox <= supCT.z; zvox++) {
-            for(int yvox = infCT.y; yvox <= supCT.y; yvox++) {
-                for(int xvox = infCT.x; xvox <= supCT.x; xvox++) {
-
-                    float ctValue;
-
-                    if (! (xvox < 0 || xvox >= (int) this->n.x
-                        || yvox < 0 || yvox >= (int) this->n.y
-                        || zvox < 0 || zvox >= (int) this->n.z)) {
-                        // Inside CT grid
-                        ctValue = data.at(zvox + yvox*this->n.z + xvox*this->n.z*this->n.y);
-                    } else {
-                        // Outside CT grid
-                        ctValue = extrapolationValue;
-                    }
-
-                    Vector3_t<float> fractions;
-                    // determine the overlap along x direction
-                    if(xvox == infCT.x) {
-                        if(xvox == supCT.x)
-                            fractions.x = pat_ct.d.x / this->d.x;
-                        else
-                            fractions.x = ((xvox+1)*this->d.x - inf.x) / this->d.x;
-                    } else {
-                        if(xvox == supCT.x)
-                            fractions.x = (sup.x - xvox*this->d.x) / this->d.x;
-                        else
-                            fractions.x = 1.0f;
-                    }
-                    // determine the overlap along y direction
-                    if(yvox == infCT.y) {
-                        if(yvox == supCT.y)
-                            fractions.y = pat_ct.d.y / this->d.y;
-                        else
-                            fractions.y = ((yvox+1)*this->d.y - inf.y) / this->d.y;
-                    } else {
-                        if(yvox == supCT.y)
-                            fractions.y = (sup.y - yvox*this->d.y) / this->d.y;
-                        else
-                            fractions.y = 1.0f;
-                    }
-                    // determine the overlap along z direction
-                    if(zvox == infCT.z) {
-                        if(zvox == supCT.z)
-                            fractions.z = pat_ct.d.z / this->d.z;
-                        else
-                            fractions.z = ((zvox+1)*this->d.z - inf.z) / this->d.z;
-                    } else {
-                        if(zvox == supCT.z)
-                            fractions.z = (sup.z - zvox*this->d.z) / this->d.z;
-                        else
-                            fractions.z = 1.0f;
-                    }
-
-                    // overlap in 3d
-                    fraction = fractions.x * fractions.y * fractions.z;
-                    mass += fraction*this->d.x*this->d.y*this->d.z;
-                    interpolatedValue += fraction*ctValue*this->d.x*this->d.y*this->d.z;
-                }
-            }
-        }
-        if(mass > 0.0) {
-            dest.at(tid) = interpolatedValue/mass;
-        } else {
-            dest.at(tid) = extrapolationValue;
-        }
-    }
-}
-
-
+void Volume_t::interpolate_to_geometry(const CT_Dims_t& pat_ct, 
+                                       const float extrapolationValue) 
+{ 
+    do_interpolate(data, pat_ct, extrapolationValue); 
+} 
+ 
+void Volume_t::interpolate_to_geometry(Volume_t& pat, 
+                                       const CT_Dims_t& pat_ct, 
+                                       const float extrapolationValue) 
+{ 
+    do_interpolate(pat.data, pat_ct, extrapolationValue); 
+} 
+ 
+void Volume_t::do_interpolate(std::vector<float>& dest, 
+                                      const CT_Dims_t& pat_ct, 
+                                      const float extrapolationValue) 
+{ 
+    for (size_t tid = 0; tid < pat_ct.total; tid++) 
+    { 
+        size_t zInd = tid%pat_ct.n.z; 
+        size_t yInd = (tid/pat_ct.n.z)%pat_ct.n.y; 
+        size_t xInd = tid/pat_ct.n.z/pat_ct.n.y; 
+ 
+        // 3d volumetric interpolation 
+        float fraction, interpolatedValue = 0.0f, mass = 0.0f; 
+        Vector3_t<float> inf, sup; 
+        //calculate the position of the scoring grid boundary 
+        inf.x = xInd*pat_ct.d.x + pat_ct.offset.x; 
+        inf.y = yInd*pat_ct.d.y + pat_ct.offset.y; 
+        inf.z = zInd*pat_ct.d.z + pat_ct.offset.z; 
+        sup.x = xInd*(pat_ct.d.x + 1) + pat_ct.offset.x; 
+        sup.y = yInd*(pat_ct.d.y + 1) + pat_ct.offset.y; 
+        sup.z = zInd*(pat_ct.d.z + 1) + pat_ct.offset.z; 
+ 
+        //calculate the nearest CT grid walls 
+        Vector3_t<int> infCT, supCT; 
+        infCT.x = (int) floorf(inf.x/this->d.x); 
+        infCT.y = (int) floorf(inf.y/this->d.y); 
+        infCT.z = (int) floorf(inf.z/this->d.z); 
+        supCT.x = (int) floorf(sup.x/this->d.x); 
+        supCT.y = (int) floorf(sup.y/this->d.y); 
+        supCT.z = (int) floorf(sup.z/this->d.z); 
+ 
+        //loop over the CT grid voxels which overlap with the current interpolated grid voxel 
+        for(int zvox = infCT.z; zvox <= supCT.z; zvox++) { 
+            for(int yvox = infCT.y; yvox <= supCT.y; yvox++) { 
+                for(int xvox = infCT.x; xvox <= supCT.x; xvox++) { 
+ 
+                    float ctValue; 
+ 
+                    if (! (xvox < 0 || xvox >= (int) this->n.x 
+                        || yvox < 0 || yvox >= (int) this->n.y 
+                        || zvox < 0 || zvox >= (int) this->n.z)) { 
+                        // Inside CT grid 
+                        ctValue = data.at(zvox + yvox*this->n.z + xvox*this->n.z*this->n.y); 
+                    } else { 
+                        // Outside CT grid 
+                        ctValue = extrapolationValue; 
+                    } 
+ 
+                    Vector3_t<float> fractions; 
+                    // determine the overlap along x direction 
+                    if(xvox == infCT.x) { 
+                        if(xvox == supCT.x) 
+                            fractions.x = pat_ct.d.x / this->d.x; 
+                        else 
+                            fractions.x = ((xvox+1)*this->d.x - inf.x) / this->d.x; 
+                    } else { 
+                        if(xvox == supCT.x) 
+                            fractions.x = (sup.x - xvox*this->d.x) / this->d.x; 
+                        else 
+                            fractions.x = 1.0f; 
+                    } 
+                    // determine the overlap along y direction 
+                    if(yvox == infCT.y) { 
+                        if(yvox == supCT.y) 
+                            fractions.y = pat_ct.d.y / this->d.y; 
+                        else 
+                            fractions.y = ((yvox+1)*this->d.y - inf.y) / this->d.y; 
+                    } else { 
+                        if(yvox == supCT.y) 
+                            fractions.y = (sup.y - yvox*this->d.y) / this->d.y; 
+                        else 
+                            fractions.y = 1.0f; 
+                    } 
+                    // determine the overlap along z direction 
+                    if(zvox == infCT.z) { 
+                        if(zvox == supCT.z) 
+                            fractions.z = pat_ct.d.z / this->d.z; 
+                        else 
+                            fractions.z = ((zvox+1)*this->d.z - inf.z) / this->d.z; 
+                    } else { 
+                        if(zvox == supCT.z) 
+                            fractions.z = (sup.z - zvox*this->d.z) / this->d.z; 
+                        else 
+                            fractions.z = 1.0f; 
+                    } 
+ 
+                    // overlap in 3d 
+                    fraction = fractions.x * fractions.y * fractions.z; 
+                    mass += fraction*this->d.x*this->d.y*this->d.z; 
+                    interpolatedValue += fraction*ctValue*this->d.x*this->d.y*this->d.z; 
+                } 
+            } 
+        } 
+        if(mass > 0.0) { 
+            dest.at(tid) = interpolatedValue/mass; 
+        } else { 
+            dest.at(tid) = extrapolationValue; 
+        } 
+    } 
+} 

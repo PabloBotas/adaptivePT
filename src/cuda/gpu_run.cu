@@ -14,14 +14,14 @@
 #include <sys/stat.h>
 
 void do_raytrace (const std::vector<short>& spots_per_field,
-                  float4* positions_scorer,
+                  double4* positions_scorer,
                   float* traces_scorer,
-                  const Array4<float>& orig_endpoints)
+                  const Array4<double>& orig_endpoints)
 {
     // Set up optional target endpoints
-    float4* dev_orig_endpoints = NULL;
+    double4* dev_orig_endpoints = NULL;
     if (!orig_endpoints.empty())
-        array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
+        array_to_device<double4, Vector4_t<double> >(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
 
     short* spf_gpu = NULL;
     array_to_device<short>(spf_gpu, spots_per_field.data(), spots_per_field.size());
@@ -41,15 +41,15 @@ void do_raytrace (const std::vector<short>& spots_per_field,
 }
 
 
-void buffers_to_device(const std::vector<float4>& xbuffer,
-                       const std::vector<float4>& vxbuffer,
+void buffers_to_device(const std::vector<double4>& xbuffer,
+                       const std::vector<double4>& vxbuffer,
                        const std::vector<short2>& ixbuffer,
                        const bool alloc)
 {
     unsigned int num = xbuffer.size();
 
     // prepare GPU
-    size_t bytes1 = sizeof(float4)*num;
+    size_t bytes1 = sizeof(double4)*num;
     size_t bytes2 = sizeof(short2)*num;
     if (alloc)
     {

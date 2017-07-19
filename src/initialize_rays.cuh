@@ -7,24 +7,24 @@
 #include <vector>
 
 void create_virtual_source_buffers(const Patient_Parameters_t& pat,
-                              std::vector<float4>& xbuffer,
-                              std::vector<float4>& vxbuffer,
+                              std::vector<double4>& xbuffer,
+                              std::vector<double4>& vxbuffer,
                               std::vector<short2>& ixbuffer);
 
 void create_treatment_plane_buffers(const Patient_Parameters_t& pat,
-                                    const Array4<float>& endpoints,
-                                    const Array4<float>& init_pos,
-                                    std::vector<float4>& xbuffer,
-                                    std::vector<float4>& vxbuffer,
+                                    const Array4<double>& endpoints,
+                                    const Array4<double>& init_pos,
+                                    std::vector<double4>& xbuffer,
+                                    std::vector<double4>& vxbuffer,
                                     std::vector<short2>& ixbuffer);
 
-float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot);
+double3 iso_to_virtual_src_pos(double z, double2 SAD, double2 spot);
 
-float2 virtual_src_to_iso_pos(float3 p, float2 SAD);
-float2 virtual_src_to_iso_pos(float3 pos, float3 cos);
-void virtual_src_to_iso_pos(Array4<float>& pos, SAD_t SAD);
+double2 virtual_src_to_iso_pos(double3 p, double2 SAD);
+double2 virtual_src_to_iso_pos(double3 pos, double3 cos);
+void virtual_src_to_iso_pos(Array4<double>& pos, SAD_t SAD);
 
-float3 getDirection(float3 pos, float2 spot);
+double3 getDirection(double3 pos, double2 spot);
 
 short2 get_beam_spot_id (size_t num, const std::vector<short>& spots_per_field);
 #endif

@@ -16,22 +16,22 @@ void initialize_device (cudaEvent_t& start);
 void stop_device (cudaEvent_t& start);
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
-                   Array4<float>& endpoints,
+                   Array4<double>& endpoints,
                    std::string output_file,
-                   const Array4<float>& orig_endpoints = Array4<float>());
+                   const Array4<double>& orig_endpoints = Array4<double>());
 
 void gpu_raytrace_original (const Patient_Parameters_t &pat,
                             const Volume_t &ct,
-                            Array4<float>& endpoints,
-                            Array4<float>& init_pos,
-                            Array4<float>& init_pat_pos,
+                            Array4<double>& endpoints,
+                            Array4<double>& init_pos,
+                            Array4<double>& init_pat_pos,
                             std::string output_file);
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Volume_t &ct,
-                          const Array4<float>& orig_endpoints,
-                          const Array4<float>& init_pos,
-                          Array4<float>& endpoints,
+                          const Array4<double>& orig_endpoints,
+                          const Array4<double>& init_pos,
+                          Array4<double>& endpoints,
                           std::string output_file);
 
 void printDevProp (const int device, bool verbose);

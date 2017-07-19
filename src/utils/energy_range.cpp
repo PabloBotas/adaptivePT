@@ -1,7 +1,7 @@
 #include "energy_range.hpp"
 
 // Energies MeV
-std::vector<float> energy = {
+std::vector<double> energy = {
         0.000, 4.500, 5.000, 5.500, 6.000, 6.500, 7.000,
         7.500, 8.000, 8.500, 9.000, 9.500, 10.00, 12.50,
         15.00, 17.50, 20.00, 22.50, 25.00, 27.50, 30.00,
@@ -15,7 +15,7 @@ std::vector<float> energy = {
         280.0, 285.0, 290.0, 295.0, 300.0, 350.0, 400.0
 };
 // Janni82 range cm water
-std::vector<float> rangeJanni = {
+std::vector<double> rangeJanni = {
         0.000000, 0.030590, 0.036760, 0.043420, 0.050580, 0.058220, 0.066340,
         0.074930, 0.083990, 0.093510, 0.103480, 0.113910, 0.124790, 0.185750,
         0.257390, 0.339390, 0.431470, 0.533360, 0.644870, 0.765790, 0.895930,
@@ -36,20 +36,7 @@ Energy_Range_Calculator_t::Energy_Range_Calculator_t(Direction_t dir_) : dir(dir
 }
 
 
-float Energy_Range_Calculator_t::calculate(float x, Direction_t dir)
-{
-    switch(dir)
-    {
-        case Energy_Range_Calculator_t::FromEtoR:
-            return table.getVal("range", "energy", x);
-            break;
-        case Energy_Range_Calculator_t::FromRtoE:
-            return table.getVal("energy", "range", x);
-            break;
-    }
-}
-
-float Energy_Range_Calculator_t::operator()(float& x)
+double Energy_Range_Calculator_t::calculate(double x, Direction_t dir)
 {
     switch(dir)
     {
@@ -63,7 +50,21 @@ float Energy_Range_Calculator_t::operator()(float& x)
     return 0.f;
 }
 
-//std::vector<float> r80 = { 30.710, 33.260, 35.820, 38.360, 40.920, 43.480, 45.980,
+double Energy_Range_Calculator_t::operator()(double& x)
+{
+    switch(dir)
+    {
+        case Energy_Range_Calculator_t::FromEtoR:
+            return table.getVal("range", "energy", x);
+            break;
+        case Energy_Range_Calculator_t::FromRtoE:
+            return table.getVal("energy", "range", x);
+            break;
+    }
+    return 0.f;
+}
+
+//std::vector<double> r80 = { 30.710, 33.260, 35.820, 38.360, 40.920, 43.480, 45.980,
 //        48.510, 51.030, 53.560, 56.100, 58.630, 61.150, 63.660, 66.190, 68.710, 71.220,
 //        73.760, 76.250, 78.770, 81.270, 83.770, 86.280, 88.820, 91.370, 93.950, 96.540,
 //        99.100, 101.63, 104.13, 106.61, 109.04, 111.49, 113.94, 116.49, 119.07, 121.69,
@@ -76,7 +77,7 @@ float Energy_Range_Calculator_t::operator()(float& x)
 //        274.87, 277.32, 279.77, 282.27, 284.78, 287.39, 289.98, 292.57, 295.11, 297.72,
 //        300.24, 302.70, 305.16, 307.69, 310.16, 312.68, 315.19, 317.72, 320.23, 322.75,
 //        325.23, 327.74, 330.26 };
-//std::vector<float> energyJanni = { 59.7690, 62.4880, 65.1150, 67.6600, 70.1300, 72.5360,
+//std::vector<double> energyJanni = { 59.7690, 62.4880, 65.1150, 67.6600, 70.1300, 72.5360,
 //        74.8470, 77.1120, 79.3290, 81.5050, 83.6400, 85.7270, 87.7750, 89.7840, 91.7600,
 //        93.7060, 95.6250, 97.5190, 99.3710, 101.201, 102.992, 104.765, 106.527, 108.295,
 //        110.042, 111.782, 113.514, 115.209, 116.873, 118.484, 120.069, 121.622, 123.162,

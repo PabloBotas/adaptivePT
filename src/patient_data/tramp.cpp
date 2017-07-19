@@ -97,7 +97,7 @@ void Tramp_t::read_()
     beam_name                  = getHeaderValue<std::string>(stream);
     gantry                     = getHeaderValue<std::string>(stream);
     couch_rotation             = getHeaderValue<std::string>(stream);
-    float gigaprotons_header   = getHeaderValue<float>(stream);
+    double gigaprotons_header  = getHeaderValue<double>(stream);
     unsigned int nspots_header = getHeaderValue<unsigned int>(stream);
 
     std::string line;
@@ -146,7 +146,7 @@ void Tramp_t::read_file_header(std::string f)
     beam_name              = getHeaderValue<std::string>(stream);
     gantry                 = getHeaderValue<std::string>(stream);
     couch_rotation         = getHeaderValue<std::string>(stream);
-    gigaprotons            = getHeaderValue<float>(stream);
+    gigaprotons            = getHeaderValue<double>(stream);
     nspots                 = getHeaderValue<unsigned int>(stream);
 }
 
@@ -212,7 +212,7 @@ void Tramp_t::setEnergies()
 }
 
 
-void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
+void Tramp_t::shift_energies(const std::vector<double>& e_, bool units)
 {
     if (e_.size() != nspots)
     {
@@ -222,7 +222,7 @@ void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
         exit(EXIT_FAILURE);
     }
 
-    float conv = units ? 1/1e6 : 1;
+    double conv = units ? 1/1e6 : 1;
     for (size_t i = 0; i < nspots; i++)
     {
         energies.at(i) += e_.at(i)*conv;
@@ -230,7 +230,7 @@ void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
     }
 }
 
-void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
+void Tramp_t::set_pos(const std::vector< Vector4_t<double> > p)
 {
     if (p.size() != nspots)
     {
@@ -248,7 +248,7 @@ void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
 
 void Tramp_t::setWEPLs()
 {
-    std::vector<float> temp;
+    std::vector<double> temp;
     if(internal_energy_set)
         temp = energies_internal;
     else
@@ -259,19 +259,19 @@ void Tramp_t::setWEPLs()
     std::transform(temp.begin(), temp.end(), wepls.begin(), calculator);
 }
 
-std::vector<float> Tramp_t::getWEPLs()
+std::vector<double> Tramp_t::getWEPLs()
 {
     if(wepls.empty())
         setWEPLs();
     return wepls;
 }
 
-float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
+double InterpTable(double *vector_X, double *vector_Y, double x, int const npoints)
 {
-    float result;
+    double result;
     int order = 4; // order of the poly
     // Allocate enough space for any table we'd like to read.
-    std::vector<float> lambda(npoints);
+    std::vector<double> lambda(npoints);
     // check order of interpolation
     if (order > npoints)
         order = npoints;
@@ -311,7 +311,7 @@ void Tramp_t::energy_to_internal()
     if(machine.compare("topasmghr4") == 0 ||
        machine.compare("topasmghr5") == 0)
     {
-        float R80AstroidTopasb8[3][27] =
+        double R80AstroidTopasb8[3][27] =
         {
             // Energy [MeV]
             { 91.015, 95.489, 101.50, 109.36, 117.30, 122.69,
@@ -336,12 +336,12 @@ void Tramp_t::energy_to_internal()
         for (size_t i = 0; i < energies.size(); i++)
         {
             // converts energy from MGHR4 machine to the one used by the virtual machines
-            float range = InterpTable(&(R80AstroidTopasb8[0][0]),
-                                      &(R80AstroidTopasb8[1][0]),
-                                      energies.at(i), 27);
-            float ECorr = InterpTable(&(R80AstroidTopasb8[2][0]),
-                                      &(R80AstroidTopasb8[0][0]),
-                                      range, 27);
+            double range = InterpTable(&(R80AstroidTopasb8[0][0]),
+                                       &(R80AstroidTopasb8[1][0]),
+                                       energies.at(i), 27);
+            double ECorr = InterpTable(&(R80AstroidTopasb8[2][0]),
+                                       &(R80AstroidTopasb8[0][0]),
+                                       range, 27);
             energies_internal.push_back(ECorr);
         }
     }

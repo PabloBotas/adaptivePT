@@ -22,9 +22,9 @@ namespace gpu_ct_to_device
 
 //__global__ void ct_to_densities(unsigned int hu_elements,
 //                                unsigned int d_elements,
-//                                float* hu,
-//                                float* densities,
-//                                float* factor);
+//                                double* hu,
+//                                double* densities,
+//                                double* factor);
 
 void freeCTMemory();
 

@@ -2,17 +2,17 @@
 
 #include "gpu_device_globals.cuh"
 
-__device__ void get_water_step(float& step,
-                               float& step_water,
-                               float& de,
-                               const float max_step,
-                               const float energy_in,
+__device__ void get_water_step(double& step,
+                               double& step_water,
+                               double& de,
+                               const double max_step,
+                               const double energy_in,
                                const int4& vox)
 {
     // Get density
-    float const density  = tex3D(dens_tex, vox.z, vox.y, vox.x);
+    double const density  = tex3D(dens_tex, vox.z, vox.y, vox.x);
     // Get stp ratio
-    float const mass_stp_ratio = massStpRatio(energy_in, vox);
+    double const mass_stp_ratio = massStpRatio(energy_in, vox);
 
     // Set steps
     step = max_step;
@@ -26,7 +26,7 @@ __device__ void get_water_step(float& step,
     }
 }
 
-__device__ float get_residual_range (float const energy)
+__device__ double get_residual_range (double const energy)
 {
     // Find range based on half the residual energy,
     // the get some kind of average stopping power
@@ -37,43 +37,43 @@ __device__ float get_residual_range (float const energy)
 
     // MP, stp_w_delta_e, stp_w_min_e, stp_w_tex and stp_w_b_coeff_tex are globals
     float index = (energy/2 - stp_w_min_e)/stp_w_delta_e + 0.5f;
-    float stop_power = tex1D(stp_w_tex, index);
-    float b = tex1D(stp_w_b_coeff_tex, index);
+    double stop_power = tex1D(stp_w_tex, index);
+    double b = tex1D(stp_w_b_coeff_tex, index);
 
-    float tau = energy/(2*MP);
+    double tau = energy/(2*MP);
 
-    float a = 1 +
-        ( 2*b*b*(1+tau)*(1+tau)*(2+tau) + b*(1+tau)*(tau*tau+3*tau-2) - 6*tau ) /
-        ( 6*(1+tau)*(1+tau)*(2+tau) );
+    double a = 1 +
+             ( 2*b*b*(1+tau)*(1+tau)*(2+tau) + b*(1+tau)*(tau*tau+3*tau-2) - 6*tau ) /
+             ( 6*(1+tau)*(1+tau)*(2+tau) );
 
-    float step_water = energy/stop_power * a;
+    double step_water = energy/stop_power * a;
 
     return step_water;
 }
 
-__device__ float get_energy_loss (float const step_water, float const energy)
+__device__ double get_energy_loss (double const step_water, double const energy)
 // find eloss based on water track length s and initial energy
 // Based on Kawrakow, 1999
 {
     // MP, stp_w_delta_e, stp_w_min_e, stp_w_tex and stp_w_b_coeff_tex are globals
     float index = (energy - stp_w_min_e)/stp_w_delta_e + 0.5f;
-    float de1 = step_water*tex1D(stp_w_tex, index);
-    float b = tex1D(stp_w_b_coeff_tex, index);
+    double de1 = step_water*tex1D(stp_w_tex, index);
+    double b = tex1D(stp_w_b_coeff_tex, index);
 
-    float tau = energy/MP;
-    float eps = de1/energy;
+    double tau = energy/MP;
+    double eps = de1/energy;
 
-    float de = de1*( 1 +
-               eps/(1+tau)/(2+tau) +
-               eps*eps*(2+2*tau+tau*tau)/(1+tau)/(1+tau)/(2+tau)/(2+tau) -
-               b*eps*(0.5+2*eps/3/(1+tau)/(2+tau) +
-               (1-b)*eps/6) );
+    double de = de1*( 1 +
+                eps/(1+tau)/(2+tau) +
+                eps*eps*(2+2*tau+tau*tau)/(1+tau)/(1+tau)/(2+tau)/(2+tau) -
+                b*eps*(0.5+2*eps/3/(1+tau)/(2+tau) +
+                (1-b)*eps/6) );
 
     de = fmin(de, energy);
     return de;
 }
 
-__device__ float massStpRatio(const float energy, const int4& vox)
+__device__ double massStpRatio(const double energy, const int4& vox)
 //  mass stopping power ratio wrt water for a material
 {
     float const energy_index = (energy - stp_ratio_min_e)/stp_ratio_delta_e + 0.5;

@@ -5,8 +5,8 @@
 
 __global__ void raytrace_plan_kernel(const short num,
                                      const short *spots_per_beam,
-                                     const float4* const orig_endpoints,
-                                     float4 *pos_scorer,
+                                     const double4* const orig_endpoints,
+                                     double4 *pos_scorer,
                                      float* traces);
 
 __device__ void score_traces(int voxnum, float *traces);

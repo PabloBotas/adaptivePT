@@ -8,8 +8,8 @@
 
 __global__ void raytrace_plan_kernel(const short num,
                                      const short* spots_per_field,
-                                     const float4* const orig_endpoints,
-                                     float4 *pos_scorer,
+                                     const double4* const orig_endpoints,
+                                     double4 *pos_scorer,
                                      float* traces)
 {
     const int thread = blockIdx.x*blockDim.x + threadIdx.x;
@@ -23,7 +23,7 @@ __global__ void raytrace_plan_kernel(const short num,
 
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
-        const float initial_energy = ray.get_energy();
+        const double initial_energy = ray.get_energy();
         pos_scorer[ind].w = initial_energy;
 
         // ray.print();
@@ -32,8 +32,8 @@ __global__ void raytrace_plan_kernel(const short num,
             if(traces)
                 score_traces(vox.w, traces);
 
-            float step_water = 0, step = 0, de = 0;
-            float max_step = to_boundary(ray.get_position(), ray.get_direction(),
+            double step_water = 0, step = 0, de = 0;
+            double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                          vox, voxUpdater, voxStepper);
             get_water_step(step, step_water, de, max_step,
                            ray.get_energy(), vox);
@@ -51,10 +51,10 @@ __global__ void raytrace_plan_kernel(const short num,
         if(orig_endpoints)
         {
             // printf("Converging to endpoint!!!\n");
-            const float sample_energy = initial_energy;
-            const float sample_wepl   = 17.82000; // Janni table for 160MeV
+            const double sample_energy = initial_energy;
+            const double sample_wepl   = 17.82000; // Janni table for 160MeV
                     
-            float3 plan_endpoint = make_float3(orig_endpoints[thread]);
+            double3 plan_endpoint = make_double3(orig_endpoints[thread]);
             ray.set_energy(sample_energy); // sample energy
             ray.set_wepl(sample_wepl);     // Janni table for sample energy
             int sign = ahead_or_behind(ray.dir, plan_endpoint, ray.pos);
@@ -62,11 +62,11 @@ __global__ void raytrace_plan_kernel(const short num,
 
             while (ray.is_alive() && vox.w != -1)
             {
-                float step_water, step;
-                float max_step = to_boundary(ray.get_position(), ray.get_direction(),
-                                             vox, voxUpdater, voxStepper,
-                                             plan_endpoint);
-                float de = 0;
+                double step_water, step;
+                double max_step = to_boundary(ray.get_position(), ray.get_direction(),
+                                              vox, voxUpdater, voxStepper,
+                                              plan_endpoint);
+                double de = 0;
                 get_water_step(step, step_water, de, max_step,
                                ray.get_energy(), vox);
                 ray.move(step, step_water, de);

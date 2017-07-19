@@ -12,7 +12,7 @@ Vector2_t<T>::Vector2_t()
 }
 
 template<class T>
-Vector2_t<T>::Vector2_t(float a, float b)
+Vector2_t<T>::Vector2_t(double a, double b)
 {
     x = a;
     y = b;

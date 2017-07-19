@@ -13,7 +13,7 @@ Spot_t::Spot_t()
 {
 }
 
-Spot_t::Spot_t(float e_, float w_, float x_, float y_)
+Spot_t::Spot_t(double e_, double w_, double x_, double y_)
 {
     e = e_;
     w = w_;

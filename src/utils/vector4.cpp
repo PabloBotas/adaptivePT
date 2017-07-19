@@ -15,7 +15,7 @@ Vector4_t<T>::Vector4_t()
 }
 
 template<class T>
-Vector4_t<T>::Vector4_t(float a)
+Vector4_t<T>::Vector4_t(double a)
 {
     x = a;
     y = a;
@@ -24,7 +24,7 @@ Vector4_t<T>::Vector4_t(float a)
 }
 
 template<class T>
-Vector4_t<T>::Vector4_t(float a, float b, float c, float d)
+Vector4_t<T>::Vector4_t(double a, double b, double c, double d)
 {
     x = a;
     y = b;
@@ -78,12 +78,12 @@ void Vector4_t<T>::print()
 }
 
 template<class T>
-void Vector4_t<T>::rotate(const float& gantry, const float& couch)
+void Vector4_t<T>::rotate(const double& gantry, const double& couch)
 {
-    float c_couch  = cos(couch);
-    float s_couch  = sin(couch);
-    float c_gantry = cos(gantry);
-    float s_gantry = sin(gantry);
+    double c_couch  = cos(couch);
+    double s_couch  = sin(couch);
+    double c_gantry = cos(gantry);
+    double s_gantry = sin(gantry);
 
     Vector4_t<T> temp(x, y, z, w);
     x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
@@ -111,3 +111,4 @@ const T& Vector4_t<T>::operator [](int idx) const
 }
 
 template class Vector4_t<float>;
+template class Vector4_t<double>;

@@ -16,9 +16,9 @@ public:
     std::string file;
     Vector3_t<unsigned int> dim;
     unsigned int nElements;
-    Vector3_t<float> spacing;
-    Vector3_t<float> origin;
-    std::vector<float> transform_matrix;
+    Vector3_t<double> spacing;
+    Vector3_t<double> origin;
+    std::vector<double> transform_matrix;
     unsigned short nb;
     unsigned short type_id;
 

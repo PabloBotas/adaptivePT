@@ -12,8 +12,8 @@ public:
     enum Direction_t {FromEtoR, FromRtoE};
     Direction_t dir;
     Energy_Range_Calculator_t(Direction_t dir = FromEtoR);
-    float calculate(float x, Direction_t dir = FromEtoR);
-    float operator()(float& x);
+    double calculate(double x, Direction_t dir = FromEtoR);
+    double operator()(double& x);
 private:
     DataTable_t table;
 };

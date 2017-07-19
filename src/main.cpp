@@ -31,23 +31,23 @@
 
 void deal_with_ct(const Patient_Parameters_t& pat,
                   const Parser& parser,
-                  Array4<float>& ct_vf_endpoints,
-                  Array4<float>& ct_vf_init_pat_pos);
+                  Array4<double>& ct_vf_endpoints,
+                  Array4<double>& ct_vf_init_pat_pos);
 
 void deal_with_cbct(Patient_Parameters_t& pat,
                     const Parser& parser,
-                    const Array4<float>& ct_vf_endpoints,
-                    const Array4<float>& ct_vf_init_pat_pos,
-                    std::vector<float>& energy_shift);
+                    const Array4<double>& ct_vf_endpoints,
+                    const Array4<double>& ct_vf_init_pat_pos,
+                    std::vector<double>& energy_shift);
 
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
-                    const std::vector<float>& energy_shift,
-                    Array4<float>& pat_pos,
-                    Array4<float>& pat_pos2);
+                    const std::vector<double>& energy_shift,
+                    Array4<double>& pat_pos,
+                    Array4<double>& pat_pos2);
 
-void export_shifts(const std::vector<float>& e,
-                   const Array4<float>& p,
+void export_shifts(const std::vector<double>& e,
+                   const Array4<double>& p,
                    const std::string& file,
                    const short& beamid);
 
@@ -71,10 +71,10 @@ int main(int argc, char** argv)
     cudaEvent_t start;
     initialize_device(start);
 
-    Array4<float> ct_endpoints(pat.total_spots);
-    Array4<float> ct_init_pat_pos(pat.total_spots);
+    Array4<double> ct_endpoints(pat.total_spots);
+    Array4<double> ct_init_pat_pos(pat.total_spots);
     deal_with_ct (pat, parser, ct_endpoints, ct_init_pat_pos);
-    std::vector<float> energy_shift(pat.total_spots);
+    std::vector<double> energy_shift(pat.total_spots);
     if (!parser.no_energy)
         deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
@@ -91,8 +91,8 @@ int main(int argc, char** argv)
 
 void deal_with_ct(const Patient_Parameters_t& pat,
                   const Parser& parser,
-                  Array4<float>& ct_endpoints,
-                  Array4<float>& ct_init_pat_pos)
+                  Array4<double>& ct_endpoints,
+                  Array4<double>& ct_init_pat_pos)
 {
     // Read CT and launch rays
     Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
@@ -102,7 +102,7 @@ void deal_with_ct(const Patient_Parameters_t& pat,
     // Get endpoints in CT ----------------------------
     ct_endpoints.resize(pat.total_spots);
     ct_init_pat_pos.resize(pat.total_spots);
-    Array4<float> ct_init_pos(pat.total_spots);
+    Array4<double> ct_init_pos(pat.total_spots);
     gpu_raytrace_original (pat, ct, ct_endpoints, ct_init_pos, ct_init_pat_pos,
                            parser.output_ct_traces);
 
@@ -120,16 +120,16 @@ void deal_with_ct(const Patient_Parameters_t& pat,
 
 void deal_with_cbct(Patient_Parameters_t& pat,
                     const Parser& parser,
-                    const Array4<float>& ct_vf_endpoints,
-                    const Array4<float>& ct_vf_init_pat_pos,
-                    std::vector<float>& energy_shift)
+                    const Array4<double>& ct_vf_endpoints,
+                    const Array4<double>& ct_vf_init_pat_pos,
+                    std::vector<double>& energy_shift)
 {
     // Get endpoints in CBCT --------------------
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
     cbct.ext_to_int_coordinates();
     pat.update_geometry_with_external(cbct);
 
-    Array4<float> cbct_endpoints(pat.total_spots);
+    Array4<double> cbct_endpoints(pat.total_spots);
     gpu_raytrace_warped (pat, cbct, ct_vf_endpoints,
                          ct_vf_init_pat_pos, cbct_endpoints,
                          parser.output_cbct_traces);
@@ -141,9 +141,9 @@ void deal_with_cbct(Patient_Parameters_t& pat,
 
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
-                    const std::vector<float>& energy_shift,
-                    Array4<float>& pat_pos,
-                    Array4<float>& pat_pos2)
+                    const std::vector<double>& energy_shift,
+                    Array4<double>& pat_pos,
+                    Array4<double>& pat_pos2)
 {
     // Go to virtual source pos
     treatment_plane_to_virtual_src (pat_pos, pat_pos2, pat);
@@ -154,17 +154,17 @@ void export_adapted(Patient_Parameters_t& pat,
     // Assign to new spotmap
     for (size_t i = 0; i < pat.nbeams; i++)
     {
-        std::vector<float>::const_iterator f = energy_shift.begin();
+        std::vector<double>::const_iterator f = energy_shift.begin();
         if (i != 0)
             f += pat.accu_spots_per_field.at(i-1);
-        std::vector<float>::const_iterator l = energy_shift.begin() + pat.accu_spots_per_field.at(i);
-        std::vector<float> subset_energies(f, l);
+        std::vector<double>::const_iterator l = energy_shift.begin() + pat.accu_spots_per_field.at(i);
+        std::vector<double> subset_energies(f, l);
 
-        Array4<float>::const_iterator ff = pat_pos.begin();
+        Array4<double>::const_iterator ff = pat_pos.begin();
         if (i != 0)
             ff += pat.accu_spots_per_field.at(i-1);
-        Array4<float>::const_iterator ll = pat_pos.begin() + pat.accu_spots_per_field.at(i);
-        Array4<float> subset_pat_pos(ff, ll);
+        Array4<double>::const_iterator ll = pat_pos.begin() + pat.accu_spots_per_field.at(i);
+        Array4<double> subset_pat_pos(ff, ll);
 
         Tramp_t tramp(pat.tramp_files.at(i));
 
@@ -177,8 +177,8 @@ void export_adapted(Patient_Parameters_t& pat,
     }
 }
 
-void export_shifts(const std::vector<float>& e,
-                   const Array4<float>& p,
+void export_shifts(const std::vector<double>& e,
+                   const Array4<double>& p,
                    const std::string& file,
                    const short& beamid)
 {
@@ -198,9 +198,9 @@ void export_shifts(const std::vector<float>& e,
 
     for (size_t spotid = 0; spotid < e.size(); spotid++)
     {
-        float vx = p.at(spotid).x;
-        float vy = p.at(spotid).y;
-        float z = p.at(spotid).z;
+        double vx = p.at(spotid).x;
+        double vy = p.at(spotid).y;
+        double z = p.at(spotid).z;
         ofs << e.at(spotid) << " " << vx << " " << vy << " " << z << " ";
         ofs << sqrt(vx*vx + vy*vy) << " " << beamid << " " << spotid << "\n";
     }

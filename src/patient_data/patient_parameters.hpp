@@ -39,7 +39,7 @@ public:
     std::vector<RangeShifter_Dims_t> range_shifters;
 
     std::vector<BeamAngles_t> angles;
-    std::vector<float>        isocenter_to_beam_distance;
+    std::vector<double>       isocenter_to_beam_distance;
     Planes_t                  treatment_planes;
 
     void ext_to_int_coordinates();
@@ -57,7 +57,7 @@ private:
 
     void consolidate_originals();
     std::vector<BeamAngles_t> original_angles;
-    std::vector<float>        original_isocenter_to_beam_distance;
+    std::vector<double>       original_isocenter_to_beam_distance;
 
 //     std::string rel_beam_location  = "/input";
 //     std::string rel_topas_location = "/run";

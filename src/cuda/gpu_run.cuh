@@ -8,12 +8,12 @@
 #include <string>
 
 void do_raytrace (const std::vector<short>& spots_per_beam,
-                  float4* positions_scorer,
+                  double4* positions_scorer,
                   float* traces_scorer,
-                  const Array4<float>& orig_endpoints);
+                  const Array4<double>& orig_endpoints);
 
-void buffers_to_device (const std::vector<float4>& xbuffer,
-                        const std::vector<float4>& vxbuffer,
+void buffers_to_device (const std::vector<double4>& xbuffer,
+                        const std::vector<double4>& vxbuffer,
                         const std::vector<short2>& ixbuffer,
                         const bool alloc = true);
 

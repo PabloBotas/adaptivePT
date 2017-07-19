@@ -14,7 +14,7 @@ Vector3_t<T>::Vector3_t()
 }
 
 template<class T>
-Vector3_t<T>::Vector3_t(float a, float b, float c)
+Vector3_t<T>::Vector3_t(double a, double b, double c)
 {
     x = a;
     y = b;
@@ -62,7 +62,7 @@ void Vector3_t<T>::print()
 }
 
 template<class T>
-float Vector3_t<T>::length()
+double Vector3_t<T>::length()
 {
     return std::sqrt(x*x + y*y + z*z);
 }
@@ -76,19 +76,19 @@ Vector3_t<T> Vector3_t<T>::cross (const Vector3_t<T>& v) const
 template<class T>
 void Vector3_t<T>::normalize()
 {
-    float d = this->length();
+    double d = this->length();
     x /= d;
     y /= d;
     z /= d;
 }
 
 template<class T>
-void Vector3_t<T>::rotate(const float& gantry, const float& couch)
+void Vector3_t<T>::rotate(const double& gantry, const double& couch)
 {
-    float c_couch  = cos(couch);
-    float s_couch  = sin(couch);
-    float c_gantry = cos(gantry);
-    float s_gantry = sin(gantry);
+    double c_couch  = cos(couch);
+    double s_couch  = sin(couch);
+    double c_gantry = cos(gantry);
+    double s_gantry = sin(gantry);
 
     Vector3_t<T> temp(x, y, z);
     x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
@@ -115,4 +115,5 @@ const T& Vector3_t<T>::operator [](int idx) const
 template class Vector3_t<int>;
 template class Vector3_t<unsigned int>;
 template class Vector3_t<float>;
+template class Vector3_t<double>;
 

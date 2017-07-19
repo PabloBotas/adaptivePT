@@ -98,7 +98,7 @@ std::string utils::run_command(const std::string cmd)
 }
 
 
-void utils::cm_to_mm(Array4<float>& vec)
+void utils::cm_to_mm(Array4<double>& vec)
 {
     const int CM2MM = 10;
     for (size_t i = 0; i < vec.size(); i++)
@@ -109,18 +109,18 @@ void utils::cm_to_mm(Array4<float>& vec)
     }
 }
 
-Vector3_t<float> utils::intersect(const Vector3_t<float>& a,
-                                  const Vector3_t<float>& u,
-                                  const Vector3_t<float>& b,
-                                  const Vector3_t<float>& v)
+Vector3_t<double> utils::intersect(const Vector3_t<double>& a,
+                                   const Vector3_t<double>& u,
+                                   const Vector3_t<double>& b,
+                                   const Vector3_t<double>& v)
 {
     // Check they are coplanar
-    Vector3_t<float> cross = u.cross(v);
+    Vector3_t<double> cross = u.cross(v);
     if (cross.length() == 0.f)
     {
         std::cout << "WARNING! Intersect received non-coplanar lines!" << std::endl;
         std::cout << "Detected: F: " << __FILE__ << ". L: " << __LINE__ << std::endl;
-        return Vector3_t<float>(NAN, NAN, NAN);
+        return Vector3_t<double>(NAN, NAN, NAN);
     }
 
     // Some direction components may be zero
@@ -133,8 +133,8 @@ Vector3_t<float> utils::intersect(const Vector3_t<float>& a,
     
     double s = ((a[ind_min]-b[ind_min]) + (b[ind_max]-a[ind_max])*u_ratio) / (v[ind_min] - v[ind_max]*u_ratio); // line parameter of b,v
     double t = ((b[ind_max]-a[ind_max]) + s*v[ind_max])/u[ind_max];
-    Vector3_t<float> A = a + t*u;
-    Vector3_t<float> B = b + s*v;
+    Vector3_t<double> A = a + t*u;
+    Vector3_t<double> B = b + s*v;
 
     std::cout << "ind_max: " << ind_max << std::endl;
     std::cout << "ind_min: " << ind_min << std::endl;

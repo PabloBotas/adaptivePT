@@ -4,7 +4,7 @@
 #include "gpu_physics.cuh"
 #include "helper_math.h"
 
-__device__ Ray::Ray (float4 x_, float4 vx_, short2 ix_)
+__device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
 {
     pos.x  = x_.x;
     pos.y  = x_.y;
@@ -19,22 +19,22 @@ __device__ Ray::Ray (float4 x_, float4 vx_, short2 ix_)
     spot_id = ix_.y;
 }
 
-__device__ float3 Ray::get_position ()
+__device__ double3 Ray::get_position ()
 {
     return pos;
 }
 
-__device__ float3 Ray::get_direction ()
+__device__ double3 Ray::get_direction ()
 {
     return dir;
 }
 
-__device__ float Ray::get_wepl ()
+__device__ double Ray::get_wepl ()
 {
     return wepl;
 }
 
-__device__ float Ray::get_energy ()
+__device__ double Ray::get_energy ()
 {
     return energy;
 }
@@ -49,22 +49,22 @@ __device__ short Ray::get_spot_id ()
     return spot_id;
 }
 
-__device__ void Ray::set_direction_to_point (float4 p)
+__device__ void Ray::set_direction_to_point (double4 p)
 {
-    float3 p2 = make_float3(p);
+    double3 p2 = make_double3(p);
     set_direction_to_point(p2);
 }
 
-__device__ void Ray::set_direction_to_point (float3 p)
+__device__ void Ray::set_direction_to_point (double3 p)
 {
     dir = p - pos;
-    float norm = length(dir);
+    double norm = length(dir);
     dir /= norm;
 }
 
-__device__ void Ray::move (const float& step,
-                           const float& step_water,
-                           const float& de)
+__device__ void Ray::move (const double& step,
+                           const double& step_water,
+                           const double& de)
 {
     pos += step*dir;
     energy -= de;
@@ -73,12 +73,12 @@ __device__ void Ray::move (const float& step,
         _alive = false;
 }
 
-__device__ void Ray::set_energy(float m)
+__device__ void Ray::set_energy(double m)
 {
     energy = m;
 }
 
-__device__ void Ray::set_wepl(float m)
+__device__ void Ray::set_wepl(double m)
 {
     wepl = m;
 }

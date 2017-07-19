@@ -24,8 +24,8 @@ Warper_t::Warper_t (const std::string vf_file,
     set_vf_origins();
 }
 
-void Warper_t::apply_to (Array4<float>& endpoints,
-                         Array4<float>& init_pos,
+void Warper_t::apply_to (Array4<double>& endpoints,
+                         Array4<double>& init_pos,
                          const CT_Dims_t& ct,
                          Planes_t treatment_plane,
                          const std::vector<short>& spots_per_field)
@@ -75,7 +75,7 @@ void Warper_t::set_vf_origins()
 }
 
 
-void Warper_t::warp_init_points (Array4<float>& init_pos,
+void Warper_t::warp_init_points (Array4<double>& init_pos,
                                  const Planes_t& pln,
                                  const std::vector<short>& spots_per_field)
 {
@@ -102,45 +102,45 @@ void Warper_t::warp_init_points (Array4<float>& init_pos,
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
 
-        Vector3_t<float> a; // has not been raytraced to CT volume
+        Vector3_t<double> a; // has not been raytraced to CT volume
         a.x = pln.p.at(ibeam).x;
         a.y = pln.p.at(ibeam).y;
         a.z = pln.p.at(ibeam).z;
-        Vector3_t<float> b; // has been raytraced to CT volume
+        Vector3_t<double> b; // has been raytraced to CT volume
         b.x = init_pos.at(i).x;
         b.y = init_pos.at(i).y;
         b.z = init_pos.at(i).z;
-        Vector3_t<float> c = probes.at(i);
-        Vector3_t<float> d = probes.at(i) + vf.at(i);
+        Vector3_t<double> c = probes.at(i);
+        Vector3_t<double> d = probes.at(i) + vf.at(i);
 
-        Vector3_t<float> u;
+        Vector3_t<double> u;
         u.x = pln.dir.at(ibeam).x;
         u.y = pln.dir.at(ibeam).y;
         u.z = pln.dir.at(ibeam).z;
 
-        Vector3_t<float> r_cb = b-c;
+        Vector3_t<double> r_cb = b-c;
         r_cb.normalize();
         std::cout << "pln_src_a: " << pln.source_a.at(ibeam).x << " " << pln.source_a.at(ibeam).y << " " << pln.source_a.at(ibeam).z << std::endl;
         std::cout << "pln_src_b: " << pln.source_b.at(ibeam).x << " " << pln.source_b.at(ibeam).y << " " << pln.source_b.at(ibeam).z << std::endl;
         std::cout << std::endl << "Point O" << std::endl;
-        Vector3_t<float> O = utils::intersect(a, u, b, r_cb);
+        Vector3_t<double> O = utils::intersect(a, u, b, r_cb);
         std::cout << std::endl << "Point O2" << std::endl;
-        Vector3_t<float> vf_dir = vf.at(i);
+        Vector3_t<double> vf_dir = vf.at(i);
         vf_dir.normalize();
-        Vector3_t<float> O2 = utils::intersect(a, u, c, vf_dir);
+        Vector3_t<double> O2 = utils::intersect(a, u, c, vf_dir);
         
         // The vector O2-c is parallel to the vector
         // between b and the raytraced a (a_ray)
-        Vector3_t<float> r_ba_ray = O2-c;
+        Vector3_t<double> r_ba_ray = O2-c;
         r_ba_ray.normalize();
         std::cout << std::endl << "Point a_ray" << std::endl;
-        Vector3_t<float> a_ray = utils::intersect(a, u, b, r_ba_ray);
+        Vector3_t<double> a_ray = utils::intersect(a, u, b, r_ba_ray);
 
         // Calculate distances to use Thales
-        Vector3_t<float> r_Oa_ray = a_ray-O;
-        Vector3_t<float> r_OO2 = O2-O;
+        Vector3_t<double> r_Oa_ray = a_ray-O;
+        Vector3_t<double> r_OO2 = O2-O;
 
-        Vector3_t<float> X = r_Oa_ray * d/r_OO2;
+        Vector3_t<double> X = r_Oa_ray * d/r_OO2;
         std::cout << "X: " << X.x << " " << X.y << " " << X.z << std::endl;
         std::cout << std::endl;
 
@@ -150,7 +150,7 @@ void Warper_t::warp_init_points (Array4<float>& init_pos,
         // init_pos.at(i).y = (SAD-z2)/SAD * (vf.y+probe.y)
         // init_pos.at(i).z = (SAD-z2)/SAD * (vf.z+probe.z)
 
-        // vf = (SAD-z2)/SAD * make_float3(vf.x+probe.x, vf.y+probe.y, vf.z+probe.z) - make_float3()
+        // vf = (SAD-z2)/SAD * make_double3(vf.x+probe.x, vf.y+probe.y, vf.z+probe.z) - make_double3()
         // std::cout << " to (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")" <<std::endl;
 
     }
@@ -164,13 +164,13 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
     {
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
-        float inner = vf.at(i).x*pln.dir.at(ibeam).x +
+        double inner = vf.at(i).x*pln.dir.at(ibeam).x +
                       vf.at(i).y*pln.dir.at(ibeam).y +
                       vf.at(i).z*pln.dir.at(ibeam).z;
-        float mod_squared = pln.dir.at(ibeam).x*pln.dir.at(ibeam).x +
+        double mod_squared = pln.dir.at(ibeam).x*pln.dir.at(ibeam).x +
                             pln.dir.at(ibeam).y*pln.dir.at(ibeam).y +
                             pln.dir.at(ibeam).z*pln.dir.at(ibeam).z;
-        float norm = inner/mod_squared;
+        double norm = inner/mod_squared;
 
         vf.at(i).x -= norm*pln.dir.at(ibeam).x;
         vf.at(i).y -= norm*pln.dir.at(ibeam).y;
@@ -179,7 +179,7 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
 }
 
 
-void Warper_t::warp_points (Array4<float>& p)
+void Warper_t::warp_points (Array4<double>& p)
 {
     for (size_t i = 0; i < p.size(); i++)
     {
@@ -189,7 +189,7 @@ void Warper_t::warp_points (Array4<float>& p)
     }
 }
 
-void Warper_t::write_to_file(const Array4<float>& p,
+void Warper_t::write_to_file(const Array4<double>& p,
                              const std::vector<short>& spots_per_field)
 {
     std::string dir = output.substr(0, output.find_last_of('/'));
@@ -217,7 +217,7 @@ void Warper_t::write_to_file(const Array4<float>& p,
     std::cout << "done!" << std::endl;
 }
 
-void Warper_t::set_probes (const Array4<float>& p)
+void Warper_t::set_probes (const Array4<double>& p)
 {
     probes.resize(p.size());
     for (size_t i = 0; i < p.size(); i++)
@@ -228,7 +228,7 @@ void Warper_t::set_probes (const Array4<float>& p)
     }
 }
 
-void Warper_t::probe (const Array4<float>& p)
+void Warper_t::probe (const Array4<double>& p)
 {
     set_probes(p);
 
@@ -260,7 +260,7 @@ void Warper_t::probe (const Array4<float>& p)
         std::string locations;
         for (size_t i = batch*locs_per_batch; i < elements && i < (batch+1)*locs_per_batch; i++)
         {
-            Vector4_t<float> temp;
+            Vector4_t<double> temp;
             temp.x = probes.at(i).x + origins.x;
             temp.y = probes.at(i).y + origins.y;
             temp.z = probes.at(i).z + origins.z;
@@ -285,7 +285,7 @@ void Warper_t::probe (const Array4<float>& p)
         {
             std::istringstream ss_per_space(line);
 
-            float z, y, x;
+            double z, y, x;
             while (ss_per_space)
             {
                 std::string dummy;
@@ -294,13 +294,13 @@ void Warper_t::probe (const Array4<float>& p)
                 ss_per_space >> dummy >> dummy >> dummy;
                 ss_per_space >> z >> y >> x;
             }
-            vf.push_back(Vector3_t<float>(-x/10, -y/10, -z/10));
+            vf.push_back(Vector3_t<double>(-x/10, -y/10, -z/10));
         }
     }
 }
 
 // Utils ----------------------------
-void Warper_t::flip_positions_X (Array4<float>& vec,
+void Warper_t::flip_positions_X (Array4<double>& vec,
                                  const CT_Dims_t dims)
 {
     for (size_t i = 0; i < vec.size(); i++)
@@ -309,7 +309,7 @@ void Warper_t::flip_positions_X (Array4<float>& vec,
     }
 }
 
-void Warper_t::flip_direction_X (Array4<float>& vec)
+void Warper_t::flip_direction_X (Array4<double>& vec)
 {
     for (size_t i = 0; i < vec.size(); i++)
     {
@@ -318,7 +318,7 @@ void Warper_t::flip_direction_X (Array4<float>& vec)
 }
 
 
-std::string Warper_t::to_location_str (const Vector3_t<float>& p,
+std::string Warper_t::to_location_str (const Vector3_t<double>& p,
                                        const bool last)
 {
     std::string s;

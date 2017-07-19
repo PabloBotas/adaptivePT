@@ -1,11 +1,11 @@
 #include "gpu_device_globals.cuh"
 
-__device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
-__device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
+__device__ double4 xdata[NRAYS];  // x y z wepl (in cm)
+__device__ double4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
 __device__ short2 ixdata[NRAYS]; // particle metadata (beam and spot ID)
 
 // CT variables
-__device__ __constant__ float3 ctVoxSize;
+__device__ __constant__ double3 ctVoxSize;
 __device__ __constant__ int3 ctVox;
 __device__ __constant__ size_t ctTotalVoxN;
 

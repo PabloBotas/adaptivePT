@@ -8,12 +8,12 @@ struct Spot_t
 {
     Spot_t();
     Spot_t(std::string line);
-    Spot_t(float e, float w, float x, float y);
+    Spot_t(double e, double w, double x, double y);
     ~Spot_t();
-    float x;
-    float y;
-    float e;
-    float w;
+    double x;
+    double y;
+    double e;
+    double w;
 
     friend std::ostream& operator<<(std::ostream& os, const Spot_t& s);
 };
