@@ -13,8 +13,8 @@ class Vector2_t
 {
 public:
     Vector2_t();
-    Vector2_t(double a);
-    Vector2_t(double a, double b);
+    Vector2_t(T a);
+    Vector2_t(T a, T b);
     Vector2_t(const std::vector<T> &v);
     Vector2_t(const Vector2_t<T> &obj);
     Vector2_t(const Vector3_t<T> &obj);

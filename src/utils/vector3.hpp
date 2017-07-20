@@ -13,8 +13,8 @@ class Vector3_t
 {
 public:
     Vector3_t();
-    Vector3_t(double a);
-    Vector3_t(double a, double b, double c);
+    Vector3_t(T a);
+    Vector3_t(T a, T b, T c);
     Vector3_t(const std::vector<T> &v);
     Vector3_t(const Vector3_t<T> &obj);
     Vector3_t(const Vector2_t<T> &obj);
