@@ -13,259 +13,40 @@ class Vector4_t
 {
 public:
     Vector4_t();
-    Vector4_t(double a);
-    Vector4_t(double a, double b, double c, double d);
+    Vector4_t(T a);
+    Vector4_t(T a, T b, T c, T d);
     Vector4_t(const std::vector<T> &v);
     Vector4_t(const Vector4_t<T> &obj);
     Vector4_t(const Vector2_t<T> &obj);
     Vector4_t(const Vector3_t<T> &obj);
-    Vector4_t operator+(const Vector4_t& rhs);
-    Vector4_t operator-(const Vector4_t& rhs);
-    Vector4_t operator*(const Vector4_t& rhs);
-    Vector4_t operator/(const Vector4_t& rhs);
-    void rotate(const double& gantry, const double& couch);
-    const T& operator [](int idx) const;
     void print();
+    double length();
+    double length2();
+    double dot(const Vector4_t<T>& a);
+    Vector4_t<T> cross(const Vector4_t<T>& v) const;
+    void normalize();
+    void rotate(const double& gantry, const double& couch);
 
     T x;
     T y;
     T z;
     T w;
+
+    const T& operator [](int idx) const;
+    const T& at(int idx) const;
+    template <class U> Vector4_t<T>& operator+=(const Vector4_t<U>& rhs);
+    template <typename U> Vector4_t<T>& operator+=(const U& rhs);
+    template <class U> Vector4_t<T>& operator-=(const Vector4_t<U>& rhs);
+    template <typename U> Vector4_t<T>& operator-=(const U& rhs);
+    template <class U> Vector4_t<T>& operator*=(const Vector4_t<U>& rhs);
+    template <typename U> Vector4_t<T>& operator*=(const U& rhs);
+    template <class U> Vector4_t<T>& operator/=(const Vector4_t<U>& rhs);
+    template <typename U> Vector4_t<T>& operator/=(const U& rhs);
 };
 
 template <class T>
 using Array4 = std::vector< Vector4_t<T> >;
 
-inline Vector4_t<double> operator+(const Vector4_t<double>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<double> operator+(const Vector4_t<double>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<double>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<double> operator+(const Vector4_t<double>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<double>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<double> operator+(const Vector4_t<int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<double> operator+(const Vector4_t<unsigned int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<double> operator+(const Vector4_t<double>& a, const double& b)
-{
-    return Vector4_t<double>(a.x+b, a.y+b, a.z+b, a.w+b);
-}
-inline Vector4_t<double> operator+(const double& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a+b.x, a+b.y, a+b.z, a+b.w);
-}
-
-inline Vector4_t<double> operator-(const Vector4_t<double>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<double> operator-(const Vector4_t<double>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<double>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<double> operator-(const Vector4_t<double>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<double>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<double> operator-(const Vector4_t<int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<double> operator-(const Vector4_t<unsigned int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<double> operator-(const Vector4_t<double>& a, const double& b)
-{
-    return Vector4_t<double>(a.x-b, a.y-b, a.z-b, a.w-b);
-}
-inline Vector4_t<double> operator-(const double& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a-b.x, a-b.y, a-b.z, a-b.w);
-}
-
-inline Vector4_t<double> operator*(const Vector4_t<double>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<double> operator*(const Vector4_t<double>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<double>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<double> operator*(const Vector4_t<double>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<double>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<double> operator*(const Vector4_t<int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<double> operator*(const Vector4_t<unsigned int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<double> operator*(const Vector4_t<double>& a, const double& b)
-{
-    return Vector4_t<double>(a.x*b, a.y*b, a.z*b, a.w*b);
-}
-inline Vector4_t<double> operator*(const double& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a*b.x, a*b.y, a*b.z, a*b.w);
-}
-
-inline Vector4_t<double> operator/(const Vector4_t<double>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<double> operator/(const Vector4_t<double>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<double>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<double> operator/(const Vector4_t<double>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<double>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<double> operator/(const Vector4_t<int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<double> operator/(const Vector4_t<unsigned int>& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<double> operator/(const Vector4_t<double>& a, const double& b)
-{
-    return Vector4_t<double>(a.x/b, a.y/b, a.z/b, a.w/b);
-}
-inline Vector4_t<double> operator/(const double& a, const Vector4_t<double>& b)
-{
-    return Vector4_t<double>(a/b.x, a/b.y, a/b.z, a/b.w);
-}
-
-inline Vector4_t<float> operator+(const Vector4_t<float>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<float> operator+(const Vector4_t<float>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<float>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<float> operator+(const Vector4_t<float>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<float>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<float> operator+(const Vector4_t<int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<float> operator+(const Vector4_t<unsigned int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
-}
-inline Vector4_t<float> operator+(const Vector4_t<float>& a, const float& b)
-{
-    return Vector4_t<float>(a.x+b, a.y+b, a.z+b, a.w+b);
-}
-inline Vector4_t<float> operator+(const float& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a+b.x, a+b.y, a+b.z, a+b.w);
-}
-
-inline Vector4_t<float> operator-(const Vector4_t<float>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<float> operator-(const Vector4_t<float>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<float>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<float> operator-(const Vector4_t<float>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<float>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<float> operator-(const Vector4_t<int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<float> operator-(const Vector4_t<unsigned int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
-}
-inline Vector4_t<float> operator-(const Vector4_t<float>& a, const float& b)
-{
-    return Vector4_t<float>(a.x-b, a.y-b, a.z-b, a.w-b);
-}
-inline Vector4_t<float> operator-(const float& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a-b.x, a-b.y, a-b.z, a-b.w);
-}
-
-inline Vector4_t<float> operator*(const Vector4_t<float>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<float> operator*(const Vector4_t<float>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<float>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<float> operator*(const Vector4_t<float>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<float>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<float> operator*(const Vector4_t<int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<float> operator*(const Vector4_t<unsigned int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
-}
-inline Vector4_t<float> operator*(const Vector4_t<float>& a, const float& b)
-{
-    return Vector4_t<float>(a.x*b, a.y*b, a.z*b, a.w*b);
-}
-inline Vector4_t<float> operator*(const float& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a*b.x, a*b.y, a*b.z, a*b.w);
-}
-
-inline Vector4_t<float> operator/(const Vector4_t<float>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<float> operator/(const Vector4_t<float>& a, const Vector4_t<int>& b)
-{
-    return Vector4_t<float>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<float> operator/(const Vector4_t<float>& a, const Vector4_t<unsigned int>& b)
-{
-    return Vector4_t<float>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<float> operator/(const Vector4_t<int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<float> operator/(const Vector4_t<unsigned int>& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
-}
-inline Vector4_t<float> operator/(const Vector4_t<float>& a, const float& b)
-{
-    return Vector4_t<float>(a.x/b, a.y/b, a.z/b, a.w/b);
-}
-inline Vector4_t<float> operator/(const float& a, const Vector4_t<float>& b)
-{
-    return Vector4_t<float>(a/b.x, a/b.y, a/b.z, a/b.w);
-}
+#include "vector4.ipp"
 
 #endif
