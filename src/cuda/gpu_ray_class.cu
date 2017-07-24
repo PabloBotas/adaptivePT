@@ -68,7 +68,7 @@ __device__ void Ray::move (const double& step,
 {
     pos += step*dir;
     energy -= de;
-    wepl -= step_water;
+    wepl += step_water;
     if (energy <= stp_w_min_e)
         _alive = false;
 }

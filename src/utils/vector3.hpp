@@ -19,13 +19,15 @@ public:
     Vector3_t(const Vector3_t<T> &obj);
     Vector3_t(const Vector2_t<T> &obj);
     Vector3_t(const Vector4_t<T> &obj);
-    void print();
-    double length();
-    double length2();
-    double dot(const Vector3_t<T>& a);
+    void print() const;
+    double length() const;
+    double length2() const;
+    double dot(const Vector3_t<T>& a) const;
     Vector3_t<T> cross(const Vector3_t<T>& v) const;
     void normalize();
+    Vector3_t<T> get_normalized() const;
     void rotate(const double& gantry, const double& couch);
+    Vector3_t<T> get_rotated(const double& gantry, const double& couch) const;
 
     T x;
     T y;

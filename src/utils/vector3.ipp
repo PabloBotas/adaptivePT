@@ -60,7 +60,7 @@ Vector3_t<T>::Vector3_t(const Vector4_t<T> &obj)
 }
 
 template<class T>
-void Vector3_t<T>::print()
+void Vector3_t<T>::print() const
 {
     std::cout << x << "\t";
     std::cout << y << "\t";
@@ -68,19 +68,19 @@ void Vector3_t<T>::print()
 }
 
 template<class T>
-double Vector3_t<T>::length()
+double Vector3_t<T>::length() const
 {
     return std::sqrt(x*x + y*y + z*z);
 }
 
 template<class T>
-double Vector3_t<T>::length2()
+double Vector3_t<T>::length2() const
 {
     return x*x + y*y + z*z;
 }
 
 template<class T>
-double Vector3_t<T>::dot(const Vector3_t<T>& a)
+double Vector3_t<T>::dot(const Vector3_t<T>& a) const
 {
     return x*a.x + y*a.y + z*a.z;
 }
@@ -101,6 +101,13 @@ void Vector3_t<T>::normalize()
 }
 
 template<class T>
+Vector3_t<T> Vector3_t<T>::get_normalized() const
+{
+    double d = this->length();
+    return Vector3_t<T>(x/d, y/d, z/d);
+}
+
+template<class T>
 void Vector3_t<T>::rotate(const double& gantry, const double& couch)
 {
     double c_couch  = cos(couch);
@@ -112,6 +119,21 @@ void Vector3_t<T>::rotate(const double& gantry, const double& couch)
     x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
     y = temp.y*c_gantry - temp.z*s_gantry;
     z = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+}
+
+template<class T>
+Vector3_t<T> Vector3_t<T>::get_rotated(const double& gantry, const double& couch) const
+{
+    double c_couch  = cos(couch);
+    double s_couch  = sin(couch);
+    double c_gantry = cos(gantry);
+    double s_gantry = sin(gantry);
+
+    Vector3_t<T> temp(x, y, z);
+    double a_ = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    double b_ = temp.y*c_gantry - temp.z*s_gantry;
+    double c_ = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    return Vector3_t<T>(a_, b_, c_);
 }
 
 // OPERATORS AND ACCESS

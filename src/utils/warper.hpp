@@ -16,7 +16,8 @@ public:
                    Array4<double>& init_pos,
                    const CT_Dims_t& ct,
                    Planes_t treatment_plane,
-                   const std::vector<short>& spots_per_field);
+                   const std::vector<short>& spots_per_field,
+                   const std::vector<BeamAngles_t>& angles);
     
 private:
     // Constructor helpers
@@ -26,7 +27,9 @@ private:
     void write_to_file (const Array4<double>& p,
                         const std::vector<short>& spots_per_field);
     void warp_points (Array4<double>& p);
-    void warp_init_points (Array4<double>& init_pos, const Planes_t& pln, const std::vector<short>& spots_per_field);
+    void warp_init_points (Array4<double>& init_pos, const Planes_t& pln,
+                           const std::vector<short>& spots_per_field,
+                           const std::vector<BeamAngles_t>& angles);
     void project_vf_on_plane (const Planes_t& pln,
                               const std::vector<short>& spots_per_field);
 

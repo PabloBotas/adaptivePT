@@ -18,11 +18,9 @@ namespace utils
                               std::string const& to_replace);
     std::string run_command(const std::string cmd);
     void cm_to_mm(Array4<double>& v);
-    Vector3_t<double> intersect(const Vector3_t<double>& a,
-                                const Vector3_t<double>& u,
-                                const Vector3_t<double>& b,
-                                const Vector3_t<double>& v,
-                                int i);
+    Vector3_t<double> closest_point(const Vector3_t<double>& vec,
+                                    const Vector3_t<double>& vec_p,
+                                    const Vector3_t<double>& p);
     void check_fs(const std::ofstream& ofs, std::string f, std::string msg);
     void check_fs(const std::ifstream& ofs, std::string f, std::string msg);
 }

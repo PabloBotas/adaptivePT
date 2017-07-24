@@ -48,7 +48,6 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
         for(unsigned int i=0; i < src.nspots; i++)
         { // LOOP OVER SPOTS
             Spot_t& spot = src.spots[i];
-
             double3 pos  = iso_to_virtual_src_pos(src.z, SAD, make_double2(spot.x, spot.y)); // cm
             double3 dCos = getDirection(pos, make_double2(spot.x, spot.y));
             double energy = src.energies_internal.at(i)*MeV2eV; // eV
@@ -135,25 +134,12 @@ double2 virtual_src_to_iso_pos(double3 pos, double3 cos)
 
 double3 getDirection(double3 pos, double2 spot)
 {
+    double dx = spot.x-pos.x;
+    double dy = spot.y-pos.y;
     double3 dCos;
-    double a = (spot.x-pos.x)/std::abs(pos.z);
-    double b = (spot.y-pos.y)/std::abs(pos.z);
-    double norm = std::sqrt(a*a + b*b + 1.f);
-    dCos.x = a/norm;
-    dCos.y = b/norm;
-
-    double temp = 1.0f - dCos.x*dCos.x - dCos.y*dCos.y;
-    if(temp < 0)
-    {
-        std::cerr << "Something went wrong calculating direction cosines:\n";
-        std::cerr << "    Pos  x:  " << pos.x  << "\n";
-        std::cerr << "    Pos  y:  " << pos.y  << "\n";
-        std::cerr << "    Pos  z:  " << pos.z  << "\n";
-        std::cerr << "    spot x:  " << spot.x << "\n";
-        std::cerr << "    spot y:  " << spot.y << std::endl;
-        exit(EXIT_FAILURE);
-    };
-    dCos.z = std::sqrt(temp);
+    dCos.x = dx/std::sqrt(dx*dx+pos.z*pos.z);
+    dCos.y = dy/std::sqrt(dy*dy+pos.z*pos.z);
+    dCos.z = std::sqrt(1.0f - dCos.x*dCos.x - dCos.y*dCos.y);
     return dCos;
 }
 

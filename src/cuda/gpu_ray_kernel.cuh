@@ -9,7 +9,7 @@ __global__ void raytrace_plan_kernel(const short num,
                                      double4 *pos_scorer,
                                      float* traces);
 
-__device__ void score_traces(int voxnum, float *traces);
+__device__ void score_traces(float *traces, int voxnum, bool last);
 
 __device__ size_t get_endpoints_index(const short beam_id,
                                       const short spot_id,

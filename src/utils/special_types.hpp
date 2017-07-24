@@ -14,10 +14,10 @@ struct BeamAngles_t
 // Planes_t ---------------------------------------
 struct Planes_t
 {
-    Array4<double> dir;
-    Array4<double> p;
-    Array4<double> source_a;
-    Array4<double> source_b;
+    Array3<double> dir;
+    Array3<double> p;
+    Array3<double> source_a;
+    Array3<double> source_b;
     Planes_t();
     Planes_t(size_t n);
 };

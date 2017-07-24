@@ -24,7 +24,7 @@
 // DONE Read CBCT
 // DONE Raytrace vf_start_points in CBCT
 // DONE Get energy distance to updated endpoints
-// TODO Convert data back to tramp file
+// DONE Convert data back to tramp file
 // TODO Fix mha output's offset to visualize in Slicer
 // TODO Verify that VF probing is correctly done. How?
 // Done Verify CBCT offsets are correctly updated
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     // Read input patient
     Patient_Parameters_t pat(parser.patient);
     pat.print();
-    pat.ext_to_int_coordinates();
+    pat.ct_to_int_coordinates();
     pat.set_treatment_planes();
 
     // Start device
@@ -108,8 +108,8 @@ void deal_with_ct(const Patient_Parameters_t& pat,
 
     // Warp endpoints in CT ---------------------------
     Warper_t warp(parser.vf_file, parser.output_vf);
-    warp.apply_to(ct_endpoints, ct_init_pat_pos,
-                  pat.ct, pat.treatment_planes, pat.spots_per_field);
+    warp.apply_to(ct_endpoints, ct_init_pat_pos, pat.ct, pat.treatment_planes,
+                  pat.spots_per_field, pat.angles);
 
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;

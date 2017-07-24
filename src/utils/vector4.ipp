@@ -67,7 +67,7 @@ Vector4_t<T>::Vector4_t(const Vector3_t<T> &obj)
 }
 
 template<class T>
-void Vector4_t<T>::print()
+void Vector4_t<T>::print() const
 {
     std::cout << x << "\t";
     std::cout << y << "\t";
@@ -76,19 +76,19 @@ void Vector4_t<T>::print()
 }
 
 template<class T>
-double Vector4_t<T>::length()
+double Vector4_t<T>::length() const
 {
     return std::sqrt(x*x + y*y + z*z);
 }
 
 template<class T>
-double Vector4_t<T>::length2()
+double Vector4_t<T>::length2() const
 {
     return x*x + y*y + z*z;
 }
 
 template<class T>
-double Vector4_t<T>::dot(const Vector4_t<T>& a)
+double Vector4_t<T>::dot(const Vector4_t<T>& a) const
 {
     return x*a.x + y*a.y + z*a.z;
 }
@@ -109,6 +109,13 @@ void Vector4_t<T>::normalize()
 }
 
 template<class T>
+Vector4_t<T> Vector4_t<T>::get_normalized() const
+{
+    double d = this->length();
+    return Vector3_t<T>(x/d, y/d, z/d, w);
+}
+
+template<class T>
 void Vector4_t<T>::rotate(const double& gantry, const double& couch)
 {
     double c_couch  = cos(couch);
@@ -120,6 +127,21 @@ void Vector4_t<T>::rotate(const double& gantry, const double& couch)
     x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
     y = temp.y*c_gantry - temp.z*s_gantry;
     z = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+}
+
+template<class T>
+Vector4_t<T> Vector4_t<T>::get_rotated(const double& gantry, const double& couch) const
+{
+    double c_couch  = cos(couch);
+    double s_couch  = sin(couch);
+    double c_gantry = cos(gantry);
+    double s_gantry = sin(gantry);
+
+    Vector4_t<T> temp(x, y, z, w);
+    double a_ = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    double b_ = temp.y*c_gantry - temp.z*s_gantry;
+    double c_ = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    return Vector3_t<T>(a_, b_, c_, temp.w);
 }
 
 // OPERATORS AND ACCESS
@@ -163,6 +185,14 @@ Vector4_t<T>& Vector4_t<T>::operator+=(const Vector4_t<U>& rhs)
     w += rhs.w;
     return *this;
 }
+template<class T> template<class U>
+Vector4_t<T>& Vector4_t<T>::operator+=(const Vector3_t<U>& rhs)
+{
+    x += rhs.x;
+    y += rhs.y;
+    z += rhs.z;
+    return *this;
+}
 template<class T> template<typename U>
 Vector4_t<T>& Vector4_t<T>::operator+=(const U& rhs)
 {
@@ -179,6 +209,14 @@ Vector4_t<T>& Vector4_t<T>::operator-=(const Vector4_t<U>& rhs)
     y -= rhs.y;
     z -= rhs.z;
     w -= rhs.w;
+    return *this;
+}
+template<class T> template<class U>
+Vector4_t<T>& Vector4_t<T>::operator-=(const Vector3_t<U>& rhs)
+{
+    x -= rhs.x;
+    y -= rhs.y;
+    z -= rhs.z;
     return *this;
 }
 template<class T> template<typename U>
@@ -199,6 +237,14 @@ Vector4_t<T>& Vector4_t<T>::operator*=(const Vector4_t<U>& rhs)
     w *= rhs.w;
     return *this;
 }
+template<class T> template<class U>
+Vector4_t<T>& Vector4_t<T>::operator*=(const Vector3_t<U>& rhs)
+{
+    x *= rhs.x;
+    y *= rhs.y;
+    z *= rhs.z;
+    return *this;
+}
 template<class T> template<typename U>
 Vector4_t<T>& Vector4_t<T>::operator*=(const U& rhs)
 {
@@ -215,6 +261,14 @@ Vector4_t<T>& Vector4_t<T>::operator/=(const Vector4_t<U>& rhs)
     y /= rhs.y;
     z /= rhs.z;
     w /= rhs.w;
+    return *this;
+}
+template<class T> template<class U>
+Vector4_t<T>& Vector4_t<T>::operator/=(const Vector3_t<U>& rhs)
+{
+    x /= rhs.x;
+    y /= rhs.y;
+    z /= rhs.z;
     return *this;
 }
 template<class T> template<typename U>

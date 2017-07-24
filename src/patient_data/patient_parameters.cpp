@@ -209,7 +209,7 @@ void Patient_Parameters_t::print()
 
 }
 
-void Patient_Parameters_t::ext_to_int_coordinates()
+void Patient_Parameters_t::ct_to_int_coordinates()
 {
     std::swap(ct.d.x, ct.d.z);
     std::swap(ct.n.x, ct.n.z);
@@ -228,17 +228,17 @@ void Patient_Parameters_t::ext_to_int_coordinates()
     }
 }
 
-void Patient_Parameters_t::int_to_ext_coordinates()
+void Patient_Parameters_t::ct_to_ext_coordinates()
 {
     // From the center to the corner
-    ct.offset.x += 0.5*ct.n.x*ct.d.x;
-    ct.offset.y += 0.5*ct.n.y*ct.d.y;
     ct.offset.z += 0.5*ct.n.z*ct.d.z;
+    ct.offset.y += 0.5*ct.n.y*ct.d.y;
+    ct.offset.x += 0.5*ct.n.x*ct.d.x;
 
+    ct.offset.x *= -1;
     std::swap(ct.d.x, ct.d.z);
     std::swap(ct.n.x, ct.n.z);
     std::swap(ct.offset.x, ct.offset.z);
-    ct.offset.x *= -1;
 
     for(size_t i = 0; i < angles.size(); i++)
     {
@@ -287,31 +287,22 @@ void Patient_Parameters_t::set_total_spots()
 void Patient_Parameters_t::set_treatment_planes()
 {
     // External to internal coordinates would do: x -> -y; y -> -x, they are all 0 here.
-    treatment_planes.p.resize(nbeams);
-    treatment_planes.dir.resize(nbeams);
-    treatment_planes.source_a.resize(nbeams);
-    treatment_planes.source_b.resize(nbeams);
+    treatment_planes = Planes_t(nbeams);
     for (size_t i = 0; i < nbeams; i++)
     {
         // Set default
-        treatment_planes.p.at(i) = Vector4_t<double>(0, 0, -isocenter_to_beam_distance.at(i), 0);
-        treatment_planes.dir.at(i) = Vector4_t<double>(0, 0, 1, 0);
-        treatment_planes.source_a.at(i) = Vector4_t<double>(0, 0, -std::abs(virtualSAD.a), 0);
-        treatment_planes.source_b.at(i) = Vector4_t<double>(0, 0, -std::abs(virtualSAD.b), 0);
+        treatment_planes.p.at(i) = Vector3_t<double>(0, 0, -isocenter_to_beam_distance.at(i));
+        treatment_planes.dir.at(i) = Vector3_t<double>(0, 0, 1);
+        treatment_planes.source_a.at(i) = Vector3_t<double>(0, 0, -std::abs(virtualSAD.a));
+        treatment_planes.source_b.at(i) = Vector3_t<double>(0, 0, -std::abs(virtualSAD.b));
         // Rotate
         treatment_planes.p.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
         treatment_planes.dir.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
         treatment_planes.source_a.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
         treatment_planes.source_b.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
         // Add offsets
-        treatment_planes.p.at(i).x -= ct.offset.x;
-        treatment_planes.p.at(i).y -= ct.offset.y;
-        treatment_planes.p.at(i).z -= ct.offset.z;
-        treatment_planes.source_a.at(i).x -= ct.offset.x;
-        treatment_planes.source_a.at(i).y -= ct.offset.y;
-        treatment_planes.source_a.at(i).z -= ct.offset.z;
-        treatment_planes.source_b.at(i).x -= ct.offset.x;
-        treatment_planes.source_b.at(i).y -= ct.offset.y;
-        treatment_planes.source_b.at(i).z -= ct.offset.z;
+        treatment_planes.p.at(i) -= ct.offset;
+        treatment_planes.source_a.at(i) -= ct.offset;
+        treatment_planes.source_b.at(i) -= ct.offset;
     }
 }

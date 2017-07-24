@@ -28,14 +28,15 @@ void Warper_t::apply_to (Array4<double>& endpoints,
                          Array4<double>& init_pos,
                          const CT_Dims_t& ct,
                          Planes_t treatment_plane,
-                         const std::vector<short>& spots_per_field)
+                         const std::vector<short>& spots_per_field,
+                         const std::vector<BeamAngles_t>& angles)
 {
     probe (endpoints, ct);
     if(exp_file)
         write_to_file (endpoints, spots_per_field);
 
     warp_points (endpoints);
-    warp_init_points (init_pos, treatment_plane, spots_per_field);
+    warp_init_points (init_pos, treatment_plane, spots_per_field, angles);
 }
 
 void Warper_t::set_vf_origins()
@@ -70,9 +71,10 @@ void Warper_t::set_vf_origins()
 
 void Warper_t::warp_init_points (Array4<double>& init_pos,
                                  const Planes_t& pln,
-                                 const std::vector<short>& spots_per_field)
+                                 const std::vector<short>& spots_per_field,
+                                 const std::vector<BeamAngles_t>& angles)
 {
-    /*      a_ray    O2 The initial position (b) has to be shifted taking into account the source position (O).
+    /*        a2     P  The initial position (b) has to be shifted taking into account the source position (O).
      * O ---a--|-->--|  The angle theta describes the triangle OO'd. Once this is obtained, the point ? can be
           \`   | u   |  determined. The initial data is a, b, c, d and the vector describing the plane.
            \ ` |b    |
@@ -95,81 +97,51 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
 
-        Vector3_t<double> a; // has not been raytraced to CT volume
-        a.x = pln.p.at(ibeam).x;
-        a.y = pln.p.at(ibeam).y;
-        a.z = pln.p.at(ibeam).z;
-        Vector3_t<double> b; // has been raytraced to CT volume
-        b.x = init_pos.at(i).x;
-        b.y = init_pos.at(i).y;
-        b.z = init_pos.at(i).z;
+        // Vector3_t<double> a = pln.p.at(ibeam); // has not been raytraced to CT volume
+        // Vector3_t<double> u = pln.dir.at(ibeam);
+        Vector3_t<double> b = init_pos.at(i); // has been raytraced to CT volume
         Vector3_t<double> c = probes.at(i);
         Vector3_t<double> d = probes.at(i) + vf.at(i);
 
-        Vector3_t<double> u;
-        u.x = pln.dir.at(ibeam).x;
-        u.y = pln.dir.at(ibeam).y;
-        u.z = pln.dir.at(ibeam).z;
+        Vector3_t<double> Oa = pln.source_a.at(ibeam);
+        Vector3_t<double> Ob = pln.source_b.at(ibeam);
+        // Vector3_t<double> P  = utils::closest_point(u, a, c);
+        // Vector3_t<double> a2 = utils::closest_point(u, a, b);
 
-        Vector3_t<double> r_cb = b-c;
-        r_cb.normalize();
+        // Undo rotation and coords adjustment to correct for SAD
+        Vector3_t<double> temp;
+        temp = d.get_rotated(-angles.at(ibeam).gantry, -angles.at(ibeam).couch);
+        Vector3_t<double> d2(-temp.y, -temp.x, temp.z);
+        temp = c.get_rotated(-angles.at(ibeam).gantry, -angles.at(ibeam).couch);
+        Vector3_t<double> c2(-temp.y, -temp.x, temp.z);
+        temp = b.get_rotated(-angles.at(ibeam).gantry, -angles.at(ibeam).couch);
+        Vector3_t<double> b2(-temp.y, -temp.x, temp.z);
+ 
+        double X_x = (b2.z-Oa.z)/(c2.z-Oa.z)*(d2.x-c2.x) + b2.x;
+        double X_y = (b2.z-Ob.z)/(c2.z-Ob.z)*(d2.y-c2.y) + b2.y;
+        Vector3_t<double> X(-X_y, -X_x, b2.z);
+        X.rotate(angles.at(ibeam).gantry, angles.at(ibeam).couch);
+        // if (i == 0)
+        // {
+        //     std::cout << "a:  " << a.x << " " << a.y << " " << a.z << std::endl;
+        //     std::cout << "b:  " << b.x << " " << b.y << " " << b.z << std::endl;
+        //     std::cout << "c:  " << c.x << " " << c.y << " " << c.z << std::endl;
+        //     std::cout << "d:  " << d.x << " " << d.y << " " << d.z << std::endl;
+        //     std::cout << "u:  " << u.x << " " << u.y << " " << u.z << std::endl;
+        //     std::cout << "vf: " << vf.at(i).x << " " << vf.at(i).y << " " << vf.at(i).z << std::endl;
+        //     std::cout << "Oa: " << Oa.x << " " << Oa.y << " " << Oa.z << std::endl;
+        //     std::cout << "Ob: " << Ob.x << " " << Ob.y << " " << Ob.z << std::endl;
+        //     // std::cout << "P:  " << P.x << " " << P.y << " " << P.z << std::endl;
+        //     // std::cout << "a2: " << a2.x << " " << a2.y << " " << a2.z << std::endl;
+        //     std::cout << "b2: " << b2.x << " " << b2.y << " " << b2.z << std::endl;
+        //     std::cout << "c2: " << c2.x << " " << c2.y << " " << c2.z << std::endl;
+        //     std::cout << "d2: " << d2.x << " " << d2.y << " " << d2.z << std::endl;
+        //     std::cout << "X:  " << X.x << " " << X.y << " " << X.z << std::endl;
+        //     std::cout << "X_wrong: " << b.x+vf.at(i).x << " " << b.y+vf.at(i).y << " " << b.z+vf.at(i).z << std::endl << std::endl;
+        // }
 
-        double src1 = (pln.source_a.at(ibeam).z - b.z)/r_cb.z;
-        double src2 = (pln.source_b.at(ibeam).z - b.z)/r_cb.z;
-        Vector3_t<double> O_src1 = b + src1*r_cb;
-        Vector3_t<double> O_src2 = b + src2*r_cb;
-        if (i == 0)
-        {
-            std::cout << "pln_src_a: " << pln.source_a.at(ibeam).x << " " << pln.source_a.at(ibeam).y << " " << pln.source_a.at(ibeam).z << std::endl;
-            std::cout << "pln_src_b: " << pln.source_b.at(ibeam).x << " " << pln.source_b.at(ibeam).y << " " << pln.source_b.at(ibeam).z << std::endl;
-            std::cout << "a: " << a.x << " " << a.y << " " << a.z << std::endl;
-            std::cout << "b: " << b.x << " " << b.y << " " << b.z << std::endl;
-            std::cout << "c: " << c.x << " " << c.y << " " << c.z << std::endl;
-            std::cout << "u: " << u.x << " " << u.y << " " << u.z << std::endl;
-            std::cout << "O_src1: " << O_src1.x << " " << O_src1.y << " " << O_src1.z << std::endl;
-            std::cout << "O_src2: " << O_src2.x << " " << O_src2.y << " " << O_src2.z << std::endl;
-        }
-        Vector3_t<bool> opts1(O_src1.x == a.x, O_src1.y == a.y, O_src1.z == a.z);
-        Vector3_t<bool> opts2(O_src2.x == a.x, O_src2.y == a.y, O_src2.z == a.z);
-
-        // Vector3_t<double> O = utils::intersect(a, u, b, r_cb, i);
-        Vector3_t<double> O2 = a + (u.dot(c-a)/u.length2())*u;
-        if (i == 0)
-        {
-            std::cout << std::endl << "Point O2" << std::endl;
-            std::cout << "O2: " << O2.x << " " << O2.y << " " << O2.z << std::endl;
-        }
-
-        Vector3_t<double> a_ray = a + (u.dot(b-a)/u.length2())*u;
-        if (i == 0)
-        {
-            std::cout << std::endl << "Point a_ray" << std::endl;
-            std::cout << "a_ray: " << a_ray.x << " " << a_ray.y << " " << a_ray.z << std::endl;
-        }
-
-        // Calculate distances to use Thales
-        Vector3_t<double> r_O_src1a_ray = a_ray-O_src1;
-        Vector3_t<double> r_O_src2a_ray = a_ray-O_src2;
-        Vector3_t<double> r_O_src1O2 = O2-O_src1;
-        Vector3_t<double> r_O_src2O2 = O2-O_src2;
-
-        Vector3_t<double> X1 = r_O_src1a_ray * d/r_O_src1O2;
-        Vector3_t<double> X2 = r_O_src2a_ray * d/r_O_src2O2;
-        if (i == 0)
-        {
-            std::cout << "X1: " << X1.x << " " << X1.y << " " << X1.z << std::endl;
-            std::cout << "X2: " << X2.x << " " << X2.y << " " << X2.z << std::endl << std::endl;
-        }
-
-        // std::cout << "VF is changing from (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")";
-
-        // init_pos.at(i).x = (SAD-z2)/SAD * (vf.x+probe.x)
-        // init_pos.at(i).y = (SAD-z2)/SAD * (vf.y+probe.y)
-        // init_pos.at(i).z = (SAD-z2)/SAD * (vf.z+probe.z)
-
-        // vf = (SAD-z2)/SAD * make_double3(vf.x+probe.x, vf.y+probe.y, vf.z+probe.z) - make_double3()
-        // std::cout << " to (" << vf.at(i).x << ", " << vf.at(i).y << ", " vf.at(i).z << ")" <<std::endl;
-
+        init_pos.at(i) = X;
+        // init_pos.at(i) += vf.at(i);
     }
 }
 

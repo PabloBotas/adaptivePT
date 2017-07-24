@@ -2,18 +2,17 @@
 
 #include "gpu_device_globals.cuh"
 
-__device__ void get_water_step(double& step,
-                               double& step_water,
-                               double& de,
-                               const double max_step,
-                               const double energy_in,
-                               const int4& vox)
+__device__ void get_step(double& step,
+                         double& step_water,
+                         double& de,
+                         const double max_step,
+                         const double energy_in,
+                         const int4& vox)
 {
     // Get density
     double const density  = tex3D(dens_tex, vox.z, vox.y, vox.x);
     // Get stp ratio
     double const mass_stp_ratio = massStpRatio(energy_in, vox);
-
     // Set steps
     step = max_step;
     step_water = mass_stp_ratio*density*max_step;

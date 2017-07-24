@@ -42,8 +42,8 @@ public:
     std::vector<double>       isocenter_to_beam_distance;
     Planes_t                  treatment_planes;
 
-    void ext_to_int_coordinates();
-    void int_to_ext_coordinates();
+    void ct_to_int_coordinates();
+    void ct_to_ext_coordinates();
     void update_geometry_with_external(const Volume_t& vol);
 
 private:

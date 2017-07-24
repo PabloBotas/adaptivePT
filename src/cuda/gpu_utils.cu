@@ -35,8 +35,10 @@ void array_to_device(T*& dest, const S* src, size_t n)
 }
 template void array_to_device<short>(short*&, const short*, size_t);
 template void array_to_device<double2>(double2*&, const double2*, size_t);
+template void array_to_device<double3>(double3*&, const double3*, size_t);
 template void array_to_device<double4>(double4*&, const double4*, size_t);
 template void array_to_device<double4, Vector4_t<double> >(double4*&, const Vector4_t<double>*, size_t);
+template void array_to_device<double3, Vector3_t<double> >(double3*&, const Vector3_t<double>*, size_t);
 
 ///////////////////////////////////////
 

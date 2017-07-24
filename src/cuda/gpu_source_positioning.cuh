@@ -13,15 +13,15 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
                                                       const double2 *angles,
                                                       const double3 ct_offsets);
 __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
-                                             const Array4<double>& pos2,
+                                             Array4<double> pos2,
                                              const Patient_Parameters_t& pat);
 __global__ void treatment_plane_to_virtual_src_kernel(const int num,
                                                       const int nbeams,
                                                       double4* pos_,
                                                       const double4* dir_,
                                                       const double2* angles,
-                                                      const double4* plane_dir,
-                                                      const double4* plane_pos,
+                                                      const double3* plane_dir,
+                                                      const double3* plane_pos,
                                                       const double3 ct_offsets);
 void correct_offsets(const unsigned int& num,
                      const double3& offsets,
@@ -52,10 +52,11 @@ __device__ __host__ double3 ray_trace_to_CT_volume(const double3& p,
 // get_treatment_planes (const Patient_Parameters_t& pat,
 //                       const std::vector<BeamAngles_t>& angles);
 
-__device__ __host__ double3 ext_to_int_coordinates(double3 a);
-__device__ __host__ double4 ext_to_int_coordinates(double4 a);
-__device__ __host__ double3 int_to_ext_coordinates(double3 a);
-__device__ __host__ double4 int_to_ext_coordinates(double4 a);
+__device__ __host__ double3 pos_to_int_coordinates(double3 a);
+__device__ __host__ double4 pos_to_int_coordinates(double4 a);
+__device__ __host__ double3 pos_to_ext_coordinates(double3 a);
+__device__ __host__ double4 pos_to_ext_coordinates(double4 a);
 __device__ double4 rotate(const double4& p, const double& gantry, const double& couch);
+__device__ double3 rotate(const double3& p, const double& gantry, const double& couch);
 
 #endif
