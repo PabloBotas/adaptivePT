@@ -16,6 +16,37 @@ mpl.rcParams['figure.titlesize'] = 14
 mpl.rcParams['figure.dpi'] = 250
 
 
+def is_outlier(value, p25, p75):
+    """Check if value is an outlier
+    """
+    lower = p25 - 1.5 * (p75 - p25)
+    upper = p75 + 1.5 * (p75 - p25)
+    return value <= lower or value >= upper
+ 
+ 
+def get_indices_of_outliers(values):
+    """Get outlier indices (if any)
+    """
+    p25 = np.percentile(values, 25)
+    p75 = np.percentile(values, 75)
+     
+    indices_of_outliers = []
+    for ind, value in enumerate(values):
+        if is_outlier(value, p25, p75):
+            indices_of_outliers.append(ind)
+    return indices_of_outliers
+
+
+def add_ellipse(ax, x, y, width, height, colr):
+    ax.add_patch(
+        patches.Ellipse(
+            (x, y), width, height,
+            facecolor="None",
+            edgecolor=colr, linewidth=0.1
+        )
+    )
+
+
 def add_rectangle(ax, x, y, width, height, color, alpha):
     ax.add_patch(
         patches.Rectangle(
@@ -35,8 +66,17 @@ def analize_vf(vf_file, pp):
     x = np.array(r['x'])
     y = np.array(r['y'])
     z = np.array(r['z'])
-    # beamid = r['beamid']
-    # spotid = r['spotid']
+    beamid = np.array(r['beamid']).astype(int)
+    spotid = np.array(r['spotid']).astype(int)
+
+    x = x if hasattr(x, "__len__") else np.array([x])
+    y = y if hasattr(y, "__len__") else np.array([y])
+    z = z if hasattr(z, "__len__") else np.array([z])
+    vx = vx if hasattr(vx, "__len__") else np.array([vx])
+    vy = vy if hasattr(vy, "__len__") else np.array([vy])
+    vz = vz if hasattr(vz, "__len__") else np.array([vz])
+    beamid = beamid if hasattr(beamid, "__len__") else np.array([beamid])
+    spotid = spotid if hasattr(spotid, "__len__") else np.array([spotid])
 
     npoints = len(x)
 
@@ -137,7 +177,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     all_y = 10*np.array(r['y'])
     # all_z  = np.array([r['z']])
     # all_d  = np.array([r['d']])
-    beamid = np.array(r['beamid'])
+    beamid = np.array(r['beamid']).astype(int)
     # spotid = [r['spotid']]
 
     all_de = all_de if hasattr(all_de, "__len__") else np.array([all_de])
