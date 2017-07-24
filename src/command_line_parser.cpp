@@ -33,7 +33,7 @@ void Parser::process_command_line(int argc, char** argv)
                     "Vector field file from CT to CBCT. B-Spline format is not supported.")
         ("outdir",  po::value<std::string>(&out_dir)->required(),
                     "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
-        ("no_energy", po::bool_switch(&no_energy)->default_value(false),
+        ("no-energy", po::bool_switch(&no_energy)->default_value(false),
                     "If only the geometry should be adapted.")
         ("output_vf", po::value<std::string>(&output_vf)->default_value(std::string()),
                     "If the probed values should be written to a file.")
