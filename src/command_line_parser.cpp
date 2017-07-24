@@ -43,7 +43,7 @@ void Parser::process_command_line(int argc, char** argv)
                     "If the traces on the CT volume should be scored to a file.")
         ("output_cbct_traces", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
                     "If the traces on the CBCT volume should be scored to a file.")
-        ("report", po::bool_switch(&report)->default_value(false),
+        ("report", po::value<std::string>(&report)->default_value("adapt_report.pdf"),
                     "If a report should be generated. Requires output_vf and output_shifts, and no geometry only mode");
 
         po::variables_map vm;
@@ -54,7 +54,7 @@ void Parser::process_command_line(int argc, char** argv)
         }
         po::notify(vm);
     
-        if ( report ) {
+        if ( !report.empty() ) {
             if ( output_shifts.empty() || output_vf.empty() || no_energy) {
                 std::cerr << "ERROR! report option needs energies processing and shifts and vf output." << std::endl;
                 print_parameters();
@@ -96,6 +96,6 @@ void Parser::print_parameters()
         std::cout << "    - Out CT traces:    " << output_ct_traces << '\n';
     if (!output_cbct_traces.empty())
         std::cout << "    - Out CBCT traces:  " << output_cbct_traces << '\n';
-    if (report)
-        std::cout << "    - Report" << '\n';
+    if (!report.empty())
+        std::cout << "    - Report:           " << report << '\n';
 }

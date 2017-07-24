@@ -51,7 +51,8 @@ void export_shifts(const std::vector<double>& e,
                    const std::string& file,
                    const short& beamid);
 
-void generate_report(const std::string& output_vf,
+void generate_report(const std::string& report,
+                     const std::string& output_vf,
                      const std::string& output_shifts,
                      const std::vector<std::string>& tramp_files);
 
@@ -80,8 +81,8 @@ int main(int argc, char** argv)
 
     export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints);
 
-    if (parser.report)
-        generate_report(parser.output_vf, parser.output_shifts, pat.tramp_files);
+    if (!parser.report.empty())
+        generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
 
     // Stop device
     stop_device(start);
@@ -206,7 +207,8 @@ void export_shifts(const std::vector<double>& e,
     }
 }
 
-void generate_report(const std::string& output_vf,
+void generate_report(const std::string& report,
+                     const std::string& output_vf,
                      const std::string& output_shifts,
                      const std::vector<std::string>& tramp_files)
 {
@@ -218,8 +220,9 @@ void generate_report(const std::string& output_vf,
     std::string tramps = "--tramps ";
     for (size_t i = 0; i < tramp_files.size(); i++)
         tramps += tramp_files.at(i) + " ";
-    std::string outdir = "--outdir " + output_vf.substr(0, output_vf.find_last_of('/'));
-    std::string command = interp + code + vf + shifts + tramps + outdir;
+    std::string outdir = "--outdir " + output_vf.substr(0, output_vf.find_last_of('/')) + " ";
+    std::string outfile = "--outfile " + report;
+    std::string command = interp + code + vf + shifts + tramps + outdir + outfile;
     std::cout << "Running: " << command << std::endl;
     int res = system(command.c_str());
 

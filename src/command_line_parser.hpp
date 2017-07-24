@@ -20,7 +20,7 @@ public:
     std::string output_shifts;
     std::string output_vf;
     std::string output_ct_traces;
-    bool report;
+    std::string report;
     std::string output_cbct_traces;
     bool if_per_layer;
     bool no_energy;
