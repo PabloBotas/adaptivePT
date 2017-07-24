@@ -74,12 +74,27 @@ def analize_vf(vf_file, pp):
     ax.set_rmax(np.round(1.05*max(b)))
     ax.set_title('Angle z', fontsize=11)
 
+    # Derect outliers
+    outliers_x = get_indices_of_outliers(x)
+    outliers_y = get_indices_of_outliers(y)
+    outliers_z = get_indices_of_outliers(z)
+    outliers = np.round(np.unique(np.concatenate((outliers_x, outliers_y, outliers_z)))).astype(int)
+
     ax = fig.add_subplot(2, 3, 4)
     dummy = vx if vx.any() or vy.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
     ax.set_xlabel('pos x (mm)', fontsize=8)
     ax.set_ylabel('pos y (mm)', fontsize=8)
+    # Detect outliers
+    width  = 0.05*(x.max()-x.min())
+    height = 0.05*(y.max()-y.min())
+    for circ in outliers:
+        add_ellipse(ax, x[circ]+0.5*dummy[circ], y[circ]+0.5*vy[circ], width, height, 'red')
+        ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
+                    xy=(x[circ], y[circ]), fontsize=6,
+                    xytext=(x[circ], y[circ]))
+
 
     ax = fig.add_subplot(2, 3, 5)
     dummy = vy if vy.any() or vz.any() else np.full((npoints, 1), 0.00000001)
@@ -87,6 +102,14 @@ def analize_vf(vf_file, pp):
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
     ax.set_xlabel('pos y (mm)', fontsize=8)
     ax.set_ylabel('pos z (mm)', fontsize=8)
+    # Detect outliers
+    width  = 0.05*(y.max()-y.min())
+    height = 0.05*(z.max()-z.min())
+    for circ in outliers:
+        add_ellipse(ax, y[circ]+0.5*dummy[circ], z[circ]+0.5*vz[circ], width, height, 'red')
+        ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
+                    xy=(y[circ], z[circ]), fontsize=6,
+                    xytext=(y[circ], z[circ]))
 
     ax = fig.add_subplot(2, 3, 6)
     dummy = vz if vz.any() or vx.any() else np.full((npoints, 1), 0.00000001)
@@ -94,6 +117,14 @@ def analize_vf(vf_file, pp):
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
     ax.set_xlabel('pos z (mm)', fontsize=8)
     ax.set_ylabel('pos x (mm)', fontsize=8)
+    # Detect outliers
+    width  = 0.05*(z.max()-z.min())
+    height = 0.05*(x.max()-x.min())
+    for circ in outliers:
+        add_ellipse(ax, z[circ]+0.5*dummy[circ], x[circ]+0.5*vx[circ], width, height, 'red')
+        ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
+                    xy=(z[circ], x[circ]), fontsize=6,
+                    xytext=(z[circ], x[circ]))
 
     pp.savefig(fig, bbox_inches='tight')
 
@@ -104,10 +135,20 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     all_de = np.array(r['e']/1e6)
     all_x = 10*np.array(r['x'])
     all_y = 10*np.array(r['y'])
-    # all_z  = np.array(r['z'])
-    # all_d  = np.array(r['d'])
+    # all_z  = np.array([r['z']])
+    # all_d  = np.array([r['d']])
     beamid = np.array(r['beamid'])
-    # spotid = r['spotid']
+    # spotid = [r['spotid']]
+
+    all_de = all_de if hasattr(all_de, "__len__") else np.array([all_de])
+    all_x = all_x if hasattr(all_x, "__len__") else np.array([all_x])
+    all_y = all_y if hasattr(all_y, "__len__") else np.array([all_y])
+    beamid = beamid if hasattr(beamid, "__len__") else np.array([beamid])
+
+    # Round
+    all_de = np.round(all_de, decimals=3);
+    all_x  = np.round(all_x, decimals=3);
+    all_y  = np.round(all_y, decimals=3);
 
     for tramp_num, tramp_file in enumerate(tramp_files, start=0):
         tramp_r = np.genfromtxt(tramp_file, skip_header=12, names=['e', 'x', 'y', 'w']).T
@@ -115,6 +156,16 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         tramp_x = np.array(tramp_r['x'])
         tramp_y = np.array(tramp_r['y'])
         tramp_w = np.array(tramp_r['w'])
+
+        tramp_e = tramp_e if hasattr(tramp_e, "__len__") else np.array([tramp_e])
+        tramp_x = tramp_x if hasattr(tramp_x, "__len__") else np.array([tramp_x])
+        tramp_y = tramp_y if hasattr(tramp_y, "__len__") else np.array([tramp_y])
+        tramp_w = tramp_w if hasattr(tramp_w, "__len__") else np.array([tramp_w])
+
+        # Round
+        tramp_e = np.round(tramp_e, decimals=3);
+        tramp_x = np.round(tramp_x, decimals=3);
+        tramp_y = np.round(tramp_y, decimals=3);
 
         de = np.array(all_de[beamid == tramp_num])
         x = np.array(all_x[beamid == tramp_num])
@@ -170,7 +221,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
                          0.8 * vx[i], 0.8 * vy[i],
                          fc='k', ec='k', alpha=0.25, zorder=0)
         cmap = plt.cm.get_cmap('hsv')
-        scat_colors = np.array(cmap(layer_id / layer_id.max()))
+        scat_colors = np.array(cmap(layer_id / max(layer_id.max(), len(layer_id))))
         ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.5, zorder=1,
                    edgecolors=scat_colors - np.array([0, 0, 0, 0.75]), facecolors='')
         ax.scatter(x, y, s=10, linewidth=0.5, zorder=2, edgecolors='k',
@@ -182,7 +233,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax = fig.add_subplot(3, 2, 4)
         nbins = 25
         if d.max()-d.min() < 0.1:
-            ax.hist(d, bins=nbins, range=(d.min-0.05, d.max+0.05))
+            ax.hist(d, bins=nbins, range=(d.min()-0.05, d.max()+0.05))
         else:
             ax.hist(d, bins=nbins)
         ax.set_xlabel('Shift size (mm)', fontsize=7)
@@ -200,6 +251,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
                     xy=(5, min(min(y), min(tramp_y))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
+        # FIGURE 1, PLOT 6 --------------------------------
         time, summary = delivery_timing.get_timing(tramp_e, tramp_x, tramp_y, tramp_w)
         time_adapted, summary_adapted = delivery_timing.get_timing(tramp_e+de, x, y, tramp_w)
         max_time = 120. if 120. > time[-1] else 1.5*time[-1]  # s
@@ -212,7 +264,6 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
 
-        # FIGURE 1, PLOT 6 --------------------------------
         ax = fig.add_subplot(3, 2, 6)
         ax.plot(time, color='blue', alpha=0.5)
         ax.plot(time_adapted, color='red')
