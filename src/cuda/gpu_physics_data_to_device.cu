@@ -17,7 +17,7 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio()
 void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_starting_values)
 {
     //  read mass stopping power ratio
-    std::string file = "/opt/utils/adaptSpotEnergies/src/phys_data/mass_stopping_power_ratio.dat";
+    std::string file = std::string(INSTALLATION_PATH) + "/src/phys_data/mass_stopping_power_ratio.dat";
     std::cout << "sendMassStoppingPowerRatio: Reading " << file << std::endl;
     std::ifstream stream(file);
     utils::check_fs(stream, file, "to read mass stopping powers.");
@@ -75,7 +75,7 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_star
 
 void gpu_physics_to_device::sendWaterRestrictedSPower()
 {
-    std::string file = "/opt/utils/adaptSpotEnergies/src/phys_data/nist_stopping_power_water.dat";
+    std::string file = std::string(INSTALLATION_PATH) + "/src/phys_data/nist_stopping_power_water.dat";
     std::cout << "sendWaterRestrictedSPower: Reading " << file << std::endl;
     std::ifstream stream(file);
     utils::check_fs(stream, file, "to read restricted stopping powers.");
