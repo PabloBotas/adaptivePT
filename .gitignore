@@ -23,8 +23,6 @@ test/P15_base_plan/out_base_plan_ct/
 
 src/extra/\.idea/
 
-test/
-
 src/extra/__pycache__/
 
 testadaptation/
