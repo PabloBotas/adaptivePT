@@ -203,12 +203,12 @@ def get_timing(e, x, y, w, energy_switch_time=True):
     # print("============================")
 
     summary = """ Summary (s):
- Moving       = {:.3f}
- Energies     = {}
- Delivery     = {:.3f}
- Signal Delay = {:.3f}
- ---------------------
- Total        = {:.3f}""".format(
+ Moving   = {:.3f}
+ Energies = {}
+ Delivery = {:.3f}
+ Delay    = {:.3f}
+ -----------------
+ Total    = {:.3f}""".format(
         round(US2S*total_time_moving_beam, 3),
         US2S*total_time_switching_e,
         round(US2S*total_time_delivering, 3),

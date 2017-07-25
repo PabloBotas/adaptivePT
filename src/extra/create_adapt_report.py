@@ -127,14 +127,13 @@ def analize_vf(vf_file, pp):
     ax.set_xlabel('pos x (mm)', fontsize=8)
     ax.set_ylabel('pos y (mm)', fontsize=8)
     # Detect outliers
-    width  = 0.05*(x.max()-x.min())
+    width = 0.05*(x.max()-x.min())
     height = 0.05*(y.max()-y.min())
     for circ in outliers:
         add_ellipse(ax, x[circ]+0.5*dummy[circ], y[circ]+0.5*vy[circ], width, height, 'red')
         ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
                     xy=(x[circ], y[circ]), fontsize=6,
                     xytext=(x[circ], y[circ]))
-
 
     ax = fig.add_subplot(2, 3, 5)
     dummy = vy if vy.any() or vz.any() else np.full((npoints, 1), 0.00000001)
@@ -143,7 +142,7 @@ def analize_vf(vf_file, pp):
     ax.set_xlabel('pos y (mm)', fontsize=8)
     ax.set_ylabel('pos z (mm)', fontsize=8)
     # Detect outliers
-    width  = 0.05*(y.max()-y.min())
+    width = 0.05*(y.max()-y.min())
     height = 0.05*(z.max()-z.min())
     for circ in outliers:
         add_ellipse(ax, y[circ]+0.5*dummy[circ], z[circ]+0.5*vz[circ], width, height, 'red')
@@ -158,7 +157,7 @@ def analize_vf(vf_file, pp):
     ax.set_xlabel('pos z (mm)', fontsize=8)
     ax.set_ylabel('pos x (mm)', fontsize=8)
     # Detect outliers
-    width  = 0.05*(z.max()-z.min())
+    width = 0.05*(z.max()-z.min())
     height = 0.05*(x.max()-x.min())
     for circ in outliers:
         add_ellipse(ax, z[circ]+0.5*dummy[circ], x[circ]+0.5*vx[circ], width, height, 'red')
@@ -186,9 +185,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     beamid = beamid if hasattr(beamid, "__len__") else np.array([beamid])
 
     # Round
-    all_de = np.round(all_de, decimals=3);
-    all_x  = np.round(all_x, decimals=3);
-    all_y  = np.round(all_y, decimals=3);
+    all_de = np.round(all_de, decimals=3)
+    all_x = np.round(all_x, decimals=3)
+    all_y = np.round(all_y, decimals=3)
 
     for tramp_num, tramp_file in enumerate(tramp_files, start=0):
         tramp_r = np.genfromtxt(tramp_file, skip_header=12, names=['e', 'x', 'y', 'w']).T
@@ -203,9 +202,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         tramp_w = tramp_w if hasattr(tramp_w, "__len__") else np.array([tramp_w])
 
         # Round
-        tramp_e = np.round(tramp_e, decimals=3);
-        tramp_x = np.round(tramp_x, decimals=3);
-        tramp_y = np.round(tramp_y, decimals=3);
+        tramp_e = np.round(tramp_e, decimals=3)
+        tramp_x = np.round(tramp_x, decimals=3)
+        tramp_y = np.round(tramp_y, decimals=3)
 
         de = np.array(all_de[beamid == tramp_num])
         x = np.array(all_x[beamid == tramp_num])
