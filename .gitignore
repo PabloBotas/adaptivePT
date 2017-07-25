@@ -1,28 +1,15 @@
 build/*
 adaptSpotEnergies
 adaptSpotEnergies.sublime-workspace
-test/results
-
-test/P15_base_plan/out_base_plan/
-
-test/P15_base_plan/out_base_plan_mha/
-
-test/P15_base_plan_simple/
-
-test/adapt_data_P15/
-
-*.mha
-
-*.raw
-
-test/Screenshot\.png
+test/adapt*
+test/energy*
+test/P*
+test/range*
+test/report*
+test/vector*
+test/vf_*
 
 \.Rhistory
 
-test/P15_base_plan/out_base_plan_ct/
-
 src/extra/\.idea/
-
 src/extra/__pycache__/
-
-testadaptation/
