@@ -14,6 +14,7 @@ mpl.rcParams['axes.formatter.useoffset'] = False
 mpl.rcParams['font.size'] = 6
 mpl.rcParams['figure.titlesize'] = 14
 mpl.rcParams['figure.dpi'] = 250
+mpl.rcParams['figure.figsize'] = 10, 6
 
 
 def is_outlier(value, p25, p75):
@@ -241,8 +242,8 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.plot(tramp_e+de, linestyle='None', color='red', marker='o', markersize=1.75, markeredgewidth=0.25)
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Energy (MeV)', fontsize=7)
-        ax.annotate('Number spots = ' + str(len(tramp_e)) + '\nOriginal energy layers  = ' +
-                    str(number_layers) + '\nAdapted energy layers = ' + str(len(np.unique(tramp_e+de))),
+        ax.annotate('N. spots = ' + str(len(tramp_e)) + '\nOrig. layers  = ' +
+                    str(number_layers) + '\nAdapt. layers = ' + str(len(np.unique(tramp_e+de))),
                     xy=(5, min(min(tramp_e+de), min(tramp_e))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
@@ -284,9 +285,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.plot(y, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Slow dimension pos (mm)', fontsize=7)
-        ax.annotate('Number spots = ' + str(len(tramp_e)) + '\n' +
-                    'Original slow layers = ' + str(len(np.unique(tramp_y))) + '\n' +
-                    'Adapted slow layers = ' + str(len(np.unique(y))),
+        ax.annotate('N. spots = ' + str(len(tramp_e)) + '\n' +
+                    'Orig. layers = ' + str(len(np.unique(tramp_y))) + '\n' +
+                    'Adapt. layers = ' + str(len(np.unique(y))),
                     xy=(5, min(min(y), min(tramp_y))), fontsize=6,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
