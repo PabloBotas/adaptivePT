@@ -20,8 +20,7 @@ Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
 {
     exploreBeamDirectories();
     parseTopasFiles();
-    set_spots_per_field();
-    set_total_spots();
+    set_spots_data();
     set_planning_CT_file();
 }
 
@@ -261,27 +260,29 @@ void Patient_Parameters_t::update_geometry_with_external(const Volume_t& v)
     ct.total = v.nElements;
 }
 
-void Patient_Parameters_t::set_spots_per_field()
+void Patient_Parameters_t::set_spots_data()
 {
     spots_per_field.reserve(nbeams);
     short acc = 0;
     for(size_t i=0; i < nbeams; i++)
     {
-        Tramp_t tramp;
-        tramp.read_file_header(tramp_files.at(i));
+        Tramp_t tramp(tramp_files.at(i));
+
         spots_per_field.push_back(tramp.nspots);
         acc += tramp.nspots;
         accu_spots_per_field.push_back(acc);
-    }
-}
 
-void Patient_Parameters_t::set_total_spots()
-{
-    total_spots = 0;
-    for(size_t i=0; i < nbeams; i++)
-    {
-        total_spots += spots_per_field.at(i);
+        double temp = tramp.energies.front();
+        std::vector<short> idxs;
+        for (size_t j=1; j < tramp.nspots; j++)
+        {
+            if (temp != tramp.energies.at(j))
+                idxs.push_back(j);
+        }
+        energy_layers.push_back(idxs);
     }
+    // Set total spots
+    total_spots = accu_spots_per_field.back();
 }
 
 void Patient_Parameters_t::set_treatment_planes()

@@ -56,7 +56,6 @@ void generate_report(const std::string& report,
                      const std::string& output_shifts,
                      const std::vector<std::string>& tramp_files);
 
-
 int main(int argc, char** argv)
 {
     Parser parser(argc, argv);
@@ -76,8 +75,8 @@ int main(int argc, char** argv)
     Array4<double> ct_init_pat_pos(pat.total_spots);
     deal_with_ct (pat, parser, ct_endpoints, ct_init_pat_pos);
     std::vector<double> energy_shift(pat.total_spots);
-    if (!parser.no_energy)
-        deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
+
+    deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
     export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints);
 
@@ -108,9 +107,9 @@ void deal_with_ct(const Patient_Parameters_t& pat,
                            parser.output_ct_traces);
 
     // Warp endpoints in CT ---------------------------
-    Warper_t warp(parser.vf_file, parser.output_vf);
+    Warper_t warp(parser.vf_file, parser.output_vf, parser.warp_opts);
     warp.apply_to(ct_endpoints, ct_init_pat_pos, pat.ct, pat.treatment_planes,
-                  pat.spots_per_field, pat.angles);
+                  pat.angles, pat.spots_per_field, pat.energy_layers);
 
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;
@@ -171,8 +170,7 @@ void export_adapted(Patient_Parameters_t& pat,
 
         if (!pars.output_shifts.empty())
             export_shifts(subset_energies, subset_pat_pos, pars.output_shifts, i);
-        if (!pars.no_energy)
-            tramp.shift_energies(subset_energies);
+        tramp.shift_energies(subset_energies);
         tramp.set_pos(subset_pat_pos);
         tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
     }
