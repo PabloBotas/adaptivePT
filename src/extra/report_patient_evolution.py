@@ -408,7 +408,7 @@ def analize_tramp(shifts_files, tramp_files, pp):
             ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.5, zorder=1,
                        edgecolors='black', alpha=0.75, facecolors='')
             ax.scatter(x[ifrac], y[ifrac], s=10, linewidth=0.5, zorder=2, edgecolors='k',
-                       facecolors=scat_colors - np.array([0, 0, 0, 0]))
+                       facecolors=scat_colors)
             ax.set_xlabel('X (mm)', fontsize=7)
             ax.set_ylabel('Y (mm)', fontsize=7)
         pp.savefig(fig, bbox_inches='tight')

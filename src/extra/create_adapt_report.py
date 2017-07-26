@@ -17,6 +17,15 @@ mpl.rcParams['figure.dpi'] = 250
 mpl.rcParams['figure.figsize'] = 10, 6
 
 
+def find_range(a, margin=5., va=None):
+    if va is not None:
+        a += va
+    a_min = a.min()
+    a_max = a.max()
+    rng = a_max - a_min
+    return [a_min - margin/100.*rng, a_max + margin/100.*rng]
+
+
 def is_outlier(value, p25, p75):
     """Check if value is an outlier
     """
@@ -250,22 +259,32 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         # FIGURE 1, PLOT 2 --------------------------------
         ax = fig.add_subplot(3, 2, 2)
         nbins = 25
-        ax.hist(de, nbins)
-        ax.set_xlabel('Shift size (MeV)', fontsize=7)
+        color_range = find_range(de, 0.)
+        xrange = find_range(de)
+        cm = plt.cm.get_cmap('rainbow')
+        bins_y, bins_x = np.histogram(de, nbins)
+        hist_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in bins_x]
+        ax.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1] - bins_x[0], alpha=0.75, linewidth=0)
+        ax.set_xlim(xrange)
+        ax.set_xlabel('Energy shift (MeV)', fontsize=7)
 
         # FIGURE 1, PLOT 3 --------------------------------
         ax = fig.add_subplot(3, 2, 3)
+        cmap = plt.cm.get_cmap('rainbow')
+        color_range = find_range(de, 0.)
+        if color_range[0] == color_range[1]:
+            color_range[0] -= 2
+            color_range[0] += 2
         for i in range(len(tramp_x)):
             if d[i] > 0.001:
                 ax.arrow(0.1 * vx[i] + tramp_x[i], 0.1 * vy[i] + tramp_y[i],
                          0.8 * vx[i], 0.8 * vy[i],
                          fc='k', ec='k', alpha=0.25, zorder=0)
-        cmap = plt.cm.get_cmap('hsv')
-        scat_colors = np.array(cmap(layer_id / max(layer_id.max(), len(layer_id))))
+        scat_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in de]
         ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.5, zorder=1,
-                   edgecolors=scat_colors - np.array([0, 0, 0, 0.75]), facecolors='')
+                   edgecolors='black', alpha=0.75, facecolors='')
         ax.scatter(x, y, s=10, linewidth=0.5, zorder=2, edgecolors='k',
-                   facecolors=scat_colors - np.array([0, 0, 0, 0]))
+                   facecolors=scat_colors)
         ax.set_xlabel('X (mm)', fontsize=7)
         ax.set_ylabel('Y (mm)', fontsize=7)
 
