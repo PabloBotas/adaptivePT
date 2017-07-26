@@ -1,5 +1,6 @@
 #include "warper.hpp"
 
+#include "program_options.hpp"
 #include "special_types.hpp"
 #include "utils.hpp"
 
@@ -12,8 +13,7 @@
 #include <vector>
 
 Warper_t::Warper_t (const std::string vf_file,
-                    const std::string output_vf,
-                    const Warp_opts_t opts)
+                    const std::string output_vf)
 {
     file = vf_file;
     output = output_vf;
@@ -23,8 +23,6 @@ Warper_t::Warper_t (const std::string vf_file,
         exp_file = true;
 
     set_vf_origins();
-
-    options = opts;
 }
 
 void Warper_t::apply_to (Array4<double>& endpoints,
@@ -33,101 +31,16 @@ void Warper_t::apply_to (Array4<double>& endpoints,
                          Planes_t treatment_plane,
                          const std::vector<BeamAngles_t>& angles,
                          const std::vector<short>& spots_per_field,
-                         const std::vector< std::vector<short> >& energy_layers)
+                         const Warp_opts_t options)
 {
     probe (endpoints, ct);
-    apply_options(spots_per_field, energy_layers);
+    apply_position_options(options, vf, spots_per_field);
     if(exp_file)
         write_to_file (endpoints, spots_per_field);
 
     warp_points (endpoints);
     warp_init_points (init_pos, treatment_plane, spots_per_field, angles);
 }
-
-void Warper_t::apply_options (const std::vector<short>& spots_per_field,
-                              const std::vector< std::vector<short> >& energy_layers)
-{
-    if (options == RIGID_POS_FREE_ENERGY ||
-        options == RIGID_POS_RIGID_ENERGY ||
-        options == RIGID_POS_RIGID_BEAMS_ENERGY)
-        apply_rigid();
-    else if (options == RIGID_BEAMS_POS_FREE_ENERGY ||
-             options == RIGID_BEAMS_POS_RIGID_ENERGY ||
-             options == RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)
-        apply_rigid_per_beam(spots_per_field);
-    
-}
-
-void Warper_t::apply_rigid ()
-{
-    // Calculate average
-    Vector3_t<double> avg;
-    for (size_t i = 0; i < vf.size(); i++)
-        avg += vf.at(i);
-    avg /= vf.size();
-
-    // Set average
-    for (size_t i = 0; i < vf.size(); i++)
-        vf.at(i) = avg;
-}
-
-void Warper_t::apply_rigid_per_beam (const std::vector<short>& spots_per_field)
-{
-    // Calculate average per field
-    double accu_spots = 0;
-    Array3<double> avgs(spots_per_field.size());
-    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
-    {
-        // std::cout << "BEAM " << ibeam << std::endl;
-        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++)
-        {
-            size_t idx;
-            if (ibeam > 0)
-                idx = ispot + accu_spots;
-            else
-                idx = ispot;
-            avgs.at(ibeam) += vf.at(idx);
-            // std::cout << "Index " << idx << " " << vf.at(idx).x << " " << avgs.at(ibeam).x << std::endl;
-        }
-        accu_spots += spots_per_field.at(ibeam);
-        avgs.at(ibeam) /= spots_per_field.at(ibeam);
-        // std::cout << "Average " << avgs.at(ibeam).x << std::endl;
-    }
-
-    // Set average per field
-    accu_spots = 0;
-    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
-    {
-        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++)
-        {
-            size_t idx;
-            if (ibeam > 0)
-                idx = ispot+accu_spots;
-            else
-                idx = ispot;
-            vf.at(idx) = avgs.at(ibeam);
-        }
-        accu_spots += spots_per_field.at(ibeam);
-    }
-}
-
-// void apply_rigid_layers (const std::vector<short>& spots_per_field,
-//                          const std::vector< std::vector<short> >& energy_layers)
-// {
-//     // Calculate average per layer
-//     std::vector<Array3> avgs(spots_per_field.size());
-//     for (size_t ibeam = 0; ibeam < energy_layers.size(); ibeam++)
-//     {
-//         double layer_avg = 0;
-//         for (size_t ispot = 0; ispot < energy_layers.at(ibeam); ispot++)
-//         {
-//             size_t idx = 0;
-//             if (ibeam > 0)
-//                 idx += energy_layers.at(ibeam-1)
-//             layer_avg
-//         }
-//     }
-// }
 
 void Warper_t::set_vf_origins()
 {

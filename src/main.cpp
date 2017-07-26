@@ -11,6 +11,7 @@
 #include "gpu_main.cuh"
 #include "gpu_source_positioning.cuh"
 #include "patient_parameters.hpp"
+#include "program_options.hpp"
 #include "tramp.hpp"
 #include "utils.hpp"
 #include "volume.hpp"
@@ -107,9 +108,9 @@ void deal_with_ct(const Patient_Parameters_t& pat,
                            parser.output_ct_traces);
 
     // Warp endpoints in CT ---------------------------
-    Warper_t warp(parser.vf_file, parser.output_vf, parser.warp_opts);
+    Warper_t warp(parser.vf_file, parser.output_vf);
     warp.apply_to(ct_endpoints, ct_init_pat_pos, pat.ct, pat.treatment_planes,
-                  pat.angles, pat.spots_per_field, pat.energy_layers);
+                  pat.angles, pat.spots_per_field, parser.warp_opts);
 
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;
@@ -134,9 +135,11 @@ void deal_with_cbct(Patient_Parameters_t& pat,
                          ct_vf_init_pat_pos, cbct_endpoints,
                          parser.output_cbct_traces);
 
-    // Print results ----------------------------
+    // Copy to output vector
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
         energy_shift.at(i) = cbct_endpoints.at(i).w;
+    // Apply energy options to output vector
+    apply_energy_options(parser.warp_opts, energy_shift, pat.spots_per_field);
 }
 
 void export_adapted(Patient_Parameters_t& pat,

@@ -31,26 +31,41 @@ void Parser::process_command_line(int argc, char** argv)
                     "CBCT to adapt the plan to.")
         ("vf",      po::value<std::string>(&vf_file)->required(),
                     "Vector field file from CT to CBCT. B-Spline format is not supported.")
-        ("outdir",  po::value<std::string>(&out_dir)->required(),
-                    "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
-        ("output_vf", po::value<std::string>(&output_vf)->default_value(std::string()),
-                    "If the probed values should be written to a file.")
-        ("output_shifts", po::value<std::string>(&output_shifts)->default_value(std::string()),
-                    "If the pos-energy shifts should be written to a file.")
-        ("output_ct_traces", po::value<std::string>(&output_ct_traces)->default_value(std::string()),
-                    "If the traces on the CT volume should be scored to a file.")
-        ("output_cbct_traces", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
-                    "If the traces on the CBCT volume should be scored to a file.")
-        ("report", po::value<std::string>(&report)->default_value(std::string())->implicit_value("adapt_report.pdf"),
-                    "If a report should be generated. Requires output_vf and output_shifts, and no geometry only mode")
-        ("rigid", po::bool_switch(&rigid)->default_value(false),
-                    "If the field should be moved rigidly")
-        ("rigid-pos", po::bool_switch(&rigid_pos)->default_value(false),
-                    "If positions should be moved rigidly")
-        ("rigid-pos-beams", po::bool_switch(&rigid_pos_beams)->default_value(false),
-                    "If positions should be moved rigidly per beam")
-        ("rigid-e", po::bool_switch(&rigid_e)->default_value(false),
-                    "If the field should be moved rigidly");
+        // Output files
+        ("outdir",      po::value<std::string>(&out_dir)->required(),
+                        "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
+        ("out_vf",      po::value<std::string>(&output_vf)->default_value(std::string()),
+                        "If the probed values should be written to a file.")
+        ("out_shifts",  po::value<std::string>(&output_shifts)->default_value(std::string()),
+                        "If the pos-energy shifts should be written to a file.")
+        ("traces_ct",   po::value<std::string>(&output_ct_traces)->default_value(std::string()),
+                        "If the traces on the CT volume should be scored to a file.")
+        ("traces_cbct", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
+                        "If the traces on the CBCT volume should be scored to a file.")
+        ("report",      po::value<std::string>(&report)->default_value(std::string())->implicit_value("adapt_report.pdf"),
+                        "If a report should be generated. Requires output_vf and output_shifts, and no geometry only mode")
+        // Adaptation methods
+        // Free positions
+        ("free",          po::bool_switch(&FREE_POS_FREE_ENERGY)->default_value(false),
+                          "If the positions and energies should move freely.")
+        ("rigid-e",       po::bool_switch(&FREE_POS_RIGID_ENERGY)->default_value(false),
+                          "If the positions should move freely and energies rigidly.")
+        ("rigid-e-beams", po::bool_switch(&FREE_POS_RIGID_BEAMS_ENERGY)->default_value(false),
+                          "If the positions should move freely and energies rigidly with independent fields.")
+        // Rigid positions
+        ("rigid-pos",         po::bool_switch(&RIGID_POS_FREE_ENERGY)->default_value(false),
+                              "If the positions should move rigidly and energies freely.")
+        ("rigid",             po::bool_switch(&RIGID_POS_RIGID_ENERGY)->default_value(false),
+                              "If the positions and energies should move rigidly.")
+        ("rigid-pos-e-beams", po::bool_switch(&RIGID_POS_RIGID_BEAMS_ENERGY)->default_value(false),
+                              "If the positions should move rigidly and energies rigidly with independent fields.")
+        // Rigid per field positions
+        ("rigid-pos-beams",   po::bool_switch(&RIGID_BEAMS_POS_FREE_ENERGY)->default_value(false),
+                              "If the positions should move rigidly with independent fields and energies freely.")
+        ("rigid-pos-beams-e", po::bool_switch(&RIGID_BEAMS_POS_RIGID_ENERGY)->default_value(false),
+                              "If the positions should move rigidly with independent fields and energies rigidly.")
+        ("rigid-beams",       po::bool_switch(&RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)->default_value(false),
+                              "If the positions and energies should move rigidly with independent fields.");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -61,12 +76,25 @@ void Parser::process_command_line(int argc, char** argv)
         po::notify(vm);
     
         // WARPING OPTIONS
-        if (rigid)
-            warp_opts = Warp_opts_t::RIGID_POS_RIGID_ENERGY;
-        else if (rigid_pos)
+        if(FREE_POS_RIGID_ENERGY)
+            warp_opts = Warp_opts_t::FREE_POS_RIGID_ENERGY;
+        else if(FREE_POS_RIGID_BEAMS_ENERGY)
+            warp_opts = Warp_opts_t::FREE_POS_RIGID_BEAMS_ENERGY;
+       else if(RIGID_POS_FREE_ENERGY)
             warp_opts = Warp_opts_t::RIGID_POS_FREE_ENERGY;
-        else if (rigid_pos_beams)
+        else if(RIGID_POS_RIGID_ENERGY)
+            warp_opts = Warp_opts_t::RIGID_POS_RIGID_ENERGY;
+        else if(RIGID_POS_RIGID_BEAMS_ENERGY)
+            warp_opts = Warp_opts_t::RIGID_POS_RIGID_BEAMS_ENERGY;
+        else if(RIGID_BEAMS_POS_FREE_ENERGY)
             warp_opts = Warp_opts_t::RIGID_BEAMS_POS_FREE_ENERGY;
+        else if(RIGID_BEAMS_POS_RIGID_ENERGY)
+            warp_opts = Warp_opts_t::RIGID_BEAMS_POS_RIGID_ENERGY;
+        else if(RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)
+            warp_opts = Warp_opts_t::RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY;
+        else
+            warp_opts = Warp_opts_t::FREE_POS_FREE_ENERGY;
+
 
         // REPORTING
         if ( !report.empty() ) {
@@ -112,10 +140,23 @@ void Parser::print_parameters()
         std::cout << "    - Out CBCT traces:  " << output_cbct_traces << '\n';
     if (!report.empty())
         std::cout << "    - Report:           " << report << '\n';
-    if (rigid)
-        std::cout << "    - Rigid shifts" << '\n';
-    if (rigid_pos)
-        std::cout << "    - Rigid position shifts" << '\n';
-    if (rigid_e)
-        std::cout << "    - Rigid energy shifts" << '\n';
+    // Warping options
+    if (FREE_POS_FREE_ENERGY)
+        std::cout << "    - Warping: Free position and energy" << '\n';
+    else if(FREE_POS_RIGID_ENERGY)
+        std::cout << "    - Warping: Free position and rigid energy" << '\n';
+    else if(FREE_POS_RIGID_BEAMS_ENERGY)
+        std::cout << "    - Warping: Free position and rigid fields energy" << '\n';
+    else if(RIGID_POS_FREE_ENERGY)
+        std::cout << "    - Warping: Rigid position and free energy" << '\n';
+    else if(RIGID_POS_RIGID_ENERGY)
+        std::cout << "    - Warping: Rigid position and energy" << '\n';
+    else if(RIGID_POS_RIGID_BEAMS_ENERGY)
+        std::cout << "    - Warping: Rigid position and rigid fields energy" << '\n';
+    else if(RIGID_BEAMS_POS_FREE_ENERGY)
+        std::cout << "    - Warping: Rigid fields position and free energy" << '\n';
+    else if(RIGID_BEAMS_POS_RIGID_ENERGY)
+        std::cout << "    - Warping: Rigid fields position and rigid energy" << '\n';
+    else if(RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)
+        std::cout << "    - Warping: Rigid fields position and energy" << '\n';
 }

@@ -25,15 +25,22 @@ public:
     std::string output_cbct_traces;
     bool if_per_layer;
 
-    Warp_opts_t warp_opts =  Warp_opts_t::FREE_POS_FREE_ENERGY;
+    Warp_opts_t warp_opts;
 
     void print_parameters();
 
 private:
-    bool rigid;
-    bool rigid_pos;
-    bool rigid_pos_beams;
-    bool rigid_e;
+    bool FREE_POS_FREE_ENERGY;
+    bool FREE_POS_RIGID_ENERGY;
+    bool FREE_POS_RIGID_BEAMS_ENERGY;
+
+    bool RIGID_POS_FREE_ENERGY;
+    bool RIGID_POS_RIGID_ENERGY;
+    bool RIGID_POS_RIGID_BEAMS_ENERGY;
+
+    bool RIGID_BEAMS_POS_FREE_ENERGY;
+    bool RIGID_BEAMS_POS_RIGID_ENERGY;
+    bool RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY;
 
     void process_command_line(int argc, char** argv);
     // bool check_both_or_none(po::variables_map vm, std::string arg1, std::string arg2);
