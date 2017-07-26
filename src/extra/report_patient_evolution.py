@@ -58,12 +58,12 @@ def get_indices_of_outliers(values):
     """
     p25 = np.percentile(values, 25)
     p75 = np.percentile(values, 75)
-     
-    indices_of_outliers = []
+    IQR = 1.5 * (p75 - p25)
+    indices_of_outliers = list()
     for ind, value in enumerate(values):
         if is_outlier(value, p25, p75):
             indices_of_outliers.append(ind)
-    return indices_of_outliers
+    return indices_of_outliers, IQR
 
 
 def add_ellipse(ax, x, y, width, height, colr):
@@ -86,10 +86,9 @@ def add_rectangle(ax, x, y, width, height, color, alpha):
     )
 
 
-def plot_quiver(ax, x, y, vx, vy, npoints, d, beamid, spotid, outliers):
+def plot_quiver(ax, x, y, vx, vy, npoints, colors, beamid, spotid, outliers):
     dummy = vx if vx.any() or vy.any() else np.full((npoints, 1), 0.00000001)
-    ax.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
-              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
+    ax.quiver(x, y, dummy, vy, color=colors, angles='xy', scale_units='xy', scale=1, pivot='tail', alpha=1)
     # Plot outliers
     width = 0.05*(x.max()-x.min())
     height = 0.05*(y.max()-y.min())
@@ -174,7 +173,10 @@ def analize_vf(vf_files, pp):
     cm = plt.cm.get_cmap('rainbow')
     for ifrac in range(nfracs):
         ax = fig.add_subplot(4, nfracs, ifrac+1)
-        this_nbins = int(np.ceil(nbins * (d[ifrac].max() - d[ifrac].min()) / (xrange[1] - xrange[0])))
+        if d[ifrac].max() == d[ifrac].min() or xrange[1] == xrange[0]:
+            this_nbins = nbins
+        else:
+            this_nbins = int(1+np.ceil(nbins * (d[ifrac].max() - d[ifrac].min()) / (xrange[1] - xrange[0])))
         bins_y, bins_x = np.histogram(d[ifrac], this_nbins)
         ymax_list.append(bins_y.max())
         hist_colors = [cm((i-color_range[0])/(color_range[1]-color_range[0])) for i in bins_x]
@@ -188,7 +190,7 @@ def analize_vf(vf_files, pp):
     fig.clf()
 
     fig.suptitle('Angular histograms')
-    nangles = 360/4
+    nangles = int(360/4)
     rmax_list = list()
     ax_list = list()
     for ifrac in range(nfracs):
@@ -217,20 +219,20 @@ def analize_vf(vf_files, pp):
     range_x = find_range(x, 5., vx)
     range_y = find_range(y, 5., vy)
     range_z = find_range(z, 5., vz)
-    color_range = [my_min(d), my_max(d)]
+    color_range = find_range(d, 0.)
     cm = plt.cm.get_cmap('rainbow')
     for ifrac in range(nfracs):
         # Detect outliers
-        outliers_x = get_indices_of_outliers(x[ifrac])
-        outliers_y = get_indices_of_outliers(y[ifrac])
-        outliers_z = get_indices_of_outliers(z[ifrac])
+        outliers_x, IQR_x = get_indices_of_outliers(x[ifrac])
+        outliers_y, IQR_y = get_indices_of_outliers(y[ifrac])
+        outliers_z, IQR_z = get_indices_of_outliers(z[ifrac])
         outliers = np.round(np.unique(np.concatenate((outliers_x, outliers_y, outliers_z)))).astype(int)
 
-        colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in d[ifrac]]
+        hist_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in d[ifrac]]
 
         ax = fig.add_subplot(3, nfracs, ifrac+1)
         plot_quiver(ax, x[ifrac], y[ifrac], vx[ifrac], vy[ifrac], npoints[ifrac],
-                    colors, beamid[ifrac], spotid[ifrac], outliers)
+                    hist_colors, beamid[ifrac], spotid[ifrac], outliers)
         ax.set_xlabel('pos x (mm)', fontsize=8)
         ax.set_ylabel('pos y (mm)', fontsize=8)
         ax.set_xlim(range_x)
@@ -238,7 +240,7 @@ def analize_vf(vf_files, pp):
 
         ax = fig.add_subplot(3, nfracs, (ifrac+1)+nfracs)
         plot_quiver(ax, y[ifrac], z[ifrac], vy[ifrac], vz[ifrac], npoints[ifrac],
-                    colors, beamid[ifrac], spotid[ifrac], outliers)
+                    hist_colors, beamid[ifrac], spotid[ifrac], outliers)
         ax.set_xlabel('pos y (mm)', fontsize=8)
         ax.set_ylabel('pos z (mm)', fontsize=8)
         ax.set_xlim(range_y)
@@ -246,7 +248,7 @@ def analize_vf(vf_files, pp):
 
         ax = fig.add_subplot(3, nfracs, (ifrac+1)+2*nfracs)
         plot_quiver(ax, z[ifrac], x[ifrac], vz[ifrac], vx[ifrac], npoints[ifrac],
-                    colors, beamid[ifrac], spotid[ifrac], outliers)
+                    hist_colors, beamid[ifrac], spotid[ifrac], outliers)
         ax.set_xlabel('pos z (mm)', fontsize=8)
         ax.set_ylabel('pos x (mm)', fontsize=8)
         ax.set_xlim(range_z)
@@ -392,6 +394,8 @@ def analize_tramp(shifts_files, tramp_files, pp):
 
         # FIGURE 1, PLOT 3 --------------------------------
         fig.suptitle('Beam: {}. Source plane positions.'.format(ibeam))
+        cmap = plt.cm.get_cmap('rainbow')
+        color_range = find_range(de, 0.)
         for ifrac in range(nfracs):
             ax = fig.add_subplot(3, nfracs, ifrac+1)
             for i in range(len(tramp_x)):
@@ -399,10 +403,10 @@ def analize_tramp(shifts_files, tramp_files, pp):
                     ax.arrow(0.1 * vx[ifrac][i] + tramp_x[i], 0.1 * vy[ifrac][i] + tramp_y[i],
                              0.8 * vx[ifrac][i], 0.8 * vy[ifrac][i],
                              fc='k', ec='k', alpha=0.25, zorder=0)
-            cmap = plt.cm.get_cmap('hsv')
-            scat_colors = np.array(cmap(layer_id / max(layer_id.max(), len(layer_id))))
+            scat_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in de[ifrac]]
+            # scat_colors = np.array(cmap(layer_id / max(layer_id.max(), len(layer_id))))
             ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.5, zorder=1,
-                       edgecolors=scat_colors - np.array([0, 0, 0, 0.75]), facecolors='')
+                       edgecolors='black', alpha=0.75, facecolors='')
             ax.scatter(x[ifrac], y[ifrac], s=10, linewidth=0.5, zorder=2, edgecolors='k',
                        facecolors=scat_colors - np.array([0, 0, 0, 0]))
             ax.set_xlabel('X (mm)', fontsize=7)
@@ -413,7 +417,7 @@ def analize_tramp(shifts_files, tramp_files, pp):
         # FIGURE 1, PLOT 4 --------------------------------
         fig.suptitle('Beam: {}. Slow direction layer shifts.'.format(ibeam))
         nbins = 50
-        color_range = [my_min(d), my_max(d)]
+        color_range = find_range(d, 0.)
         xrange = find_range(d)
         ymax_list = list()
         ax_list = list()
@@ -462,7 +466,7 @@ def analize_tramp(shifts_files, tramp_files, pp):
                                                                    tramp_w, energy_switch_time=False)
             total_ideal = time_ideal[-1]
             max_layers = np.floor((max_time - total_ideal)/default_energy_switch)
-            print('Maximum theoretical energy layers: {}'.format(max_layers))
+            # print('Maximum theoretical energy layers: {}'.format(max_layers))
 
             summary = summary.replace('Summary', 'Orig.')
             summary_adapted = summary_adapted.replace('Summary', 'Adapt.')
