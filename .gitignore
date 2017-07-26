@@ -8,7 +8,7 @@ test/range*
 test/report*
 test/vector*
 test/vf_*
-
+test
 \.Rhistory
 
 src/extra/\.idea/
