@@ -34,13 +34,13 @@ void Parser::process_command_line(int argc, char** argv)
         // Output files
         ("outdir",      po::value<std::string>(&out_dir)->required(),
                         "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
-        ("out_vf",      po::value<std::string>(&output_vf)->default_value(std::string()),
+        ("out_vf",      po::value<std::string>(&output_vf)->default_value(std::string())->implicit_value("vf.dat"),
                         "If the probed values should be written to a file.")
-        ("out_shifts",  po::value<std::string>(&output_shifts)->default_value(std::string()),
+        ("out_shifts",  po::value<std::string>(&output_shifts)->default_value(std::string())->implicit_value("shifts.dat"),
                         "If the pos-energy shifts should be written to a file.")
-        ("traces_ct",   po::value<std::string>(&output_ct_traces)->default_value(std::string()),
+        ("traces_ct",   po::value<std::string>(&output_ct_traces)->default_value(std::string())->implicit_value("ct_traces.mhd"),
                         "If the traces on the CT volume should be scored to a file.")
-        ("traces_cbct", po::value<std::string>(&output_cbct_traces)->default_value(std::string()),
+        ("traces_cbct", po::value<std::string>(&output_cbct_traces)->default_value(std::string())->implicit_value("cbct_traces.pdf"),
                         "If the traces on the CBCT volume should be scored to a file.")
         ("report",      po::value<std::string>(&report)->default_value(std::string())->implicit_value("adapt_report.pdf"),
                         "If a report should be generated. Requires output_vf and output_shifts, and no geometry only mode")
