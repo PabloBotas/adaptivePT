@@ -198,7 +198,7 @@ void Tramp_t::to_file(std::string f, std::string dir)
         Spot_t thisspot = spots.at(i);
         thisspot.x *= CM2MM;
         thisspot.y *= CM2MM;
-        os << std::fixed << std::setprecision(6) << thisspot << "\n";
+        os << std::fixed << std::setprecision(10) << thisspot << "\n";
     }
 }
 
