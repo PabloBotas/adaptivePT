@@ -260,6 +260,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax = fig.add_subplot(3, 2, 2)
         nbins = 25
         color_range = find_range(de, 0.)
+        if color_range[0] == color_range[1]:
+            color_range[0] -= 2
+            color_range[0] += 2
         xrange = find_range(de)
         cm = plt.cm.get_cmap('rainbow')
         bins_y, bins_x = np.histogram(de, nbins)
