@@ -286,7 +286,7 @@ void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
                 ss_per_space >> dummy >> dummy >> dummy;
                 ss_per_space >> z >> y >> x;
             }
-            vf.push_back(Vector3_t<double>(-x/10, -y/10, -z/10));
+            vf.push_back(Vector3_t<double>(x/10, -y/10, -z/10));
         }
     }
 }
