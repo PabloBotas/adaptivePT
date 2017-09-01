@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <limits>
+#include <typeinfo>
 
 Mha_reader_t::Mha_reader_t(std::string f) : file(f)
 {
