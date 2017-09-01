@@ -26,6 +26,10 @@ public:
     void print(unsigned int n0, unsigned int n1);
     void defaults();
     void read_file_header(std::string f);
+    std::vector<float> get_weights();
+    std::vector<float> get_energies();
+    std::vector<float> get_xpos();
+    std::vector<float> get_ypos();
 
     std::vector<Spot_t> spots;
     std::vector<double> energies;

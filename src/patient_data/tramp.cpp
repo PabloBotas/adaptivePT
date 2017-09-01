@@ -189,7 +189,7 @@ void Tramp_t::to_file(std::string f, std::string dir)
     os << "# beam_name "               << beam_name              << '\n';
     os << "# gantry "                  << gantry                 << '\n';
     os << "# couch_rotation "          << couch_rotation         << '\n';
-    os << "# gigaproton_total "        << gigaprotons            << '\n';
+    os << std::fixed << std::setprecision(10) << "# gigaproton_total " << gigaprotons << '\n';
     os << "# rows_total "              << nspots                 << '\n';
     os << "# E(MeV) X(mm) Y(mm) N(Gp)" << '\n';
 
@@ -265,6 +265,47 @@ std::vector<double> Tramp_t::getWEPLs()
         setWEPLs();
     return wepls;
 }
+
+std::vector<float> Tramp_t::get_weights()
+{
+    std::vector<float> weights(spots.size());
+    for (size_t i = 0; i < spots.size(); i++)
+    {
+        weights.at(i) = spots.at(i).w;
+    }
+    return weights;
+}
+
+std::vector<float> Tramp_t::get_energies()
+{
+    std::vector<float> temp(spots.size());
+    for (size_t i = 0; i < spots.size(); i++)
+    {
+        temp.at(i) = spots.at(i).e;
+    }
+    return temp;
+}
+
+std::vector<float> Tramp_t::get_ypos()
+{
+    std::vector<float> temp(spots.size());
+    for (size_t i = 0; i < spots.size(); i++)
+    {
+        temp.at(i) = spots.at(i).y;
+    }
+    return temp;
+}
+
+std::vector<float> Tramp_t::get_xpos()
+{
+    std::vector<float> temp(spots.size());
+    for (size_t i = 0; i < spots.size(); i++)
+    {
+        temp.at(i) = spots.at(i).x;
+    }
+    return temp;
+}
+
 
 double InterpTable(double *vector_X, double *vector_Y, double x, int const npoints)
 {
