@@ -1,6 +1,7 @@
 #include "volume.hpp"
-#include "volume_mha_reader.hpp"
 #include "volume_ctvolume_reader.hpp"
+#include "volume_dose_reader.hpp"
+#include "volume_mha_reader.hpp"
 #include "special_types.hpp"
 #include "utils.hpp"
 
@@ -96,6 +97,15 @@ void Volume_t::read_volume()
             #endif
             break;
         }
+        case Source_type::DOSE:
+        {
+            Dose_reader_t reader(file);
+
+            nElements = reader.nElements;
+            data.resize(nElements);
+            std::copy( reader.data.begin(), reader.data.end(), data.begin() );
+            break;
+        }
         case Source_type::MHA:
         {
             Mha_reader_t reader(file);
@@ -180,6 +190,16 @@ void Volume_t::ext_to_int_coordinates()
     // std::swap(imgCenter.x, imgCenter.z);
     // origin.x *= -1;
     // imgCenter.x *= -1;
+}
+
+void Volume_t::normalize(double ref)
+{
+    if (high_precision)
+        for (size_t i = 0; i < nElements; i++)
+            long_data.at(i) /= ref;
+    else
+        for (size_t i = 0; i < nElements; i++)
+            data.at(i) /= ref;
 }
 
 void Volume_t::output(std::string outfile)

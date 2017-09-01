@@ -13,6 +13,7 @@ public:
     enum Source_type
     {
         CTVOLUME,
+        DOSE,
         MHA
     };
 
@@ -26,6 +27,7 @@ public:
     void setDims(const CT_Dims_t& pat_ct, const bool interpolate = false);
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
     void setSpacing(double x, double y, double z);
+    void normalize(double ref);
     void output(std::string outfile);
     void output(std::string outfile, const CT_Dims_t& dims);
     void ext_to_int_coordinates();
