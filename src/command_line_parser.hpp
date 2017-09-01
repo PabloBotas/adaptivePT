@@ -14,17 +14,21 @@ public:
     Parser(int argc, char** argv);
     ~Parser();
 
+    // Common parameters
     std::string patient;
     std::string cbct_file;
     std::string vf_file;
+    std::string dose_file;
+    double dose_presc;
+    double spot_factor;
+    // Output files
     std::string out_dir;
     std::string output_shifts;
     std::string output_vf;
     std::string output_ct_traces;
     std::string report;
     std::string output_cbct_traces;
-    bool if_per_layer;
-
+    // Adaptation methods
     Warp_opts_t warp_opts;
 
     void print_parameters();

@@ -25,12 +25,18 @@ void Parser::process_command_line(int argc, char** argv)
         desc.add_options()
         ("help", "Produce this help message.")
         // Common parameters
-        ("patient", po::value<std::string>(&patient)->required(),
-                    "Topas MCAUTO_DICOM.txt file with the plan parameters.")
-        ("cbct",    po::value<std::string>(&cbct_file)->required(),
-                    "CBCT to adapt the plan to.")
-        ("vf",      po::value<std::string>(&vf_file)->required(),
-                    "Vector field file from CT to CBCT. B-Spline format is not supported.")
+        ("patient",     po::value<std::string>(&patient)->required(),
+                        "Topas MCAUTO_DICOM.txt file with the plan parameters.")
+        ("cbct",        po::value<std::string>(&cbct_file)->required(),
+                        "CBCT to adapt the plan to.")
+        ("vf",          po::value<std::string>(&vf_file)->required(),
+                        "Vector field file from CT to CBCT. B-Spline format is not supported.")
+        ("dose",        po::value<std::string>(&dose_file)->required(),
+                        "Dose of plan evaluated in CBCT.")
+        ("presc",       po::value<double>(&dose_presc)->required(),
+                        "Target dose prescription.")
+        ("spot_factor", po::value<double>(&spot_factor)->required(),
+                        "Spot factor used in simulation.")
         // Output files
         ("outdir",      po::value<std::string>(&out_dir)->required(),
                         "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
