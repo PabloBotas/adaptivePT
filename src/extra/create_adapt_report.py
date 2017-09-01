@@ -124,7 +124,7 @@ def analize_vf(vf_file, pp):
     ax.set_rmax(np.round(1.05*max(b)))
     ax.set_title('Angle z', fontsize=11)
 
-    # Derect outliers
+    # Detect outliers
     outliers_x = get_indices_of_outliers(x)
     outliers_y = get_indices_of_outliers(y)
     outliers_z = get_indices_of_outliers(z)
@@ -179,7 +179,7 @@ def analize_vf(vf_file, pp):
 
 
 def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
-    r = np.genfromtxt(shifts_file, skip_header=1, delimiter=' ',
+    r = np.genfromtxt(shifts_file, comments='#', delimiter=' ',
                       names=['e', 'x', 'y', 'z', 'd', 'beamid', 'spotid']).T
     all_de = np.array(r['e']/1e6)
     all_x = 10*np.array(r['x'])
@@ -248,7 +248,8 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.step(range(len(tramp_e)), tramp_e, color='black', alpha=0.9)
         ax.plot(np.sort(tramp_e+de)[::-1], linestyle='None', marker='o', color='black',
                 markersize=1, alpha=0.4, markeredgecolor='black', markeredgewidth=0.1)
-        ax.plot(tramp_e+de, linestyle='None', color='red', marker='o', markersize=1.75, markeredgewidth=0.25)
+        ax.plot(tramp_e+de, linestyle='None', color='red', marker='o', alpha=0.75,
+                markersize=1.75, markeredgewidth=0.25)
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Energy (MeV)', fontsize=7)
         ax.annotate('N. spots = ' + str(len(tramp_e)) + '\nOrig. layers  = ' +
@@ -282,11 +283,11 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
             if d[i] > 0.001:
                 ax.arrow(0.1 * vx[i] + tramp_x[i], 0.1 * vy[i] + tramp_y[i],
                          0.8 * vx[i], 0.8 * vy[i],
-                         fc='k', ec='k', alpha=0.25, zorder=0)
+                         fc='k', ec='k', alpha=0.15, zorder=0)
         scat_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in de]
-        ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.5, zorder=1,
-                   edgecolors='black', alpha=0.75, facecolors='')
-        ax.scatter(x, y, s=10, linewidth=0.5, zorder=2, edgecolors='k',
+        ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.25, zorder=1,
+                   edgecolors='black', alpha=0.5, facecolors='')
+        ax.scatter(x, y, s=10, linewidth=0.5, alpha=0.75, zorder=2, edgecolors='k',
                    facecolors=scat_colors)
         ax.set_xlabel('X (mm)', fontsize=7)
         ax.set_ylabel('Y (mm)', fontsize=7)
