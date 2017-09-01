@@ -11,8 +11,10 @@
 class Warper_t
 {
 public:
+    Warper_t();
     Warper_t(const std::string vf_file,
              const std::string output_vf);
+    void set(const std::string vf_file, const std::string output_vf);
     void apply_to (Array4<double>& endpoints,
                    Array4<double>& init_pos,
                    const CT_Dims_t& ct,
@@ -20,11 +22,16 @@ public:
                    const std::vector<BeamAngles_t>& angles,
                    const std::vector<short>& spots_per_field,
                    const Warp_opts_t opts);
+    Vector3_t<double> vf_ave;
+    Array3<double> vf_ave_planes;
     
 private:
     // Constructor helpers
     void set_vf_origins ();
     // Main functions
+    void apply_position_options (Warp_opts_t options, const std::vector<short>& spots_per_field);
+    void apply_rigid_positions ();
+    void apply_rigid_positions_per_beam (const std::vector<short>& spots_per_field);
     void probe (const Array4<double>& p, const CT_Dims_t& ct);
     void write_to_file (const Array4<double>& p,
                         const std::vector<short>& spots_per_field);
@@ -39,6 +46,7 @@ private:
     void flip_positions_X (Array4<double>& vec, const CT_Dims_t dims);
     void flip_direction_X (Array4<double>& vec);
     std::string to_location_str (const Vector3_t<double>& p, const bool last);
+    void set_average ();
     void set_probes (const Array4<double>& p);
 
     bool exp_file;
@@ -46,6 +54,7 @@ private:
     std::string output;
     Vector3_t<double> origins;
     Array3<double> vf;
+    Array3<double> vf_planes;
     Array3<double> probes;
 };
 

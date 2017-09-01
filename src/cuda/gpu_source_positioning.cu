@@ -136,7 +136,8 @@ __global__ void correct_offsets_kernel(const int num,
 
 __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
                                              Array4<double> dir,
-                                             const Patient_Parameters_t& pat)
+                                             const Patient_Parameters_t& pat,
+                                             const Vector3_t<double>& isocenter_shift)
 {
     std::vector<double2> temp(pat.angles.size());
     for (size_t i = 0; i < pat.nbeams; i++)
@@ -145,6 +146,7 @@ __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
         temp[i].y = pat.angles.at(i).couch;
     }
     double3 offset = make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z);
+    offset -= make_double3(isocenter_shift.x, isocenter_shift.y, isocenter_shift.z);
 
     for (size_t i = 0; i < dir.size(); i++)
     {

@@ -30,27 +30,30 @@
 // TODO Verify that VF probing is correctly done. How?
 // Done Verify CBCT offsets are correctly updated
 
-void deal_with_ct(const Patient_Parameters_t& pat,
-                  const Parser& parser,
-                  Array4<double>& ct_vf_endpoints,
-                  Array4<double>& ct_vf_init_pat_pos);
+void adjust_pos_in_ct(const Patient_Parameters_t& pat,
+                      const Parser& parser,
+                      Array4<double>& ct_vf_endpoints,
+                      Array4<double>& ct_vf_init_pat_pos,
+                      Warper_t& warper);
 
-void deal_with_cbct(Patient_Parameters_t& pat,
-                    const Parser& parser,
-                    const Array4<double>& ct_vf_endpoints,
-                    const Array4<double>& ct_vf_init_pat_pos,
-                    std::vector<double>& energy_shift);
+void adjust_energy_in_cbct(Patient_Parameters_t& pat,
+                           const Parser& parser,
+                           const Array4<double>& ct_vf_endpoints,
+                           const Array4<double>& ct_vf_init_pat_pos,
+                           std::vector<double>& energy_shift);
 
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
                     const std::vector<double>& energy_shift,
                     Array4<double>& pat_pos,
-                    Array4<double>& pat_pos2);
+                    Array4<double>& pat_pos2,
+                    const Warper_t& warper);
 
 void export_shifts(const std::vector<double>& e,
                    const Array4<double>& p,
                    const std::string& file,
-                   const short& beamid);
+                   const short& beamid,
+                   const Vector3_t<double>& isocenter_shift);
 
 void generate_report(const std::string& report,
                      const std::string& output_vf,
@@ -74,12 +77,13 @@ int main(int argc, char** argv)
 
     Array4<double> ct_endpoints(pat.total_spots);
     Array4<double> ct_init_pat_pos(pat.total_spots);
-    deal_with_ct (pat, parser, ct_endpoints, ct_init_pat_pos);
+    Warper_t warper(parser.vf_file, parser.output_vf);
+    adjust_pos_in_ct (pat, parser, ct_endpoints, ct_init_pat_pos, warper);
     std::vector<double> energy_shift(pat.total_spots);
 
-    deal_with_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
+    adjust_energy_in_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
-    export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints);
+    export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints, warper);
 
     if (!parser.report.empty())
         generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
@@ -90,10 +94,11 @@ int main(int argc, char** argv)
     exit(EXIT_SUCCESS);
 }
 
-void deal_with_ct(const Patient_Parameters_t& pat,
-                  const Parser& parser,
-                  Array4<double>& ct_endpoints,
-                  Array4<double>& ct_init_pat_pos)
+void adjust_pos_in_ct(const Patient_Parameters_t& pat,
+                      const Parser& parser,
+                      Array4<double>& ct_endpoints,
+                      Array4<double>& ct_init_pat_pos,
+                      Warper_t& warper)
 {
     // Read CT and launch rays
     Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
@@ -108,9 +113,8 @@ void deal_with_ct(const Patient_Parameters_t& pat,
                            parser.output_ct_traces);
 
     // Warp endpoints in CT ---------------------------
-    Warper_t warp(parser.vf_file, parser.output_vf);
-    warp.apply_to(ct_endpoints, ct_init_pat_pos, pat.ct, pat.treatment_planes,
-                  pat.angles, pat.spots_per_field, parser.warp_opts);
+    warper.apply_to(ct_endpoints, ct_init_pat_pos, pat.ct, pat.treatment_planes,
+                    pat.angles, pat.spots_per_field, parser.warp_opts);
 
     // Print results
     std::cout << "Warped patient positions and wepl:" << std::endl;
@@ -119,11 +123,11 @@ void deal_with_ct(const Patient_Parameters_t& pat,
         ct_init_pat_pos.at(i).print();
 }
 
-void deal_with_cbct(Patient_Parameters_t& pat,
-                    const Parser& parser,
-                    const Array4<double>& ct_vf_endpoints,
-                    const Array4<double>& ct_vf_init_pat_pos,
-                    std::vector<double>& energy_shift)
+void adjust_energy_in_cbct(Patient_Parameters_t& pat,
+                           const Parser& parser,
+                           const Array4<double>& ct_vf_endpoints,
+                           const Array4<double>& ct_vf_init_pat_pos,
+                           std::vector<double>& energy_shift)
 {
     // Get endpoints in CBCT --------------------
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
@@ -145,14 +149,15 @@ void deal_with_cbct(Patient_Parameters_t& pat,
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
                     const std::vector<double>& energy_shift,
-                    Array4<double>& pat_pos,
-                    Array4<double>& pat_pos2)
+                    Array4<double>& ct_initpos,
+                    Array4<double>& ct_endpoints,
+                    const Warper_t& warper)
 {
     // Go to virtual source pos
-    treatment_plane_to_virtual_src (pat_pos, pat_pos2, pat);
+    treatment_plane_to_virtual_src (ct_initpos, ct_endpoints, pat, warper.vf_ave);
 
     // From virtual source to iso
-    virtual_src_to_iso_pos(pat_pos, pat.virtualSAD);
+    virtual_src_to_iso_pos(ct_initpos, pat.virtualSAD);
     
     // Assign to new spotmap
     for (size_t i = 0; i < pat.nbeams; i++)
@@ -163,26 +168,28 @@ void export_adapted(Patient_Parameters_t& pat,
         std::vector<double>::const_iterator l = energy_shift.begin() + pat.accu_spots_per_field.at(i);
         std::vector<double> subset_energies(f, l);
 
-        Array4<double>::const_iterator ff = pat_pos.begin();
+        Array4<double>::const_iterator ff = ct_initpos.begin();
         if (i != 0)
             ff += pat.accu_spots_per_field.at(i-1);
-        Array4<double>::const_iterator ll = pat_pos.begin() + pat.accu_spots_per_field.at(i);
+        Array4<double>::const_iterator ll = ct_initpos.begin() + pat.accu_spots_per_field.at(i);
         Array4<double> subset_pat_pos(ff, ll);
 
-        Tramp_t tramp(pat.tramp_files.at(i));
-
         if (!pars.output_shifts.empty())
-            export_shifts(subset_energies, subset_pat_pos, pars.output_shifts, i);
+            export_shifts(subset_energies, subset_pat_pos, pars.output_shifts, i, warper.vf_ave);
+
+        Tramp_t tramp(pat.tramp_files.at(i));
         tramp.shift_energies(subset_energies);
         tramp.set_pos(subset_pat_pos);
         tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
     }
+
 }
 
 void export_shifts(const std::vector<double>& e,
                    const Array4<double>& p,
                    const std::string& file,
-                   const short& beamid)
+                   const short& beamid,
+                   const Vector3_t<double>& isocenter_shift)
 {
     std::ofstream ofs;
     if (beamid != 0)
@@ -195,7 +202,9 @@ void export_shifts(const std::vector<double>& e,
     if (beamid == 0)
     {
         std::cout << "Writting adaptation shifts to " << file << std::endl;
-        ofs << "e x y z d beamid spotid\n";
+        std::cout << "Isocenter shift: " << isocenter_shift.x << ", " << isocenter_shift.y << ", " << isocenter_shift.z << std::endl;
+        ofs << "# Isocenter shift: " << isocenter_shift.x << " " << isocenter_shift.y << " " << isocenter_shift.z << '\n';
+        ofs << "# e x y z d beamid spotid\n";
     }
 
     for (size_t spotid = 0; spotid < e.size(); spotid++)

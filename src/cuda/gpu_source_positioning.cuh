@@ -14,7 +14,8 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
                                                       const double3 ct_offsets);
 __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
                                              Array4<double> pos2,
-                                             const Patient_Parameters_t& pat);
+                                             const Patient_Parameters_t& pat,
+                                             const Vector3_t<double>& isocenter_shift);
 __global__ void treatment_plane_to_virtual_src_kernel(const int num,
                                                       const int nbeams,
                                                       double4* pos_,
