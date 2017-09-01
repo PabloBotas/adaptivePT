@@ -53,4 +53,4 @@ add_definitions(-DBIN_PATH=${abs_bin_path} )
 # endif()
 
 add_subdirectory(src)
-add_subdirectory(src/extra)
+# add_subdirectory(src/extra)
