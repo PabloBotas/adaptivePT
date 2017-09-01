@@ -42,6 +42,11 @@ void adjust_energy_in_cbct(Patient_Parameters_t& pat,
                            const Array4<double>& ct_vf_init_pat_pos,
                            std::vector<double>& energy_shift);
 
+void correct_cold_spots(Patient_Parameters_t& pat,
+                        const Parser& parser,
+                        const Array4<double>& ct_vf_endpoints,
+                        const Array4<double>& ct_vf_init_pat_pos);
+
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
                     const std::vector<double>& energy_shift,
@@ -83,6 +88,8 @@ int main(int argc, char** argv)
 
     adjust_energy_in_cbct (pat, parser, ct_endpoints, ct_init_pat_pos, energy_shift);
 
+    correct_cold_spots (pat, parser.dose_presc, parser.dose_file, ct_endpoints, ct_init_pat_pos);
+
     export_adapted (pat, parser, energy_shift, ct_init_pat_pos, ct_endpoints, warper);
 
     if (!parser.report.empty())
@@ -92,6 +99,28 @@ int main(int argc, char** argv)
     stop_device(start);
 
     exit(EXIT_SUCCESS);
+}
+
+void correct_cold_spots(Patient_Parameters_t& pat,
+                        const Parser& parser,
+                        const Array4<double>& ct_endpoints,
+                        const Array4<double>& ct_init_pat_pos,
+                        std::vector<double>& weights)
+{
+    // Get endpoints in CBCT --------------------
+    Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
+    cbct.ext_to_int_coordinates();
+    pat.update_geometry_with_external(cbct);
+
+    // Read dose (internal coords) --------------
+    Volume_t dose(parser.dose_file, Volume_t::Source_type::DOSE);
+    double const MeVg2Gy = 1.6022e-10;
+    double const RBE     = 1.1;
+    double const flux    = 1.0e9 / parser.spot_factor;
+    double scale = RBE*flux*MeVg2Gy;
+    dose.normalize(parser.dose_presc/scale);
+
+    gpu_fill_cold_spots (pat, cbct, dose, ct_endpoints, ct_init_pat_pos, weights);
 }
 
 void adjust_pos_in_ct(const Patient_Parameters_t& pat,

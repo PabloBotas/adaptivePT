@@ -75,6 +75,18 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     gpu_raytrace (pat, endpoints, output_file, off_endpoints);
 }
 
+void gpu_fill_cold_spots (const Patient_Parameters_t &pat,
+                          const Volume_t &ct,
+                          const Array4<double>& orig_endpoints,
+                          const Array4<double>& init_pos,
+                          std::vector<double>& weights,
+                          std::string output_file)
+{
+    // Set geometry in GPU
+    gpu_ct_to_device::sendGeometries(ct);
+
+}
+
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    Array4<double>& endpoints,
                    std::string output_file,
