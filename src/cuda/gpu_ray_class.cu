@@ -4,6 +4,7 @@
 #include "gpu_physics.cuh"
 #include "helper_math.h"
 
+// CONSTRUCTORS --------------------------------------------------------------
 __device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
 {
     pos.x  = x_.x;
@@ -18,6 +19,8 @@ __device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
     beam_id = ix_.x;
     spot_id = ix_.y;
 }
+
+// BASIC GETTERS -------------------------------------------------------------
 
 __device__ double3 Ray::get_position ()
 {
@@ -49,6 +52,48 @@ __device__ short Ray::get_spot_id ()
     return spot_id;
 }
 
+// GETTERS -------------------------------------------------------------------
+
+__device__ bool Ray::is_alive()
+{
+    _alive = energy > 0;
+    return _alive;
+}
+
+// BASIC SETTERS -------------------------------------------------------------
+
+__device__ void Ray::set_energy(double m)
+{
+    energy = m;
+}
+
+__device__ void Ray::set_wepl(double m)
+{
+    wepl = m;
+}
+
+__device__ void Ray::set_position (double4 d)
+{
+    set_position(make_double3(d));
+}
+
+__device__ void Ray::set_position (double3 d)
+{
+    pos = d;
+}
+
+__device__ void Ray::set_direction (double4 d)
+{
+    set_direction(make_double3(d));
+}
+
+__device__ void Ray::set_direction (double3 d)
+{
+    dir = normalize(d);
+}
+
+// SETTERS -------------------------------------------------------------------
+
 __device__ void Ray::set_direction_to_point (double4 p)
 {
     double3 p2 = make_double3(p);
@@ -62,6 +107,8 @@ __device__ void Ray::set_direction_to_point (double3 p)
     dir /= norm;
 }
 
+// ACTIONS -------------------------------------------------------------------
+
 __device__ void Ray::move (const double& step,
                            const double& step_water,
                            const double& de)
@@ -71,22 +118,6 @@ __device__ void Ray::move (const double& step,
     wepl += step_water;
     if (energy <= stp_w_min_e)
         _alive = false;
-}
-
-__device__ void Ray::set_energy(double m)
-{
-    energy = m;
-}
-
-__device__ void Ray::set_wepl(double m)
-{
-    wepl = m;
-}
-
-__device__ bool Ray::is_alive()
-{
-    _alive = energy > 0;
-    return _alive;
 }
 
 __device__ void Ray::kill()

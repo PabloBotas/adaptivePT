@@ -3,6 +3,7 @@
 #include "gpu_ct_to_device.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_errorcheck.cuh"
+#include "gpu_influence_kernel.cuh"
 #include "gpu_physics_data_to_device.cuh"
 #include "gpu_run.cuh"
 #include "gpu_source_positioning.cuh"
@@ -19,9 +20,10 @@
 void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             const Volume_t& ct,
                             Array4<double>& endpoints,
-                            Array4<double>& init_pos,
-                            Array4<double>& init_pat_pos,
-                            std::string output_file)
+                            Array4<double>& initpos_xbuffer_dbg,
+                            Array4<double>& initpos,
+                            std::string output_file,
+                            Array4<double>& influence)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -35,17 +37,19 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     virtual_src_to_treatment_plane (xbuffer.size(), pat.angles,
                                     make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
 
-    gpuErrchk( cudaMemcpyFromSymbol(&(init_pat_pos[0].x), xdata, sizeof(double4)*xbuffer.size(), 0, cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpyFromSymbol(&(initpos[0].x), xdata, sizeof(double4)*xbuffer.size(), 0, cudaMemcpyDeviceToHost) );
     // Copy buffer with initial positions and wepl
     for (size_t i = 0; i < xbuffer.size(); i++)
     {
-        init_pos.at(i).x = xbuffer[i].x;
-        init_pos.at(i).y = xbuffer[i].y;
-        init_pos.at(i).z = xbuffer[i].z;
-        init_pos.at(i).w = xbuffer[i].w; // wepl
+        initpos_xbuffer_dbg.at(i).x = xbuffer[i].x;
+        initpos_xbuffer_dbg.at(i).y = xbuffer[i].y;
+        initpos_xbuffer_dbg.at(i).z = xbuffer[i].z;
+        initpos_xbuffer_dbg.at(i).w = xbuffer[i].w; // wepl
     }
 
     gpu_raytrace (pat, endpoints, output_file);
+    gpu_calculate_influence (pat, endpoints, influence);
+    freeCTMemory();
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
@@ -73,18 +77,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                        make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
     gpu_raytrace (pat, endpoints, output_file, off_endpoints);
-}
-
-void gpu_fill_cold_spots (const Patient_Parameters_t &pat,
-                          const Volume_t &ct,
-                          const Array4<double>& orig_endpoints,
-                          const Array4<double>& init_pos,
-                          std::vector<double>& weights,
-                          std::string output_file)
-{
-    // Set geometry in GPU
-    gpu_ct_to_device::sendGeometries(ct);
-
+    freeCTMemory();
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
@@ -117,6 +110,34 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     retrieve_scorer<double, double4>(&(endpoints[0].x), pos_scorer, pat.total_spots);
     // Free memory
     gpuErrchk( cudaFree(pos_scorer) );
+}
+
+void gpu_calculate_influence (const Patient_Parameters_t& pat,
+                              const Array4<double>& endpoints,
+                              Array4<double>& influence)
+{
+    // Copy data to device
+    double4 *dev_endpoints = NULL;
+    array_to_device<double4, Vector4_t<double> >(dev_endpoints, endpoints.data(), endpoints.size());
+    short* dev_spf = NULL;
+    array_to_device<short>(dev_spf, pat.spots_per_field.data(), pat.spots_per_field.size());
+    // Create scorer array
+    double4* dev_influence = NULL;
+    allocate_scorer<double4>(dev_influence, pat.total_spots*pat.total_spots);
+    
+    // Launch influence kernel
+    std::cout << std::endl;
+    std::cout << "Calculating influence matrix ..." << std::endl;
+
+    int nblocks = 1 + (pat.total_spots*pat.total_spots-1)/NTHREAD_PER_BLOCK_INFLUENCE;
+    get_influence_kernel<<<nblocks, NTHREAD_PER_BLOCK_INFLUENCE>>>(pat.total_spots,
+                                                              dev_spf, dev_endpoints,
+                                                              dev_influence);
+    check_kernel_execution(__FILE__, __LINE__);
+    retrieve_scorer<double, double4>(&(influence[0].x), dev_influence, pat.total_spots*pat.total_spots);
+    // Free memory
+    gpuErrchk( cudaFree(dev_spf) );
+    gpuErrchk( cudaFree(dev_influence) );
     freeCTMemory();
 }
 

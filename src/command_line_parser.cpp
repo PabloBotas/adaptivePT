@@ -31,11 +31,11 @@ void Parser::process_command_line(int argc, char** argv)
                         "CBCT to adapt the plan to.")
         ("vf",          po::value<std::string>(&vf_file)->required(),
                         "Vector field file from CT to CBCT. B-Spline format is not supported.")
-        ("dose",        po::value<std::string>(&dose_file)->required(),
+        ("dose",        po::value<std::string>(&dose_file),
                         "Dose of plan evaluated in CBCT.")
-        ("presc",       po::value<double>(&dose_presc)->required(),
+        ("presc",       po::value<double>(&dose_presc),
                         "Target dose prescription.")
-        ("spot_factor", po::value<double>(&spot_factor)->required(),
+        ("spot_factor", po::value<double>(&spot_factor),
                         "Spot factor used in simulation.")
         // Output files
         ("outdir",      po::value<std::string>(&out_dir)->required(),
