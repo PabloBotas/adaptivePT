@@ -11,6 +11,7 @@
 #include <fstream>
 #include <array>
 #include <regex>
+#include <cerrno>
 
 void utils::check_fs(const std::ofstream& fs, std::string f, std::string msg)
 {
@@ -67,27 +68,29 @@ std::string utils::replace_substring(std::string const& str,
 
 std::string utils::run_command(const std::string cmd)
 {
-    std::cout << "Running command:";
+    std::cout << std::endl << "Running command";
 
+    std::string cmd_trimmed;
+    const std::string* to_output = &cmd;
     if(cmd.size() > 160)
     {
-        std::cout << " (trimmed)" << std::endl;
-        std::cout.write(&cmd[0], 75);
-        std::cout << " ...//... ";
-        size_t size = cmd.size();
-        std::cout.write(&cmd[size-75], 75) << std::endl;
+        std::cout << " (trimmed)";
+        cmd_trimmed = cmd.substr(0, 75) + " ...//... " + cmd.substr(cmd.size()-75, 75);
+        to_output = &cmd_trimmed;
     }
-    else
-    {
-        std::cout << std::endl << cmd << std::endl;
-    }
+
+    std::cout << ": " << std::endl << *to_output << std::endl;
+
 
     std::array<char, 512> buffer;
     std::string stdout;
     std::shared_ptr<std::FILE> pipe(popen(cmd.c_str(), "r"), pclose);
     if (!pipe)
     {
-        std::cerr << "ERROR! popen() failed" << std::endl;
+        std::cerr << std::endl << "Could not launch command:" << std::endl;
+        std::cerr << *to_output << std::endl;
+        std::cerr << "Error number: " << errno << std::endl;
+        std::perror("popen() failed");
         exit(EXIT_FAILURE);
     }
     while (!feof(pipe.get())) {
