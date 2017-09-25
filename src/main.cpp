@@ -103,12 +103,12 @@ int main(int argc, char** argv)
                    endpoints, initpos,       // outputs
                    vf_endpoints, vf_initpos, // outputs
                    influence0);              // outputs
-    // // 2: Get endpoints in CBCT and compare with CT to correct energy
-    // compute_in_cbct (pat, parser,                  // inputs
-    //                  vf_endpoints, vf_initpos,     // inputs
-    //                  energy_shift, cbct_endpoints, // outputs
-    //                  influence1);                  // outputs
-    // // 3: Correct weights
+    // 2: Get endpoints in CBCT and compare with CT to correct energy
+    compute_in_cbct (pat, parser,                  // inputs
+                     vf_endpoints, vf_initpos,     // inputs
+                     energy_shift, cbct_endpoints, // outputs
+                     influence0);                  // outputs
+    // 3: Correct weights
     // // process_influences (influence0, influence1);
 
     // // Export results and report
@@ -148,19 +148,19 @@ void compute_in_ct(const Patient_Parameters_t& pat,
     gpu_raytrace_original (pat, ct, endpoints, initpos_xbuffer_dbg, initpos,
                            parser.output_ct_traces, influence);
 
-    // // Warp endpoints in CT ---------------------------
-    // vf_endpoints.resize(pat.total_spots);
-    // vf_initpos.resize(pat.total_spots);
-    // std::copy (endpoints.begin(), endpoints.end(), vf_endpoints.begin());
-    // std::copy (initpos.begin(), initpos.end(), vf_initpos.begin());
-    // warper.apply_to(vf_endpoints, vf_initpos, pat.ct, pat.treatment_planes,
-    //                 pat.angles, pat.spots_per_field, parser.warp_opts);
+    // Warp endpoints in CT ---------------------------
+    vf_endpoints.resize(pat.total_spots);
+    vf_initpos.resize(pat.total_spots);
+    std::copy (endpoints.begin(), endpoints.end(), vf_endpoints.begin());
+    std::copy (initpos.begin(), initpos.end(), vf_initpos.begin());
+    warper.apply_to(vf_endpoints, vf_initpos, pat.ct, pat.treatment_planes,
+                    pat.angles, pat.spots_per_field, parser.warp_opts);
 
-    // // Print results
-    // std::cout << "Warped patient positions and wepl:" << std::endl;
-    // size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
-    // for (size_t i = 0; i < iters; i++)
-    //     initpos.at(i).print();
+    // Print results
+    std::cout << "Warped patient positions and wepl:" << std::endl;
+    size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
+    for (size_t i = 0; i < iters; i++)
+        initpos.at(i).print();
 }
 
 
@@ -180,7 +180,8 @@ void compute_in_cbct(Patient_Parameters_t& pat,
     cbct_endpoints.resize(pat.total_spots);
     gpu_raytrace_warped (pat, cbct, vf_endpoints,
                          vf_initpos, cbct_endpoints,
-                         parser.output_cbct_traces);
+                         parser.output_cbct_traces,
+                         influence);
 
     // Copy to output vector
     for (size_t i = 0; i < cbct_endpoints.size(); i++)

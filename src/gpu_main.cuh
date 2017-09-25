@@ -33,11 +33,14 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Array4<double>& orig_endpoints,
                           const Array4<double>& init_pos,
                           Array4<double>& endpoints,
-                          std::string output_file);
+                          std::string output_file,
+                          Array4<double>& influence);
 
-void gpu_calculate_influence (const Patient_Parameters_t& pat,
+void gpu_calculate_influence (const short& pat,
                               const Array4<double>& endpoints,
-                              Array4<double>& influence);
+                              Array4<double>& influence,
+                              std::vector<float>& spot_weights,
+                              std::vector<float>& inf_volume);
 
 void printDevProp (const int device, bool verbose);
 

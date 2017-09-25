@@ -10,6 +10,7 @@
 #include "gpu_utils.cuh"
 #include "initialize_rays.cuh"
 #include "patient_parameters.hpp"
+#include "tramp.hpp"
 #include "utils.hpp"
 #include "volume.hpp"
 
@@ -48,7 +49,32 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     }
 
     gpu_raytrace (pat, endpoints, output_file);
-    gpu_calculate_influence (pat, endpoints, influence);
+
+    // INFLUENCE
+    std::vector<float> inf_cube(ct.nElements);
+    std::vector<float> spot_weights;
+    for (size_t i = 0; i < pat.tramp_files.size(); ++i)
+    {
+        Tramp_t tramp(pat.tramp_files.at(i), pat.machine);
+        std::vector<float> w = tramp.get_weights();
+        spot_weights.reserve(spot_weights.size() + tramp.nspots);
+        spot_weights.insert(spot_weights.end(), w.begin(), w.end());
+    }
+    gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
+#ifdef __INFLUENCE_MATRICES__
+    std::cout << "Writting influence_matrix_CT.dat ..." << std::endl;
+    std::ofstream fout("influence_matrix_CT.dat", std::ios::out | std::ios::binary);
+    for (size_t i = 0; i < influence.size(); ++i)
+        fout.write((char*)&influence[i].w, sizeof(double));
+
+    std::cout << "Writting influence_cube_CT.dat ..." << std::endl;
+    std::ofstream fout2("influence_cube_CT.dat", std::ios::out | std::ios::binary);
+    fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
+#endif
+    // for (size_t i = 0; i < 10; i++)
+    // {
+    //     std::cerr << influence[i].x << " " << influence[i].y << " " << influence[i].z << " " << influence[i].w << "\n";
+    // }
     freeCTMemory();
 }
 
@@ -57,7 +83,8 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Array4<double>& orig_endpoints,
                           const Array4<double>& init_pos,
                           Array4<double>& endpoints,
-                          std::string output_file)
+                          std::string output_file,
+                          Array4<double>& influence)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -77,6 +104,31 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                        make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
     gpu_raytrace (pat, endpoints, output_file, off_endpoints);
+
+    std::vector<float> inf_cube(ct.nElements);
+    std::vector<float> spot_weights;
+    for (size_t i = 0; i < pat.tramp_files.size(); ++i)
+    {
+        Tramp_t tramp(pat.tramp_files.at(i), pat.machine);
+        std::vector<float> w = tramp.get_weights();
+        spot_weights.reserve(spot_weights.size() + tramp.nspots);
+        spot_weights.insert(spot_weights.end(), w.begin(), w.end());
+    }
+    gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
+#ifdef __INFLUENCE_MATRICES__
+    std::cout << "Writting influence_CBCT.dat ..." << std::endl;
+    std::ofstream fout("influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
+    for (size_t i = 0; i < influence.size(); ++i)
+        fout.write((char*)&influence[i].w, sizeof(double));
+    
+    std::cout << "Writting influence_cube_CBCT.dat ..." << std::endl;
+    std::ofstream fout2("influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
+    fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
+#endif
+    // for (size_t i = 0; i < influence.size(); i+=6421)
+    // {
+    //     std::cout << influence[i].x << " " << influence[i].y << " " << influence[i].z << " " << influence[i].w << "\n";
+    // }
     freeCTMemory();
 }
 
@@ -112,32 +164,43 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     gpuErrchk( cudaFree(pos_scorer) );
 }
 
-void gpu_calculate_influence (const Patient_Parameters_t& pat,
+void gpu_calculate_influence (const short& nspots,
                               const Array4<double>& endpoints,
-                              Array4<double>& influence)
+                              Array4<double>& influence,
+                              std::vector<float>& spot_weights,
+                              std::vector<float>& inf_volume)
 {
     // Copy data to device
     double4 *dev_endpoints = NULL;
     array_to_device<double4, Vector4_t<double> >(dev_endpoints, endpoints.data(), endpoints.size());
-    short* dev_spf = NULL;
-    array_to_device<short>(dev_spf, pat.spots_per_field.data(), pat.spots_per_field.size());
     // Create scorer array
-    double4* dev_influence = NULL;
-    allocate_scorer<double4>(dev_influence, pat.total_spots*pat.total_spots);
+    double4 *dev_influence = NULL;
+    allocate_scorer<double4>(dev_influence, nspots*nspots);
+    // Create scorer array
+    float *dev_inf_volume = NULL;
+    allocate_scorer<float>(dev_inf_volume, inf_volume.size());
+    // Create weights array
+    float *dev_spot_weights = NULL;
+    array_to_device<float>(dev_spot_weights, &spot_weights[0], spot_weights.size());
     
     // Launch influence kernel
-    std::cout << std::endl;
     std::cout << "Calculating influence matrix ..." << std::endl;
 
-    int nblocks = 1 + (pat.total_spots*pat.total_spots-1)/NTHREAD_PER_BLOCK_INFLUENCE;
-    get_influence_kernel<<<nblocks, NTHREAD_PER_BLOCK_INFLUENCE>>>(pat.total_spots,
-                                                              dev_spf, dev_endpoints,
-                                                              dev_influence);
+    int nblocks = 1 + (nspots*nspots-1)/NTHREAD_PER_BLOCK_INFLUENCE;
+    get_influence_kernel<<<nblocks, NTHREAD_PER_BLOCK_INFLUENCE>>>(nspots,
+                                                                   dev_endpoints,
+                                                                   dev_influence,
+                                                                   dev_spot_weights,
+                                                                   dev_inf_volume);
     check_kernel_execution(__FILE__, __LINE__);
-    retrieve_scorer<double, double4>(&(influence[0].x), dev_influence, pat.total_spots*pat.total_spots);
+    retrieve_scorer<double, double4>(&(influence[0].x), dev_influence, nspots*nspots);
+    retrieve_scorer<float, float>(&(inf_volume[0]), dev_inf_volume, inf_volume.size());
+    retrieve_scorer<float, float>(&(spot_weights[0]), dev_spot_weights, spot_weights.size());
     // Free memory
-    gpuErrchk( cudaFree(dev_spf) );
+    gpuErrchk( cudaFree(dev_endpoints) );
     gpuErrchk( cudaFree(dev_influence) );
+    gpuErrchk( cudaFree(dev_inf_volume) );
+    gpuErrchk( cudaFree(dev_spot_weights) );
     freeCTMemory();
 }
 
@@ -155,6 +218,7 @@ void initialize_device(cudaEvent_t& start)
 
     gpu_physics_to_device::sendWaterRestrictedSPower();
     gpu_physics_to_device::sendMassStoppingPowerRatio();
+    gpu_physics_to_device::sendBraggPeakFits();
 }
 
 void stop_device(cudaEvent_t& start)

@@ -34,6 +34,7 @@ void array_to_device(T*& dest, const S* src, size_t n)
     gpuErrchk( cudaMemcpy(dest, src, sizeof(T)*n, cudaMemcpyHostToDevice) );
 }
 template void array_to_device<short>(short*&, const short*, size_t);
+template void array_to_device<float>(float*&, const float*, size_t);
 template void array_to_device<double2>(double2*&, const double2*, size_t);
 template void array_to_device<double3>(double3*&, const double3*, size_t);
 template void array_to_device<double4>(double4*&, const double4*, size_t);

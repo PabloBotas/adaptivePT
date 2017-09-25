@@ -68,4 +68,17 @@ extern __device__ __constant__ float stp_ratio_delta_e;
 extern cudaArray* stp_ratio_array;
 extern texture<float, 2, cudaReadModeElementType> stp_ratio_tex;
 
+// Bragg peaks LUTs
+extern __device__ __constant__ float bp_energy_min;
+extern __device__ __constant__ float bp_energy_delta;
+extern __device__ __constant__ float bp_depth_delta;
+extern cudaArray* bp_b_array;
+extern texture<float, 2, cudaReadModeElementType> bp_b_tex;
+extern cudaArray* bp_n_array;
+extern texture<float, 2, cudaReadModeElementType> bp_n_tex;
+extern cudaArray* bp_s_array;
+extern texture<float, 2, cudaReadModeElementType> bp_s_tex;
+extern cudaArray* bp_w_array;
+extern texture<float, 2, cudaReadModeElementType> bp_w_tex;
+
 #endif

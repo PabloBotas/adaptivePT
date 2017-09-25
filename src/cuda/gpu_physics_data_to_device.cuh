@@ -8,6 +8,7 @@ namespace gpu_physics_to_device
     void sendMassStoppingPowerRatio();
     void sendMassStoppingPowerRatio(std::vector<int>& HU_starting_values);
     void sendWaterRestrictedSPower();
+    void sendBraggPeakFits();
 }
 void freePhysicsMemory();
 
