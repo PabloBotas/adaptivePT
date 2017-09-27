@@ -111,10 +111,10 @@ int main(int argc, char** argv)
     // 3: Correct weights
     // // process_influences (influence0, influence1);
 
-    // // Export results and report
-    // export_adapted (pat, parser, energy_shift, initpos, endpoints, warper);
-    // if (!parser.report.empty())
-    //     generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
+    // Export results and report
+    export_adapted (pat, parser, energy_shift, initpos, endpoints, warper);
+    if (!parser.report.empty())
+        generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
 
     // Stop device
     stop_device(start);

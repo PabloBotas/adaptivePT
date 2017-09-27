@@ -63,12 +63,12 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_matrix_CT.dat ..." << std::endl;
-    std::ofstream fout("influence_matrix_CT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout("adaptation_x10_y20_z30/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(double));
 
     std::cout << "Writting influence_cube_CT.dat ..." << std::endl;
-    std::ofstream fout2("influence_cube_CT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout2("adaptation_x10_y20_z30/influence_cube_CT.dat", std::ios::out | std::ios::binary);
     fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
 #endif
     // for (size_t i = 0; i < 10; i++)
@@ -97,11 +97,11 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                     xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer, false);
     correct_offsets (xbuffer.size(), 
-        make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-        make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+                     make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                     make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
     Array4<double> off_endpoints = offset_endpoints (orig_endpoints, 
-                                       make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                                       make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+                                                     make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                                                     make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
     gpu_raytrace (pat, endpoints, output_file, off_endpoints);
 
@@ -117,12 +117,12 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_CBCT.dat ..." << std::endl;
-    std::ofstream fout("influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout("adaptation_x10_y20_z30/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(double));
     
     std::cout << "Writting influence_cube_CBCT.dat ..." << std::endl;
-    std::ofstream fout2("influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout2("adaptation_x10_y20_z30/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
     fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
 #endif
     // for (size_t i = 0; i < influence.size(); i+=6421)
