@@ -13,3 +13,6 @@ test
 
 src/extra/\.idea/
 src/extra/__pycache__/
+\.cproject
+
+\.settings/
