@@ -7,6 +7,8 @@ import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from scipy import ndimage
+from scipy import stats
+import pandas as pd
 
 mpl.rcParams['axes.labelpad'] = 2
 mpl.rcParams['axes.formatter.useoffset'] = False
@@ -171,6 +173,7 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
             mc_data = mc_data.sum(axis=0)
             ray_data = ray_data.any(axis=0)
 
+            ## Fit to get the angle and rotate the beam for analysis
             y, x = np.where(ray_data > 0.)
             x = x[::-1]
             y = y[::-1]
@@ -180,10 +183,12 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
             temp = mc_data
             mc_data = ndimage.rotate(mc_data, 180./np.pi*angle, reshape=False, order=0)
             ray_data = ndimage.rotate(ray_data, 180./np.pi*angle, reshape=False, order=0)
+            y, x = np.where(ray_data > 0.)
+            pol = np.poly1d(np.polyfit(x, y, 1))
             if plot_profiles:
                 ax = fig.add_subplot(rows_per_figure, 3, 3*(idose % rows_per_figure) + 1)
                 ax.imshow(temp, aspect='auto', cmap='YlOrRd_r', origin='lower', alpha=0.5)
-                ax.imshow(ray_data, aspect='auto', interpolation='none', cmap='binary', origin='lower', alpha=0.5)
+                ax.plot(x, pol(x), color='black')
                 ax.imshow(mc_data, aspect='auto', cmap='YlOrRd_r', origin='lower', alpha=0.5)
                 ax.annotate("Spot {}".format(idose), xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - 5, 0),
                             xycoords=ax.yaxis.label, textcoords='offset points',
@@ -250,79 +255,112 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
             ))
 
 
+def my_linfit(x, y):
+    z = np.polyfit(x,y,1)
+    p = np.poly1d(z)
+    p_y = z[0]*x + z[1]
+    y_err = y - p_y
+    # p_x = np.arange(np.min(x),np.max(x)+1,1)
+    p_x = np.unique(x)
+    # now calculate confidence intervals for new test x-series
+    mean_x = np.mean(x) # mean of x
+    n = len(x)          # number of samples in original fit
+    t = stats.t.ppf(1-0.025, len(x))  # appropriate t value (two tailed 95%)
+    s_err = np.sum(np.power(y_err,2))  # sum of the squares of the residuals
+    confs = t * np.sqrt((s_err/(n-2))*(1.0/n + (np.power((p_x-mean_x),2)/
+                ((np.sum(np.power(x,2)))-n*(np.power(mean_x,2))))))
+    # now predict y based on test x-values
+    p_y = z[0]*p_x+z[1]
+    # get lower and upper confidence limits based on predicted y and confidence intervals
+    lower = p_y - abs(confs)
+    upper = p_y + abs(confs)
+    return p, upper, lower
+
+
 def analyze_ranges(infile, outfile):
+    plt.style.use('ggplot')
+    colors = ['#d9544d', '#3778bf', '#7bb274']
+    plt.locator_params(nbins=10)
+    df = pd.read_csv(infile, sep=" ", header=None)
+    df.columns = ['energy', 'factor', 'ray', 'max',
+                  'r90', 'r80', 'r70', 'r50', 'dev_max',
+                  'dev_r90', 'dev_r80', 'dev_r70', 'dev_r50']
+    df['energy_round'] = df.apply(lambda row: int(10*row.energy+0.5)/10, axis=1)
+    
+    fig, ax = plt.subplots(nrows=2, ncols=2)
+    ## PLOT boxplots
+    boxprops = dict(linewidth=0.6)
+    whiskerprops = dict(linestyle='-', linewidth=0.5)
+    medianprops = dict(linewidth=0.6)
+    meanprops_1 = dict(markersize=3)
+    meanprops_2 = dict(markersize=5)
+    capprops = dict(linewidth=0.6)
+    flierprops = dict(marker='o', markersize=1, markerfacecolor='black')
+    box_kwargs = dict(return_type='dict', flierprops=flierprops, medianprops=medianprops,
+                      boxprops=boxprops, whiskerprops=whiskerprops, patch_artist=True,
+                      capprops=capprops, showmeans=True)
+    positions = np.unique(df['energy'])
+    bp0 = df.boxplot(['dev_r90'], by=['energy_round'], ax=ax[0,0], widths=1.5, positions=positions, meanprops=meanprops_1, **box_kwargs)   
+    bp1 = df.boxplot(['dev_r80'], by=['energy_round'], ax=ax[0,1], widths=1.5, positions=positions, meanprops=meanprops_1, **box_kwargs)
+    bp2 = df.boxplot(['dev_r70'], by=['energy_round'], ax=ax[1,0], widths=1.5, positions=positions, meanprops=meanprops_1, **box_kwargs)
+    bp3 = df.boxplot(['dev_r90','dev_r80','dev_r70'], ax=ax[1,1], meanprops=meanprops_2, **box_kwargs)
 
-    ranges = dict()
-    ranges['factor'] = list()
-    ranges['ray'] = list()
-    ranges['max'] = list()
-    ranges['r90'] = list()
-    ranges['r80'] = list()
-    ranges['r70'] = list()
-    ranges['r50'] = list()
-    energies = list()
-    dev_max = list()
-    dev_r90 = list()
-    dev_r80 = list()
-    dev_r70 = list()
-    dev_r50 = list()
-    with open(infile, 'r') as file:
-        for line in file:
-            e, f, rr, rm, r90, r80, r70, r50, dm, d90, d80, d70, d50 = line.split()
-            energies.append(float(e))
-            ranges['factor'].append(float(f))
-            ranges['ray'].append(float(rr))
-            ranges['max'].append(float(rm))
-            ranges['r90'].append(float(r90))
-            ranges['r80'].append(float(r80))
-            ranges['r70'].append(float(r70))
-            ranges['r50'].append(float(r50))
-            dev_max.append(float(dm))
-            dev_r90.append(float(d90))
-            dev_r80.append(float(d80))
-            dev_r70.append(float(d70))
-            dev_r50.append(float(d50))
+    ## Set colors (f***ing pandas boxprops do not work)
+    [item.set_color('black') for item in bp3['boxes']]
+    [item.set_facecolor(colors[i]) for i,item in enumerate(bp3['boxes'])]
+    [item.set_color('black') for item in bp3['whiskers']]
+    [item.set_color('black') for item in bp3['medians']]
+    [item.set_markerfacecolor(colors[i-1]) for i,item in enumerate(bp3['means'])]
+    for i, bp in enumerate([bp0, bp1, bp2]):
+        [item.set_color('black') for item in bp[list(bp.keys())[0]]['boxes']]
+        [item.set_facecolor(colors[i]) for item in bp[list(bp.keys())[0]]['boxes']]
+        [item.set_color('black') for item in bp[list(bp.keys())[0]]['whiskers']]
+        [item.set_color('black') for item in bp[list(bp.keys())[0]]['medians']]
+        [item.set_markerfacecolor(colors[i-1]) for item in bp[list(bp.keys())[0]]['means']]
 
-    ranges['factor'] = np.array(ranges['factor'])
-    ranges['ray'] = np.array(ranges['ray'])
-    ranges['max'] = np.array(ranges['max'])
-    ranges['r90'] = np.array(ranges['r90'])
-    ranges['r80'] = np.array(ranges['r80'])
-    ranges['r70'] = np.array(ranges['r70'])
-    ranges['r50'] = np.array(ranges['r50'])
+    ## PLOT TREND LINES AND CI
+    for i,(var,axid) in enumerate(zip(['dev_r90', 'dev_r80', 'dev_r70'], [(0,0),(0,1),(1,0)])):
+        fit, upper, lower = my_linfit(df['energy'].values, df[var].values)
+        ax[axid].plot(df['energy'].values, fit(df['energy'].values), color=colors[i], alpha=0.9)
+        ax[axid].fill_between(np.unique(df['energy'].values), lower, upper, color=colors[i], alpha=0.4)
+        ax[axid].annotate('{}'.format(fit),
+                          xy=(0, 0), xytext=(0.5, 0.95),
+                          xycoords='axes fraction', textcoords='axes fraction',
+                          size='small', ha='center', va='center')
+    ## PLOT AVERAGES AND SIGMAS
+    anno_kwargs = dict(xy=(0, 0),
+                       xycoords='axes fraction', textcoords='axes fraction',
+                       size='small', ha='center', va='center')
+    ax[(1,1)].annotate(r'${:.2f} \pm {:.2f}$'.format(df['dev_r90'].mean(), df['dev_r90'].std()), xytext=(0.165, 0.95), **anno_kwargs)
+    ax[(1,1)].annotate(r'${:.2f} \pm {:.2f}$'.format(df['dev_r80'].mean(), df['dev_r80'].std()), xytext=(0.500, 0.95), **anno_kwargs)
+    ax[(1,1)].annotate(r'${:.2f} \pm {:.2f}$'.format(df['dev_r70'].mean(), df['dev_r70'].std()), xytext=(0.825, 0.95), **anno_kwargs)
 
-    fig = plt.figure()
-    fig.suptitle("Range analysis")
-    ax = fig.add_subplot(1, 1, 1)
-    # ax.plot(energies, dev_max, marker='o', color='black', linestyle='None', label='Max')
-    ax.plot(energies, dev_r90, marker='o', color='blue',  linestyle='None', label='R90')
-    ax.plot(energies, dev_r80, marker='o', color='red',   linestyle='None', label='R80')
-    ax.plot(energies, dev_r70, marker='o', color='green', linestyle='None', label='R70')
-    # ax.plot(energies, dev_r50, marker='o', color='gray',  linestyle='None', label='R50')
-    ax.legend()
+    fig.suptitle("")
+    fig.tight_layout()
+    
+    titles = ['R90', 'R80', 'R70', 'Comparison']
+    for i,pair in enumerate([(0,0),(0,1),(1,0),(1,1)]):
+        ax[pair].xaxis.label.set_fontsize(10)
+        ax[pair].yaxis.label.set_fontsize(10)
+        ax[pair].set(title=titles[i], xlabel='Energy (MeV)', ylabel='Deviation (%)')
+        ax[pair].title.set_fontsize(10)
+        rotation = 0 if pair == (1,1) else 90
+        ax[pair].set_xticklabels(ax[pair].get_xticklabels(), rotation=rotation, size=7)
+        ax[pair].set_yticklabels(ax[pair].get_yticklabels(), size=7)
 
+    ## FIND AND ADD OUTLIERS INFORMATION
     j = 0
-    for i in np.arange(len(dev_r80)):
-        if abs(dev_r80[i]) > 2:
-            ax.annotate('{:0.2f} : Beam {} - Spot {}'.format(
-                            dev_r80[i], int(i/(len(dev_r80)/2)), int(i % (len(dev_r80)/2))
-                        ),
-                        xy=(0, 0), xytext=(1.08, 1-j*0.05),
-                        xycoords='axes fraction', textcoords='axes fraction',
-                        size='small', ha='center', va='center')
+    for i in df.index:
+        if abs(df['dev_r80'][i]) > 2:
+            ax[0,1].annotate('{:0.2f} : Beam {} - Spot {}'.format(
+                    df['dev_r80'][i], int(i/(len(df.index)/2)), int(i % (len(df.index)/2))
+                ),
+                xy=(0, 0), xytext=(1.24, 1-j*0.05),
+                xycoords='axes fraction', textcoords='axes fraction',
+                size='small', ha='center', va='center')
             j += 1
 
-    # pol_max = np.poly1d(np.polyfit(energies, dev_max, 1))
-    pol_r90 = np.poly1d(np.polyfit(energies, dev_r90, 1))
-    pol_r80 = np.poly1d(np.polyfit(energies, dev_r80, 1))
-    pol_r70 = np.poly1d(np.polyfit(energies, dev_r70, 1))
-    # pol_r50 = np.poly1d(np.polyfit(energies, dev_r50, 1))
-    # ax.plot(energies, pol_max(energies), color='black')
-    ax.plot(energies, pol_r90(energies), color='blue')
-    ax.plot(energies, pol_r80(energies), color='red')
-    ax.plot(energies, pol_r70(energies), color='green')
-    # ax.plot(energies, pol_r50(energies), color='gray')
-
+    ## SAVE TO FILE
     pp = PdfPages("{}.pdf".format(outfile))
     pp.savefig(fig, bbox_inches='tight')
     pp.close()
@@ -337,7 +375,7 @@ def main(argv):
     parser.add_argument('--tramps', nargs='+', help='Tramp files')
     parser.add_argument('--nspots', help='Number of spots to analyze per tramp file', default=20, type=int)
     parser.add_argument('--info', nargs='+', help='Topas files with the angles and dimensions')
-    parser.add_argument('--input', help='Input data for analysis')
+    parser.add_argument('--input', help='Processed input data for analysis')
     parser.add_argument('--outdir', help='Output directory', default='./')
     parser.add_argument('--outfiles', help='Output files basename', required=True)
 
