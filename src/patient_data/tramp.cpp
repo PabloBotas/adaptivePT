@@ -172,8 +172,10 @@ void Tramp_t::print(unsigned int n0, unsigned int n1)
 
 void Tramp_t::to_file(std::string f, std::string dir)
 {
-    if(!dir.empty())
-    {
+    if (f.find("_modified") == std::string::npos) {
+        f += "_modified";
+    }
+    if(!dir.empty()) {
         mkdir(dir.c_str(), 0774);
         f = f.substr(f.find_last_of("/"));
         f = dir + "/" + f;
