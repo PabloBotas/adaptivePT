@@ -33,16 +33,16 @@
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,
                    Warper_t& warper,
-                   Array4<double>& ct_endpoints,
-                   Array4<double>& ct_initpos,
-                   Array4<double>& ct_vf_endpoints,
-                   Array4<double>& ct_vf_initpos,
+                   Array4<double>& endpoints,
+                   Array4<double>& initpos,
+                   Array4<double>& warped_endpoints,
+                   Array4<double>& warped_initpos,
                    Array4<double>& influence0);
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
-                     const Array4<double>& ct_vf_endpoints,
-                     const Array4<double>& ct_vf_initpos,
+                     const Array4<double>& ct_warped_endpoints,
+                     const Array4<double>& ct_warped_initpos,
                      std::vector<double>& energy_shift,
                      Array4<double>& cbct_endpoints,
                      Array4<double>& influence1);
@@ -86,8 +86,8 @@ int main(int argc, char** argv)
     // Data containers and warper --------------------------------------------
     Array4<double> endpoints(pat.total_spots);
     Array4<double> initpos(pat.total_spots);
-    Array4<double> vf_endpoints(pat.total_spots);
-    Array4<double> vf_initpos(pat.total_spots);
+    Array4<double> warped_endpoints(pat.total_spots);
+    Array4<double> warped_initpos(pat.total_spots);
     Array4<double> cbct_endpoints(pat.total_spots);
     Array4<double> influence0(pat.total_spots*pat.total_spots);
     Array4<double> influence1(pat.total_spots*pat.total_spots);
@@ -98,21 +98,25 @@ int main(int argc, char** argv)
 
     // Adaptive steps --------------------------------------------------------
     // 1: Get endpoints in CT
-    compute_in_ct (pat, parser,              // inputs
-                   warper,                   // outputs
-                   endpoints, initpos,       // outputs
-                   vf_endpoints, vf_initpos, // outputs
-                   influence0);              // outputs
-    // 2: Get endpoints in CBCT and compare with CT to correct energy
-    compute_in_cbct (pat, parser,                  // inputs
-                     vf_endpoints, vf_initpos,     // inputs
-                     energy_shift, cbct_endpoints, // outputs
-                     influence0);                  // outputs
+    compute_in_ct (pat, parser,                       // inputs
+                   warper,                            // outputs
+                   endpoints, initpos,                // outputs
+                   warped_endpoints, warped_initpos,  // outputs
+                   influence0);                       // outputs
+
+    if (!parser.skip_cbct)
+    {
+        // 2: Get endpoints in CBCT and compare with CT to correct energy
+        compute_in_cbct (pat, parser,                      // inputs
+                         warped_endpoints, warped_initpos, // inputs
+                         energy_shift, cbct_endpoints,     // outputs
+                         influence1);                      // outputs
+    }
     // 3: Correct weights
     // // process_influences (influence0, influence1);
 
     // Export results and report
-    export_adapted (pat, parser, energy_shift, initpos, endpoints, warper);
+    export_adapted (pat, parser, energy_shift, warped_initpos, warped_endpoints, warper);
     if (!parser.report.empty())
         generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
 
@@ -128,13 +132,13 @@ int main(int argc, char** argv)
 // }
 
 void compute_in_ct(const Patient_Parameters_t& pat,
-                      const Parser& parser,
-                      Warper_t& warper,
-                      Array4<double>& endpoints,
-                      Array4<double>& initpos,
-                      Array4<double>& vf_endpoints,
-                      Array4<double>& vf_initpos,
-                      Array4<double>& influence)
+                   const Parser& parser,
+                   Warper_t& warper,
+                   Array4<double>& endpoints,
+                   Array4<double>& initpos,
+                   Array4<double>& warped_endpoints,
+                   Array4<double>& warped_initpos,
+                   Array4<double>& influence)
 {
     // Read CT and launch rays
     Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
@@ -146,28 +150,30 @@ void compute_in_ct(const Patient_Parameters_t& pat,
     initpos.resize(pat.total_spots);
     Array4<double> initpos_xbuffer_dbg(pat.total_spots);
     gpu_raytrace_original (pat, ct, endpoints, initpos_xbuffer_dbg, initpos,
-                           parser.output_ct_traces, influence);
+                           parser, influence);
 
     // Warp endpoints in CT ---------------------------
-    vf_endpoints.resize(pat.total_spots);
-    vf_initpos.resize(pat.total_spots);
-    std::copy (endpoints.begin(), endpoints.end(), vf_endpoints.begin());
-    std::copy (initpos.begin(), initpos.end(), vf_initpos.begin());
-    warper.apply_to(vf_endpoints, vf_initpos, pat.ct, pat.treatment_planes,
+    warped_endpoints.resize(pat.total_spots);
+    warped_initpos.resize(pat.total_spots);
+    std::copy (endpoints.begin(), endpoints.end(), warped_endpoints.begin());
+    std::copy (initpos.begin(), initpos.end(), warped_initpos.begin());
+    warper.apply_to(warped_endpoints, warped_initpos, pat.ct, pat.treatment_planes,
                     pat.angles, pat.spots_per_field, parser.warp_opts);
 
     // Print results
-    std::cout << "Warped patient positions and wepl:" << std::endl;
+    std::cout << "Warped patient positions and wepl (example):" << std::endl;
     size_t iters = pat.total_spots < 5 ? pat.total_spots : 5;
-    for (size_t i = 0; i < iters; i++)
-        initpos.at(i).print();
+    for (size_t i = 0; i < iters; i++) {
+        initpos.at(i).print_as_3D(" -> ");
+        warped_initpos.at(i).print_as_3D();
+    }
 }
 
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
-                     const Array4<double>& vf_endpoints,
-                     const Array4<double>& vf_initpos,
+                     const Array4<double>& warped_endpoints,
+                     const Array4<double>& warped_initpos,
                      std::vector<double>& energy_shift,
                      Array4<double>& cbct_endpoints,
                      Array4<double>& influence)
@@ -178,10 +184,9 @@ void compute_in_cbct(Patient_Parameters_t& pat,
     pat.update_geometry_with_external(cbct);
 
     cbct_endpoints.resize(pat.total_spots);
-    gpu_raytrace_warped (pat, cbct, vf_endpoints,
-                         vf_initpos, cbct_endpoints,
-                         parser.output_cbct_traces,
-                         influence);
+    gpu_raytrace_warped (pat, cbct, warped_endpoints,
+                         warped_initpos, cbct_endpoints,
+                         parser, influence);
 
     // Copy to output vector
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
@@ -193,15 +198,15 @@ void compute_in_cbct(Patient_Parameters_t& pat,
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
                     const std::vector<double>& energy_shift,
-                    Array4<double>& ct_initpos,
-                    Array4<double>& ct_endpoints,
+                    Array4<double>& warped_initpos,
+                    Array4<double>& warped_endpoints,
                     const Warper_t& warper)
 {
     // Go to virtual source pos
-    treatment_plane_to_virtual_src (ct_initpos, ct_endpoints, pat, warper.vf_ave);
+    treatment_plane_to_virtual_src (warped_initpos, warped_endpoints, pat, warper.vf_ave);
 
     // From virtual source to iso
-    virtual_src_to_iso_pos(ct_initpos, pat.virtualSAD);
+    virtual_src_to_iso_pos(warped_initpos, pat.virtualSAD);
     
     // Assign to new spotmap
     for (size_t i = 0; i < pat.nbeams; i++)
@@ -212,10 +217,10 @@ void export_adapted(Patient_Parameters_t& pat,
         std::vector<double>::const_iterator l = energy_shift.begin() + pat.accu_spots_per_field.at(i);
         std::vector<double> subset_energies(f, l);
 
-        Array4<double>::const_iterator ff = ct_initpos.begin();
+        Array4<double>::const_iterator ff = warped_initpos.begin();
         if (i != 0)
             ff += pat.accu_spots_per_field.at(i-1);
-        Array4<double>::const_iterator ll = ct_initpos.begin() + pat.accu_spots_per_field.at(i);
+        Array4<double>::const_iterator ll = warped_initpos.begin() + pat.accu_spots_per_field.at(i);
         Array4<double> subset_pat_pos(ff, ll);
 
         if (!pars.output_shifts.empty())
@@ -246,8 +251,11 @@ void export_shifts(const std::vector<double>& e,
     if (beamid == 0)
     {
         std::cout << "Writting adaptation shifts to " << file << std::endl;
-        std::cout << "Isocenter shift: " << isocenter_shift.x << ", " << isocenter_shift.y << ", " << isocenter_shift.z << std::endl;
-        ofs << "# Isocenter shift: " << isocenter_shift.x << " " << isocenter_shift.y << " " << isocenter_shift.z << '\n';
+        std::string txt = "Isocenter shift: " + std::to_string(isocenter_shift.x) +
+                          ", " + std::to_string(isocenter_shift.y) +
+                          ", " + std::to_string(isocenter_shift.z) + " cm";
+        std::cout << txt << std::endl;
+        ofs << "# " << txt << '\n';
         ofs << "# e x y z d beamid spotid\n";
     }
 
