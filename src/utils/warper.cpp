@@ -151,14 +151,14 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
                                  const std::vector<short>& spots_per_field,
                                  const std::vector<BeamAngles_t>& angles)
 {
-    /*        a2     P  The initial position (b) has to be shifted taking into account the source position (O).
-     * O ---a--|-->--|  The angle theta describes the triangle OPd. Once this is obtained, the point X? can be
-     *    \`   | u   |  determined. The initial data is a, b, c, d and the vector describing the plane.
-     *     \ ` |b    |
-     *      \  `     |  r_xy is the unitary vector going from x to y
-     *       \ | `   |
-     *        \|   ` |
-     *         o     | c
+    /*        a2     P  The initial position (b) has to be shifted taking into
+     * O ---a--|-->--|  account the source position (O).
+     *    \`   | u   |  The angle theta describes the triangle OPd. Once this is
+     *     \ ` |b    |  obtained, the point X can be determined. The initial data
+     *      \  `     |  is a, b, c, d and the vector describing the plane.
+     *       \ | `   |  r_xy is the unitary vector going from x to y.
+     *        \|   `.|
+     *         o    c|
      *       X? \    |
      *           \   |  This part is not necessarily coplanar with the top part
      *            \  |
@@ -213,6 +213,7 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
         //     std::cout << "c:  " << c.x << " " << c.y << " " << c.z << std::endl;
         //     std::cout << "d:  " << d.x << " " << d.y << " " << d.z << std::endl;
         //     // std::cout << "u:  " << u.x << " " << u.y << " " << u.z << std::endl;
+        //     std::cout << "planes: " << vf_planes.at(ibeam).x << " " << vf_planes.at(ibeam).y << " " << vf_planes.at(ibeam).z << std::endl;
         //     std::cout << "vf: " << vf_ave_planes.at(ibeam).x << " " << vf_ave_planes.at(ibeam).y << " " << vf_ave_planes.at(ibeam).z << std::endl;
         //     std::cout << "Ox: " << Ox.x << " " << Ox.y << " " << Ox.z << std::endl;
         //     std::cout << "Oy: " << Oy.x << " " << Oy.y << " " << Oy.z << std::endl;
@@ -236,20 +237,19 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
     vf_ave_planes.resize(spots_per_field.size());
     for (size_t i = 0, ibeam = 0; i < vf.size(); i++)
     {
-        vf_planes.at(i) = vf.at(i);
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
-        double inner = vf_planes.at(i).x*pln.dir.at(ibeam).x +
-                       vf_planes.at(i).y*pln.dir.at(ibeam).y +
-                       vf_planes.at(i).z*pln.dir.at(ibeam).z;
+        double inner = vf.at(i).x*pln.dir.at(ibeam).x +
+                       vf.at(i).y*pln.dir.at(ibeam).y +
+                       vf.at(i).z*pln.dir.at(ibeam).z;
         double mod_squared = pln.dir.at(ibeam).x*pln.dir.at(ibeam).x +
                              pln.dir.at(ibeam).y*pln.dir.at(ibeam).y +
                              pln.dir.at(ibeam).z*pln.dir.at(ibeam).z;
         double norm = inner/mod_squared;
 
-        vf_planes.at(i).x -= norm*pln.dir.at(ibeam).x;
-        vf_planes.at(i).y -= norm*pln.dir.at(ibeam).y;
-        vf_planes.at(i).z -= norm*pln.dir.at(ibeam).z;
+        vf_planes.at(i).x = vf.at(i).x - norm*pln.dir.at(ibeam).x;
+        vf_planes.at(i).y = vf.at(i).y - norm*pln.dir.at(ibeam).y;
+        vf_planes.at(i).z = vf.at(i).z - norm*pln.dir.at(ibeam).z;
 
         vf_ave_planes.at(ibeam) += vf_planes.at(i)/spots_per_field.at(ibeam);
     }
