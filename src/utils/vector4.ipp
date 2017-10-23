@@ -67,12 +67,20 @@ Vector4_t<T>::Vector4_t(const Vector3_t<T> &obj)
 }
 
 template<class T>
-void Vector4_t<T>::print() const
+void Vector4_t<T>::print(std::string sep) const
 {
-    std::cout << x << "\t";
-    std::cout << y << "\t";
-    std::cout << z << "\t";
-    std::cout << w << std::endl;
+    std::cout << x << "  ";
+    std::cout << y << "  ";
+    std::cout << z << "  ";
+    std::cout << w << sep;
+}
+
+template<class T>
+void Vector4_t<T>::print_as_3D(std::string sep) const
+{
+    std::cout << x << "  ";
+    std::cout << y << "  ";
+    std::cout << z << sep;
 }
 
 template<class T>

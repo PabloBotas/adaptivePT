@@ -4,6 +4,7 @@
 #include "vector2.hpp"
 #include "vector3.hpp"
 #include <vector>
+#include <string>
 
 template <class T> class Vector2_t;
 template <class T> class Vector3_t;
@@ -19,7 +20,8 @@ public:
     Vector4_t(const Vector4_t<T> &obj);
     Vector4_t(const Vector2_t<T> &obj);
     Vector4_t(const Vector3_t<T> &obj);
-    void print() const;
+    void print(std::string sep = "\n") const;
+    void print_as_3D(std::string sep = "\n") const;
     double length() const;
     double length2() const;
     double dot(const Vector4_t<T>& a) const;

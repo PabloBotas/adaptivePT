@@ -60,11 +60,11 @@ Vector3_t<T>::Vector3_t(const Vector4_t<T> &obj)
 }
 
 template<class T>
-void Vector3_t<T>::print() const
+void Vector3_t<T>::print(std::string sep) const
 {
-    std::cout << x << "\t";
-    std::cout << y << "\t";
-    std::cout << z << std::endl;
+    std::cout << x << "  ";
+    std::cout << y << "  ";
+    std::cout << z << sep;
 }
 
 template<class T>

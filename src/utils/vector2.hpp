@@ -19,7 +19,7 @@ public:
     Vector2_t(const Vector2_t<T> &obj);
     Vector2_t(const Vector3_t<T> &obj);
     Vector2_t(const Vector4_t<T> &obj);
-    void print();
+    void print(std::string sep = "\n") const;
 
     T x;
     T y;

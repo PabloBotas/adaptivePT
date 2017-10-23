@@ -19,7 +19,7 @@ public:
     Vector3_t(const Vector3_t<T> &obj);
     Vector3_t(const Vector2_t<T> &obj);
     Vector3_t(const Vector4_t<T> &obj);
-    void print() const;
+    void print(std::string sep = "\n") const;
     double length() const;
     double length2() const;
     double dot(const Vector3_t<T>& a) const;

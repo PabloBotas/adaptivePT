@@ -54,10 +54,10 @@ Vector2_t<T>::Vector2_t(const Vector4_t<T> &obj)
 }
 
 template<class T>
-void Vector2_t<T>::print()
+void Vector2_t<T>::print(std::string sep) const
 {
-        std::cout << x << "\t";
-        std::cout << y << std::endl;
+        std::cout << x << "  ";
+        std::cout << y << sep;
 }
 
 
