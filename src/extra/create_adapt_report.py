@@ -106,7 +106,7 @@ def analize_vf(vf_file, pp):
     cm = plt.cm.get_cmap('rainbow')
     hist_colors = [cm(((i-bins_x.min())/(bins_x.max()-bins_x.min()))) for i in bins_x]
     ax.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1]-bins_x[0], alpha=0.75)
-    ax.set_xlabel('Vector size (mm)', fontsize=8)
+    ax.set_xlabel('Vector size (cm)', fontsize=8)
 
     ax = fig.add_subplot(2, 4, 2, projection='polar')
     b, _, _ = ax.hist(ang_x, nangles, histtype='step', alpha=1, color='r', fill=True, facecolor='r')
@@ -134,8 +134,8 @@ def analize_vf(vf_file, pp):
     dummy = vx if vx.any() or vy.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
-    ax.set_xlabel('pos x (mm)', fontsize=8)
-    ax.set_ylabel('pos y (mm)', fontsize=8)
+    ax.set_xlabel('pos x (cm)', fontsize=8)
+    ax.set_ylabel('pos y (cm)', fontsize=8)
     # Detect outliers
     width = 0.05*(x.max()-x.min())
     height = 0.05*(y.max()-y.min())
@@ -149,8 +149,8 @@ def analize_vf(vf_file, pp):
     dummy = vy if vy.any() or vz.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(y, z, dummy, vz, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
-    ax.set_xlabel('pos y (mm)', fontsize=8)
-    ax.set_ylabel('pos z (mm)', fontsize=8)
+    ax.set_xlabel('pos y (cm)', fontsize=8)
+    ax.set_ylabel('pos z (cm)', fontsize=8)
     # Detect outliers
     width = 0.05*(y.max()-y.min())
     height = 0.05*(z.max()-z.min())
@@ -164,8 +164,8 @@ def analize_vf(vf_file, pp):
     dummy = vz if vz.any() or vx.any() else np.full((npoints, 1), 0.00000001)
     ax.quiver(z, x, dummy, vx, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
-    ax.set_xlabel('pos z (mm)', fontsize=8)
-    ax.set_ylabel('pos x (mm)', fontsize=8)
+    ax.set_xlabel('pos z (cm)', fontsize=8)
+    ax.set_ylabel('pos x (cm)', fontsize=8)
     # Detect outliers
     width = 0.05*(z.max()-z.min())
     height = 0.05*(x.max()-x.min())
@@ -322,7 +322,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         time_ideal, summary_ideal = delivery_timing.get_timing(tramp_e, x, y, tramp_w, energy_switch_time=False)
         total_ideal = time_ideal[-1]
         max_layers = np.floor((max_time - total_ideal)/default_energy_switch)
-        print('Maximum theoretical energy layers: {}'.format(max_layers))
+        print('Maximum theoretical energy layers in 2 minutes: {}'.format(max_layers))
 
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
