@@ -14,6 +14,8 @@ public:
     Parser(int argc, char** argv);
     ~Parser();
 
+    // General control
+    bool skip_cbct;
     // Common parameters
     std::string patient;
     std::string cbct_file;

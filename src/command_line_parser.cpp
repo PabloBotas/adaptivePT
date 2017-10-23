@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include <exception>
+#include <stdexcept>
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
@@ -24,12 +25,14 @@ void Parser::process_command_line(int argc, char** argv)
         po::options_description desc("Allowed options");
         desc.add_options()
         ("help", "Produce this help message.")
+        ("skip-cbct",   po::bool_switch(&skip_cbct)->default_value(false),
+                        "Wheter the calculation on the CBCT should be skiped")
         // Common parameters
         ("patient",     po::value<std::string>(&patient)->required(),
                         "Topas MCAUTO_DICOM.txt file with the plan parameters.")
-        ("cbct",        po::value<std::string>(&cbct_file)->required(),
+        ("cbct",        po::value<std::string>(&cbct_file)->default_value(std::string()),
                         "CBCT to adapt the plan to.")
-        ("vf",          po::value<std::string>(&vf_file)->required(),
+        ("vf",          po::value<std::string>(&vf_file)->default_value(std::string()),
                         "Vector field file from CT to CBCT. B-Spline format is not supported.")
         ("dose",        po::value<std::string>(&dose_file),
                         "Dose of plan evaluated in CBCT.")
@@ -75,11 +78,25 @@ void Parser::process_command_line(int argc, char** argv)
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
-        if (vm.count("help")) {
+        if (argc == 1) {
+            std::cerr << "ERROR! No input arguments." << std::endl;
+            std::cerr << desc << std::endl;
+            exit(EXIT_SUCCESS);
+        }
+        if (vm.count("help") || argc == 1) {
             std::cerr << desc << std::endl;
             exit(EXIT_SUCCESS);
         }
         po::notify(vm);
+
+        // Check required options
+        if(!skip_cbct)
+        {
+            if(cbct_file.empty())
+                throw std::invalid_argument("the option \'--cbct\' is required but missing");
+            if(vf_file.empty())
+                throw std::invalid_argument("the option \'--vf\' is required but missing");
+        }
     
         // WARPING OPTIONS
         if(FREE_POS_RIGID_ENERGY)
