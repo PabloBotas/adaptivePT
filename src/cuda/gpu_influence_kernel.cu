@@ -31,7 +31,12 @@ __global__ void get_influence_kernel(const short num,
                  ray.get_direction();
 
         // Get WEPL to point0
-        wepl_d = wepl_to_point (ray, point0);
+        double3 r = point0 - ray.get_direction();
+        double cos_to_point = dot(r, ray.get_direction()) / 
+                              (length(r)*length(ray.get_direction()));
+        if ((cos_to_point >  0.9999 && cos_to_point < 1.0001) ||
+            (cos_to_point > -0.0001 && cos_to_point < 0.0001))
+            wepl_d = wepl_to_point (ray, point0);
 
         if (wepl_d >= 0)
         {
@@ -39,16 +44,16 @@ __global__ void get_influence_kernel(const short num,
             wepl_r = wepl_to_point (ray, point1, true);
         }
 
-        double influ = get_influence (vxdata[spot_i].w, wepl_r, wepl_d);
+        double dose = get_dose_at (vxdata[spot_i].w, wepl_d, wepl_r);
 
         influence[num*spot_i+probe_j].x = vxdata[spot_i].w;
         influence[num*spot_i+probe_j].y = wepl_r;
         influence[num*spot_i+probe_j].z = wepl_d;
-        influence[num*spot_i+probe_j].w = influ*spot_weights[spot_i];
+        influence[num*spot_i+probe_j].w = dose*spot_weights[spot_i];
 
         // Accumulate influence of spot i on probe j position
         int4 vox = get_voxel (point1);
-        atomicAdd(&inf_volume[vox.w], influ*spot_weights[spot_i]);
+        atomicAdd(&inf_volume[vox.w], dose*spot_weights[spot_i]);
 
         // if(spot_i < 10 && probe_j < 10)
             // printf("%u %u %f %f\n", spot_i, probe_j, vxdata[spot_i].w, influence[num*spot_i+probe_j].w);
@@ -74,7 +79,7 @@ __device__ double wepl_to_point (Ray& ray, double3 stop_point, bool overwrite_en
         double step_water = 0, step = 0, de = 0;
         double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                       vox, voxUpdater, voxStepper, stop_point);
-        get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+        get_average_blur_step(step, step_water, de, max_step, ray, vox);
         ray.move(step, step_water, de);
 
         if (voxUpdater == NONE) {
@@ -90,23 +95,4 @@ __device__ double wepl_to_point (Ray& ray, double3 stop_point, bool overwrite_en
     return wepl;
 }
 
-
-__device__ double get_influence (double const energy, double const wepl_r, double const wepl_d)
-{
-    if (wepl_d < 0 && wepl_r < 0)
-        return 0;
-    // Get nominal influence at center axis of integrated peak from LUT
-    double const energy_index = (energy - bp_energy_min)/bp_energy_delta + 0.5;
-    double const depth_index = wepl_d/bp_depth_delta + 0.5;
-    double b = tex2D(bp_b_tex, energy_index, depth_index);
-    double n = tex2D(bp_n_tex, energy_index, depth_index);
-    double s = tex2D(bp_s_tex, energy_index, depth_index);
-    double w = tex2D(bp_w_tex, energy_index, depth_index);
-
-    // Get radial decay
-    double influence = n * (w/(sqrtf(2*PI)*s) * exp(-0.5 * wepl_r*wepl_r/(s*s)) +
-        (1-w) * 2*pow(b, 1.5)/PI *1/pow(wepl_r*wepl_r + b, 2));
-
-    return fabs(influence);
-}
 

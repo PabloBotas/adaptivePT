@@ -1,5 +1,6 @@
 #include "gpu_main.cuh"
 
+#include "command_line_parser.hpp"
 #include "gpu_ct_to_device.cuh"
 #include "gpu_device_globals.cuh"
 #include "gpu_errorcheck.cuh"
@@ -23,7 +24,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             Array4<double>& endpoints,
                             Array4<double>& initpos_xbuffer_dbg,
                             Array4<double>& initpos,
-                            std::string output_file,
+                            const Parser& parser,
                             Array4<double>& influence)
 {
     // Set geometry in GPU
@@ -48,7 +49,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         initpos_xbuffer_dbg.at(i).w = xbuffer[i].w; // wepl
     }
 
-    gpu_raytrace (pat, endpoints, output_file);
+    gpu_raytrace (pat, endpoints, parser.output_ct_traces);
 
     // INFLUENCE
     std::vector<float> inf_cube(ct.nElements);
@@ -61,15 +62,35 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         spot_weights.insert(spot_weights.end(), w.begin(), w.end());
     }
     gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
+
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_matrix_CT.dat ..." << std::endl;
-    std::ofstream fout("adaptation_x10_y20_z30/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout(parser.out_dir + "/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(double));
 
     std::cout << "Writting influence_cube_CT.dat ..." << std::endl;
-    std::ofstream fout2("adaptation_x10_y20_z30/influence_cube_CT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout2(parser.out_dir + "/influence_cube_CT.dat", std::ios::out | std::ios::binary);
     fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
+
+    std::cout << "Writting vox_endpoints_CT.dat ..." << std::endl;
+    std::ofstream fout3(parser.out_dir + "/vox_endpoints_CT.dat", std::ios::out | std::ios::binary);
+    for (size_t i = 0; i < endpoints.size(); ++i)
+    {
+        unsigned int vox_x = floor(endpoints.at(i).x/ct.d.x);
+        unsigned int vox_y = floor(endpoints.at(i).y/ct.d.y);
+        unsigned int vox_z = floor(endpoints.at(i).z/ct.d.z);
+        int vox_w;
+        // Check if in CT grid
+        if (vox_x >= ct.n.x ||
+            vox_y >= ct.n.y ||
+            vox_z >= ct.n.z)
+            vox_w = -1;
+        else
+            vox_w = vox_z + vox_y*ct.n.z + vox_x*ct.n.z*ct.n.y;
+
+        fout3.write((char*)&vox_w, sizeof(int));
+    }
 #endif
     // for (size_t i = 0; i < 10; i++)
     // {
@@ -83,7 +104,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Array4<double>& orig_endpoints,
                           const Array4<double>& init_pos,
                           Array4<double>& endpoints,
-                          std::string output_file,
+                          const Parser& parser,
                           Array4<double>& influence)
 {
     // Set geometry in GPU
@@ -103,7 +124,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                                      make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
                                                      make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
-    gpu_raytrace (pat, endpoints, output_file, off_endpoints);
+    gpu_raytrace (pat, endpoints, parser.output_cbct_traces, off_endpoints);
 
     std::vector<float> inf_cube(ct.nElements);
     std::vector<float> spot_weights;
@@ -117,13 +138,32 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_CBCT.dat ..." << std::endl;
-    std::ofstream fout("adaptation_x10_y20_z30/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout(parser.out_dir + "/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(double));
     
     std::cout << "Writting influence_cube_CBCT.dat ..." << std::endl;
-    std::ofstream fout2("adaptation_x10_y20_z30/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout2(parser.out_dir + "/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
     fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
+
+    std::cout << "Writting vox_endpoints_CBCT.dat ..." << std::endl;
+    std::ofstream fout3(parser.out_dir + "/vox_endpoints_CBCT.dat", std::ios::out | std::ios::binary);
+    for (size_t i = 0; i < endpoints.size(); ++i)
+    {
+        unsigned int vox_x = floor(endpoints.at(i).x/ct.d.x);
+        unsigned int vox_y = floor(endpoints.at(i).y/ct.d.y);
+        unsigned int vox_z = floor(endpoints.at(i).z/ct.d.z);
+        int vox_w;
+        // Check if in CT grid
+        if (vox_x >= ct.n.x ||
+            vox_y >= ct.n.y ||
+            vox_z >= ct.n.z)
+            vox_w = -1;
+        else
+            vox_w = vox_z + vox_y*ct.n.z + vox_x*ct.n.z*ct.n.y;
+
+        fout3.write((char*)&vox_w, sizeof(int));
+    }
 #endif
     // for (size_t i = 0; i < influence.size(); i+=6421)
     // {
@@ -134,7 +174,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
                    Array4<double>& endpoints,
-                   std::string output_file,
+                   std::string traces_file,
                    const Array4<double>& orig_endpoints)
 {
     // Create scorer array
@@ -142,7 +182,7 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     allocate_scorer<double4>(pos_scorer, pat.total_spots);
 
     // Calculate rays
-    if (output_file.empty())
+    if (traces_file.empty())
     {
         do_raytrace(pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
     }
@@ -155,7 +195,7 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
         Volume_t traces(pat.ct, long_data);
         retrieve_scorer<float, float>(&traces.data[0], traces_scorer, traces.nElements);
         // traces.output("output_volume.mha");
-        traces.output(output_file);
+        traces.output(traces_file);
         gpuErrchk( cudaFree(traces_scorer) );
     }
 

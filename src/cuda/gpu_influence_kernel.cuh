@@ -11,6 +11,4 @@ __global__ void get_influence_kernel(const short num,
 
 __device__ double wepl_to_point (Ray& ray, double3 stop_point, bool overwrite_energy = false);
 
-__device__ double get_influence (double const energy, double const wepl_r, double const wepl_d);
-
 #endif
