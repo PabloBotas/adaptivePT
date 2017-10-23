@@ -33,7 +33,7 @@ __global__ void raytrace_plan_kernel(const short num,
             double step_water = 0, step = 0, de = 0;
             double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                           vox, voxUpdater, voxStepper);
-            get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+            get_average_blur_step(step, step_water, de, max_step, ray, vox);
             ray.move(step, step_water, de);
 
             if(traces)
@@ -65,7 +65,7 @@ __global__ void raytrace_plan_kernel(const short num,
                 double step_water = 0, step = 0, de = 0;
                 double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                               vox, voxUpdater, voxStepper, plan_endpoint);
-                get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+                get_average_blur_step(step, step_water, de, max_step, ray, vox);
                 ray.move(step, step_water, de);
 
                 if (voxUpdater != NONE)

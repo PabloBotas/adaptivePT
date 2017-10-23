@@ -68,7 +68,7 @@ __device__ double to_boundary(const double3& pos,
        !(cos_to_point >  0.9999 && cos_to_point < 1.0001) &&
        !(cos_to_point > -0.0001 && cos_to_point < 0.0001))
     {
-        int i =blockIdx.x*blockDim.x + threadIdx.x;
+        int i = blockIdx.x*blockDim.x + threadIdx.x;
         printf("WARNING! %d - %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
                i, cos_to_point, dist,
                xdata[i].x, xdata[i].y, xdata[i].z,
@@ -153,6 +153,25 @@ __device__ int4 get_voxel (double3 pos)
 
     return vox;
 }
+
+
+__device__ int get_voxel_abs (double3 pos)
+{
+    int4 vox;
+    vox.x = floor(pos.x/ctVoxSize.x);
+    vox.y = floor(pos.y/ctVoxSize.y);
+    vox.z = floor(pos.z/ctVoxSize.z);
+    // Check if in CT grid
+    if (vox.x < 0 || vox.x >= ctVox.x ||
+        vox.y < 0 || vox.y >= ctVox.y ||
+        vox.z < 0 || vox.z >= ctVox.z)
+        vox.w = -1;
+    else
+        vox.w = vox.z + vox.y*ctVox.z + vox.x*ctVox.z*ctVox.y;
+
+    return vox.w;
+}
+
 
 __device__ int3 getVoxelCoords(unsigned int index)
 {

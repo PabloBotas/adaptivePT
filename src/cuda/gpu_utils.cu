@@ -82,3 +82,29 @@ template void sendVectorToTexture<float>(size_t w, size_t h, size_t d,
                                          cudaArray* array,
                                          texture<float, 3, cudaReadModeElementType>& tex);
 
+///////////////////////////////////////
+template <class T>
+__device__ __host__ void bubble_sort(T arr[], int n, int indx[])
+{
+    for (int i = 0; i < n-1; i++)      
+        for (int j = 0; j < n-i-1; j++) 
+            if (arr[j] > arr[j+1])
+            {
+                swap<T>(&arr[j], &arr[j+1]);
+                if (indx != NULL)
+                    swap<int>(&indx[j], &indx[j+1]);
+            }
+}
+template void bubble_sort(double arr[], int n, int indx[]);
+
+template <class T>
+__device__ __host__ void swap(T* a, T* b)
+{
+    T t = *a;
+    *a = *b;
+    *b = t;
+}
+template void swap(int*, int*);
+template void swap(double*, double*);
+
+

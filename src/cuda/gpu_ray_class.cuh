@@ -15,12 +15,12 @@ public:
     __device__ Ray (double4 x_, double4 vx_, short2 ix);
 
     // BASIC GETTERS ---------------------------------------------------------
-    __device__ double3 get_position ();
-    __device__ double3 get_direction ();
-    __device__ short get_beam_id ();
-    __device__ short get_spot_id ();
-    __device__ double get_energy ();
-    __device__ double get_wepl ();
+    __device__ double3 get_position () const;
+    __device__ double3 get_direction () const;
+    __device__ short get_beam_id () const;
+    __device__ short get_spot_id () const;
+    __device__ double get_energy () const;
+    __device__ double get_wepl () const;
     // GETTERS ---------------------------------------------------------------
     __device__ bool is_alive ();
     // BASIC SETTERS ---------------------------------------------------------

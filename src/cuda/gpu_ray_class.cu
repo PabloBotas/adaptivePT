@@ -22,32 +22,32 @@ __device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
 
 // BASIC GETTERS -------------------------------------------------------------
 
-__device__ double3 Ray::get_position ()
+__device__ double3 Ray::get_position () const
 {
     return pos;
 }
 
-__device__ double3 Ray::get_direction ()
+__device__ double3 Ray::get_direction () const
 {
     return dir;
 }
 
-__device__ double Ray::get_wepl ()
+__device__ double Ray::get_wepl () const
 {
     return wepl;
 }
 
-__device__ double Ray::get_energy ()
+__device__ double Ray::get_energy () const
 {
     return energy;
 }
 
-__device__ short Ray::get_beam_id ()
+__device__ short Ray::get_beam_id () const
 {
     return beam_id;
 }
 
-__device__ short Ray::get_spot_id ()
+__device__ short Ray::get_spot_id () const
 {
     return spot_id;
 }

@@ -28,6 +28,7 @@ __device__ void changeVoxel (int4 &vox,
                              const VoxelUpdater indexvox,
                              const VoxelStepper dvox);
 __device__ int4 get_voxel (double3 pos);
+__device__ int get_voxel_abs (double3 pos);
 __device__ int3 getVoxelCoords (unsigned int index);
 __device__ double3 getVoxelCenter (int3 vox);
 __device__ double3 getVoxelCenter (unsigned int index);

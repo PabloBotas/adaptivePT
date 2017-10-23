@@ -22,4 +22,10 @@ void sendVectorToTexture(size_t w, size_t h, size_t d,
                          cudaArray* array,
                          texture<T, 3, cudaReadModeElementType>& tex);
 
+template <class T>
+__device__ __host__ void bubble_sort(T arr[], int n, int indx[]);
+
+template <class T>
+__device__ __host__ void swap(T* a, T* b);
+
 #endif
