@@ -75,7 +75,7 @@ std::string utils::run_command(const std::string cmd)
     if(cmd.size() > 160)
     {
         std::cout << " (trimmed)";
-        cmd_trimmed = cmd.substr(0, 75) + " ...//... " + cmd.substr(cmd.size()-75, 75);
+        cmd_trimmed = cmd.substr(0, 50) + " ...//... " + cmd.substr(cmd.size()-50, 50);
         to_output = &cmd_trimmed;
     }
 
