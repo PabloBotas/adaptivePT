@@ -3,6 +3,7 @@
 
 #include "vector2.hpp"
 #include "vector4.hpp"
+#include <string>
 #include <vector>
 
 template <class T> class Vector2_t;
