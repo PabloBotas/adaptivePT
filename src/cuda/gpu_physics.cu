@@ -115,7 +115,7 @@ __device__ void average_blur (double& density, double& mass_stp_ratio,
                               const Ray& ray, const int4& vox)
 {
     int const N = 9;
-    double const sigma_scale = 0.5;
+    double const sigma_scale = 1;
     int voxels_array[N];
     // Set 8 points at a distance from the central axis
     step_blur_get_voxels(voxels_array, ray, vox, N, sigma_scale);
@@ -139,25 +139,25 @@ __device__ void average_blur (double& density, double& mass_stp_ratio,
     // density = (density + density_array[N-1])/2;
     // mass_stp_ratio = (mass_stp_ratio + mass_stp_ratio_array[N-1])/2;
     // case 2
-    // for (int i = 0; i < N-1; ++i)
-    // {
-    //     density += 0.606530659*density_array[i];
-    //     mass_stp_ratio += 0.606530659*mass_stp_ratio_array[i];
-    // }
-    // density += density_array[N-1];
-    // mass_stp_ratio += mass_stp_ratio_array[N-1];
-    // density /= 0.606530659*(N-1)+1;
-    // mass_stp_ratio /= 0.606530659*(N-1)+1;
-    // case 3
     for (int i = 0; i < N-1; ++i)
     {
-        density += 0.882496902*density_array[i];
-        mass_stp_ratio += 0.882496902*mass_stp_ratio_array[i];
+        density += 0.606530659*density_array[i];
+        mass_stp_ratio += 0.606530659*mass_stp_ratio_array[i];
     }
     density += density_array[N-1];
     mass_stp_ratio += mass_stp_ratio_array[N-1];
-    density /= 0.882496902*(N-1)+1;
-    mass_stp_ratio /= 0.882496902*(N-1)+1;
+    density /= 0.606530659*(N-1)+1;
+    mass_stp_ratio /= 0.606530659*(N-1)+1;
+    // case 3
+    // for (int i = 0; i < N-1; ++i)
+    // {
+    //     density += 0.882496902*density_array[i];
+    //     mass_stp_ratio += 0.882496902*mass_stp_ratio_array[i];
+    // }
+    // density += density_array[N-1];
+    // mass_stp_ratio += mass_stp_ratio_array[N-1];
+    // density /= 0.882496902*(N-1)+1;
+    // mass_stp_ratio /= 0.882496902*(N-1)+1;
     // // CASE 4
     // for (int i = 0; i < N-1; ++i)
     // {
