@@ -31,7 +31,7 @@ __global__ void get_influence_kernel(const short num,
                  ray.get_direction();
 
         // Get WEPL to point0
-        double3 r = point0 - ray.get_direction();
+        double3 r = point0 - ray.get_position();
         double cos_to_point = dot(r, ray.get_direction()) / 
                               (length(r)*length(ray.get_direction()));
         if ((cos_to_point >  0.9999 && cos_to_point < 1.0001) ||
