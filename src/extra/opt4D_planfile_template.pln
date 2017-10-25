@@ -1,0 +1,48 @@
+pln_file_version 0.2
+
+## We start with the plan title:
+title patient
+
+## A short description of the plan.  
+description Automatic influence reoptimization
+
+## The plan file root is used to derive the names of files
+plan_file_root beam
+vv_file_name structures.vv
+dif_file_name dimensions.dif
+
+# The number of beams and instances of the plan
+nBeams     1
+nInstances 1
+ 
+# Dose Delivery Model
+Dose_Delivery_Model standard
+
+## Parameter Vector type
+parameter_type squarerootbixel
+
+### DEFINE PLAN OBJECTIVES ##########################
+OBJ 1  type voxeldose
+OBJ 1  VOI 1
+OBJ 1  dose_file_name reference_influence.dat
+OBJ 1  min_dose 20000
+OBJ 1  weight 3
+
+# CONS 1  type constrainedobjective
+# CONS 1  OBJ 1
+# CONS 1  bound 1.31293
+# CONS 1  weight 10
+
+### DEFINE PLAN CONSTRAINS ##########################
+# CTV
+# CONS 1  type doseconstraint
+# CONS 1  VOI 7
+# CONS 1  min_dose 60
+# CONS 1  weight 20
+# CONS 2  type doseconstraint
+# CONS 2  VOI 7
+# CONS 2  max_dose 64
+# CONS 2  weight 10
+
+### ASSORTED OTHER PROPERTIES #######################
+DVH_bin_size 0.1

@@ -16,7 +16,7 @@ message ( STATUS "OUTPUT_DIRECTORY:     " ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
 set (CMAKE_C_COMPILER "/usr/bin/gcc")
 set (CMAKE_CXX_COMPILER "/usr/bin/g++")
 set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-variadic-macros -Wno-language-extension-token")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-variadic-macros")
 
 #-Cuda compiler------------------------------------------------------
 find_package(CUDA REQUIRED)
@@ -61,3 +61,6 @@ endif()
 
 add_subdirectory(src)
 # add_subdirectory(src/extra)
+
+# Opt4D ------------------------------------------------------
+find_program (OPT4D_PATH_BINARY opt4D "/opt/opt4D/src/")

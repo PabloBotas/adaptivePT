@@ -1,6 +1,7 @@
 #include "gpu_physics_data_to_device.cuh"
 
 #include "gpu_device_globals.cuh"
+#include "enviroment.hpp"
 #include "utils.hpp"
 #include <iostream>
 #include <vector>

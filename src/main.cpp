@@ -2,14 +2,12 @@
 #include <iomanip>
 #include <string>
 
-#define TO_STRING2(X) #X
-#define TO_STRING(X) TO_STRING2(X)
-#define INSTALLATION_PATH TO_STRING(BIN_PATH)
-
 #include "command_line_parser.hpp"
 #include "initialize_rays.cuh"
+#include "enviroment.hpp"
 #include "gpu_main.cuh"
 #include "gpu_source_positioning.cuh"
+#include "opt4D_manager.hpp"
 #include "patient_parameters.hpp"
 #include "program_options.hpp"
 #include "tramp.hpp"
@@ -37,7 +35,7 @@ void compute_in_ct(const Patient_Parameters_t& pat,
                    Array4<double>& initpos,
                    Array4<double>& warped_endpoints,
                    Array4<double>& warped_initpos,
-                   Array4<double>& influence0);
+                   Array4<double>& influence_ct);
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
@@ -45,10 +43,10 @@ void compute_in_cbct(Patient_Parameters_t& pat,
                      const Array4<double>& ct_warped_initpos,
                      std::vector<double>& energy_shift,
                      Array4<double>& cbct_endpoints,
-                     Array4<double>& influence1);
+                     Array4<double>& influence_cbct);
 
-// void process_influences (Array4<double> influence0,
-//                          Array4<double> influence1);
+// void process_influences (Array4<double> influence_ct,
+//                          Array4<double> influence_cbct);
 
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
@@ -89,8 +87,8 @@ int main(int argc, char** argv)
     Array4<double> warped_endpoints(pat.total_spots);
     Array4<double> warped_initpos(pat.total_spots);
     Array4<double> cbct_endpoints(pat.total_spots);
-    Array4<double> influence0(pat.total_spots*pat.total_spots);
-    Array4<double> influence1(pat.total_spots*pat.total_spots);
+    Array4<double> influence_ct(pat.total_spots*pat.total_spots);
+    Array4<double> influence_cbct(pat.total_spots*pat.total_spots);
     std::vector<double> energy_shift(pat.total_spots);
 
     // Warper ----------------------------------------------------------------
@@ -102,7 +100,7 @@ int main(int argc, char** argv)
                    warper,                            // outputs
                    endpoints, initpos,                // outputs
                    warped_endpoints, warped_initpos,  // outputs
-                   influence0);                       // outputs
+                   influence_ct);                     // outputs
 
     if (!parser.skip_cbct)
     {
@@ -110,10 +108,16 @@ int main(int argc, char** argv)
         compute_in_cbct (pat, parser,                      // inputs
                          warped_endpoints, warped_initpos, // inputs
                          energy_shift, cbct_endpoints,     // outputs
-                         influence1);                      // outputs
+                         influence_cbct);                  // outputs
     }
     // 3: Correct weights
-    // // process_influences (influence0, influence1);
+    if (!parser.output_opt4D_files.empty())
+    {
+        Opt4D_manager opt4d(parser.output_opt4D_files);
+        opt4d.populate_directory(influence_ct, influence_cbct);
+        if (parser.launch_opt4D)
+            opt4d.launch_optimization();
+    }
 
     // Export results and report
     export_adapted (pat, parser, energy_shift, warped_initpos, warped_endpoints, warper);
@@ -126,8 +130,8 @@ int main(int argc, char** argv)
 }
 
 
-// void process_influences (Array4<double> influence0,
-//                          Array4<double> influence1)
+// void process_influences (Array4<double> influence_ct,
+//                          Array4<double> influence_cbct)
 // {
 // }
 

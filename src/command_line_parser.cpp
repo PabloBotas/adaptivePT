@@ -28,53 +28,106 @@ void Parser::process_command_line(int argc, char** argv)
         ("skip-cbct",   po::bool_switch(&skip_cbct)->default_value(false),
                         "Wheter the calculation on the CBCT should be skiped")
         // Common parameters
-        ("patient",     po::value<std::string>(&patient)->required(),
-                        "Topas MCAUTO_DICOM.txt file with the plan parameters.")
-        ("cbct",        po::value<std::string>(&cbct_file)->default_value(std::string()),
-                        "CBCT to adapt the plan to.")
-        ("vf",          po::value<std::string>(&vf_file)->default_value(std::string()),
-                        "Vector field file from CT to CBCT. B-Spline format is not supported.")
+        ("patient",     po::value<std::string>(&patient)->
+                            required(),
+                            "Topas MCAUTO_DICOM.txt file with the plan "
+                            "parameters.")
+        ("cbct",        po::value<std::string>(&cbct_file)->
+                            default_value(default_cbct_file),
+                            "CBCT to adapt the plan to.")
+        ("vf",          po::value<std::string>(&vf_file)->
+                            default_value(default_vf_file),
+                            "Vector field file from CT to CBCT. B-Spline format"
+                            " is not supported.")
         ("dose",        po::value<std::string>(&dose_file),
-                        "Dose of plan evaluated in CBCT.")
+                            "Dose of plan evaluated in CBCT.")
         ("presc",       po::value<double>(&dose_presc),
-                        "Target dose prescription.")
+                            "Target dose prescription.")
         ("spot_factor", po::value<double>(&spot_factor),
-                        "Spot factor used in simulation.")
+                            "Spot factor used in simulation.")
         // Output files
-        ("outdir",      po::value<std::string>(&out_dir)->required(),
-                        "Output directory to write results to. Will be prepended to any output if they don't contain \'/\'")
-        ("out_vf",      po::value<std::string>(&output_vf)->default_value(std::string())->implicit_value("vf.dat"),
-                        "If the probed values should be written to a file.")
-        ("out_shifts",  po::value<std::string>(&output_shifts)->default_value(std::string())->implicit_value("shifts.dat"),
-                        "If the pos-energy shifts should be written to a file.")
-        ("traces_ct",   po::value<std::string>(&output_ct_traces)->default_value(std::string())->implicit_value("ct_traces.mhd"),
-                        "If the traces on the CT volume should be scored to a file.")
-        ("traces_cbct", po::value<std::string>(&output_cbct_traces)->default_value(std::string())->implicit_value("cbct_traces.pdf"),
-                        "If the traces on the CBCT volume should be scored to a file.")
-        ("report",      po::value<std::string>(&report)->default_value(std::string())->implicit_value("adapt_report.pdf"),
-                        "If a report should be generated. Requires output_vf and output_shifts, and no geometry only mode")
+        ("outdir",      po::value<std::string>(&out_dir)->
+                            required(),
+                            "Output directory to write results to. Will be "
+                            "prepended to any output if they don't contain "
+                            "\'/\'")
+        ("out_vf",      po::value<std::string>(&output_vf)->
+                            default_value(default_output_vf)->
+                            implicit_value(implicit_output_vf),
+                            "If the probed values should be written to a "
+                            "file.")
+        ("out_shifts",  po::value<std::string>(&output_shifts)->
+                            default_value(default_output_shifts)->
+                            implicit_value(implicit_output_shifts),
+                            "If the pos-energy shifts should be written to a "
+                            "file.")
+        ("traces_ct",   po::value<std::string>(&output_ct_traces)->
+                            default_value(default_output_ct_traces)->
+                            implicit_value(implicit_output_ct_traces),
+                            "If the traces on the CT volume should be scored to"
+                            " a file.")
+        ("traces_cbct", po::value<std::string>(&output_cbct_traces)->
+                            default_value(default_output_cbct_traces)->
+                            implicit_value(implicit_output_cbct_traces),
+                            "If the traces on the CBCT volume should be scored "
+                            "to a file.")
+        ("report",      po::value<std::string>(&report)->
+                            default_value(default_report)->
+                            implicit_value(implicit_report),
+                            "If a report should be generated. Requires "
+                            "output_vf and output_shifts, and no geometry only "
+                            "mode")
+        ("opt4D-out",   po::value<std::string>(&output_opt4D_files)->
+                            default_value(default_output_opt4D_files)->
+                            implicit_value(implicit_output_opt4D_files),
+                            "If Opt4D files should be created. The passed "
+                            "directory will be created and populated with files"
+                            " for optimization.")
+        // Launchers
+        ("opt4D",       po::bool_switch(&launch_opt4D)->
+                            default_value(default_launch_opt4D),
+                            "If Opt4D should be launched. If a file destination"
+                            " is not provided as well, the default will be set.")
         // Adaptation methods
         // Free positions
-        ("free",          po::bool_switch(&FREE_POS_FREE_ENERGY)->default_value(false),
-                          "If the positions and energies should move freely.")
-        ("rigid-e",       po::bool_switch(&FREE_POS_RIGID_ENERGY)->default_value(false),
-                          "If the positions should move freely and energies rigidly.")
-        ("rigid-e-beams", po::bool_switch(&FREE_POS_RIGID_BEAMS_ENERGY)->default_value(false),
-                          "If the positions should move freely and energies rigidly with independent fields.")
+        ("free",          po::bool_switch(&FREE_POS_FREE_ENERGY)->
+                              default_value(default_FREE_POS_FREE_ENERGY),
+                              "If the positions and energies should move "
+                              "freely.")
+        ("rigid-e",       po::bool_switch(&FREE_POS_RIGID_ENERGY)->
+                              default_value(default_FREE_POS_RIGID_ENERGY),
+                              "If the positions should move freely and energies"
+                              " rigidly.")
+        ("rigid-e-beams", po::bool_switch(&FREE_POS_RIGID_BEAMS_ENERGY)->
+                              default_value(default_FREE_POS_RIGID_BEAMS_ENERGY),
+                              "If the positions should move freely and energies"
+                              " rigidly with independent fields.")
         // Rigid positions
-        ("rigid-pos",         po::bool_switch(&RIGID_POS_FREE_ENERGY)->default_value(false),
-                              "If the positions should move rigidly and energies freely.")
-        ("rigid",             po::bool_switch(&RIGID_POS_RIGID_ENERGY)->default_value(false),
-                              "If the positions and energies should move rigidly.")
-        ("rigid-pos-e-beams", po::bool_switch(&RIGID_POS_RIGID_BEAMS_ENERGY)->default_value(false),
-                              "If the positions should move rigidly and energies rigidly with independent fields.")
+        ("rigid-pos",         po::bool_switch(&RIGID_POS_FREE_ENERGY)->
+                                  default_value(default_RIGID_POS_FREE_ENERGY),
+                                  "If the positions should move rigidly and "
+                                  "energies freely.")
+        ("rigid",             po::bool_switch(&RIGID_POS_RIGID_ENERGY)->
+                                  default_value(default_RIGID_POS_RIGID_ENERGY),
+                                  "If the positions and energies should move "
+                                  "rigidly.")
+        ("rigid-pos-e-beams", po::bool_switch(&RIGID_POS_RIGID_BEAMS_ENERGY)->
+                                  default_value(default_RIGID_POS_RIGID_BEAMS_ENERGY),
+                                  "If the positions should move rigidly and "
+                                  "energies rigidly with independent fields.")
         // Rigid per field positions
-        ("rigid-pos-beams",   po::bool_switch(&RIGID_BEAMS_POS_FREE_ENERGY)->default_value(false),
-                              "If the positions should move rigidly with independent fields and energies freely.")
-        ("rigid-pos-beams-e", po::bool_switch(&RIGID_BEAMS_POS_RIGID_ENERGY)->default_value(false),
-                              "If the positions should move rigidly with independent fields and energies rigidly.")
-        ("rigid-beams",       po::bool_switch(&RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)->default_value(false),
-                              "If the positions and energies should move rigidly with independent fields.");
+        ("rigid-pos-beams",   po::bool_switch(&RIGID_BEAMS_POS_FREE_ENERGY)->
+                                  default_value(default_RIGID_BEAMS_POS_FREE_ENERGY),
+                                  "If the positions should move rigidly with "
+                                  "independent fields and energies freely.")
+        ("rigid-pos-beams-e", po::bool_switch(&RIGID_BEAMS_POS_RIGID_ENERGY)->
+                                  default_value(default_RIGID_BEAMS_POS_RIGID_ENERGY),
+                                  "If the positions should move rigidly with "
+                                  "independent fields and energies rigidly.")
+        ("rigid-beams",       po::bool_switch(&RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)->
+                                  default_value(default_RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY),
+                                  "If the positions and energies should move "
+                                  "rigidly with independent fields.");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -96,6 +149,11 @@ void Parser::process_command_line(int argc, char** argv)
                 throw std::invalid_argument("the option \'--cbct\' is required but missing");
             if(vf_file.empty())
                 throw std::invalid_argument("the option \'--vf\' is required but missing");
+        }
+
+        // Launchers
+        if (launch_opt4D && output_opt4D_files.empty()) {
+            output_opt4D_files = implicit_output_opt4D_files;
         }
     
         // WARPING OPTIONS
