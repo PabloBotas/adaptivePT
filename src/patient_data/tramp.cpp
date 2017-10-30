@@ -402,12 +402,13 @@ std::string toLower(std::string s) {
     return s;
 }
 
-// void Tramp_t::scale(double ratio)
-// {
-//     if(previouslyScaled)
-//         return;
-//     for (size_t i = 0; i < nspots; i++)
-//     {
-//         spots.at(i).w *= ratio;
-//     }
-// }
+void Tramp_t::scale_weights(std::vector<double> ratio)
+{
+    gigaprotons = 0;
+    for (size_t i = 0; i < nspots; i++)
+    {
+        spots.at(i).w *= ratio.at(i);
+        gigaprotons += spots.at(i).w;
+    }
+}
+

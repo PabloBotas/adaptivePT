@@ -23,6 +23,9 @@ namespace utils
                                     const Vector3_t<double>& p);
     void check_fs(const std::ofstream& ofs, std::string f, std::string msg);
     void check_fs(const std::ifstream& ofs, std::string f, std::string msg);
+    template<class T>
+    void subset_vector(std::vector<T>& vout, const std::vector<T>& v,
+                       const size_t offset_a, const size_t offset_b);
 }
 
 #endif

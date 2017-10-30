@@ -16,7 +16,7 @@ public:
     ~Tramp_t();
     void setEnergies();
     void to_file(std::string file, std::string dir = std::string());
-    void scale(double ratio);
+    void scale_weights(std::vector<double> ratio);
     void setWEPLs();
     std::vector<double> getWEPLs();
     void energy_to_internal();

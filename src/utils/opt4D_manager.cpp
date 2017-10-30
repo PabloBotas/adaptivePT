@@ -7,11 +7,20 @@
 #include <fstream>
 #include <limits>
 #include <string>
+#include <sstream>
 #include <sys/stat.h>
 
 
-Opt4D_manager::Opt4D_manager(std::string outdir) : out_directory(outdir)
+Opt4D_manager::Opt4D_manager(std::string outdir) : out_directory(outdir),
+                                                   min_average_constrain(0)
 {
+    launcher_file  = outdir + '/' + launcher_file_base;
+    plan_file      = outdir + '/' + plan_file_base;
+    dif_file       = outdir + '/' + dif_file_base;
+    vv_file        = outdir + '/' + vv_file_base;
+    dij_file       = outdir + '/' + dij_file_base;
+    reference_file = outdir + '/' + reference_file_base;
+    bwf_file       = outdir + '/' + bwf_file_base;
 }
 
 
@@ -23,59 +32,78 @@ Opt4D_manager::~Opt4D_manager()
 
 void Opt4D_manager::launch_optimization()
 {
-    std::string cmd = "bash " + out_directory + "/opt4D_launcher.sh " +
-                      out_directory + "/opt4d_planfile.pln" + out_directory;
-    utils::run_command(cmd);
+    std::string cmd = "bash " + launcher_file +" "+ plan_file_base +" "+ out_directory;
+    std::string std_out = utils::run_command(cmd);
+    size_t pos = std_out.find_last_of('\n');
+    pos = std_out.find_last_of('\n', pos-1);
+    pos = std_out.find_last_of('\n', pos-1);
+
+    std::cout << std_out.substr(pos+1, std_out.size()-1) << std::endl;
 }
 
 
 void Opt4D_manager::populate_directory(const Array4<double>& influence_ct,
                                        const Array4<double>& influence_cbct)
 {
-    std::cout << "Writting Opt4D files ..." << std::endl;
+    std::cout << "Writting Opt4D files: ";
+    mkdir(out_directory.c_str(), 0774);
     n = (unsigned int)(sqrt(influence_ct.size() + 0.5));
-    write_templates();
+    std::cout << "\t- " << dif_file_base << std::endl;
     write_dif();
+    std::cout << "\t- " << vv_file_base << std::endl;
     write_vv();
+    std::cout << "\t- " << dij_file_base << std::endl;
     write_dij(influence_cbct);
-    write_reference_influence(influence_ct);
+    std::cout << "\t- " << reference_file_base << std::endl;
+    set_write_reference_influence(influence_ct);
+    std::cout << "\t- templates" << std::endl;
+    write_templates();
 }
 
 
 void Opt4D_manager::write_templates()
 {
-    mkdir(out_directory.c_str(), 0774);
+    std::ifstream src1(template_plan_file);
+    if(!src1) {
+        std::cerr << "Can't open " + template_plan_file + " file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::ofstream dst1(plan_file);
+    if (min_average_constrain > 0)
+    {
+        std::string planfile_contents;
+        for (char ch; src1.get(ch); planfile_contents.push_back(ch)) {
+        }
+        std::string to_replace = "MINAVERAGECONS";
 
-    std::ifstream src1(std::string(INSTALLATION_PATH) +
-                       "/src/extra/opt4D_planfile_template.pln");
-    if(!src1)
-    {
-        std::cerr << "Can't open " +
-                     std::string(INSTALLATION_PATH) +
-                     "/src/extra/opt4D_planfile_template.pln" +
+        size_t pos = planfile_contents.find(to_replace);
+        while (pos != std::string::npos) {
+            planfile_contents.replace(pos, to_replace.length(),
+                                  std::to_string(min_average_constrain));
+            pos = planfile_contents.find(to_replace, pos);
+        }
+        
+        dst1 << planfile_contents;
+    } else {
+        dst1 << src1.rdbuf();
+    }
+
+
+    // Bash script
+    std::ifstream src2(template_launcher_file);
+    if(!src2) {
+        std::cerr << "Can't open " + template_launcher_file +
                      " file" << std::endl;
         exit(EXIT_FAILURE);
     }
-    std::ofstream dst1(out_directory+"/opt4D_planfile.pln");
-    dst1 << src1.rdbuf();
-    std::ifstream src2(std::string(INSTALLATION_PATH) +
-                       "/src/extra/opt4D_launcher_template.sh");
-    if(!src2)
-    {
-        std::cerr << "Can't open " +
-                     std::string(INSTALLATION_PATH) +
-                     "/src/extra/opt4D_planfile_template.pln" +
-                     " file" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    std::ofstream dst2(out_directory+"/opt4D_launcher.sh");
+    std::ofstream dst2(launcher_file);
     dst2 << src2.rdbuf();
 }
 
 
 void Opt4D_manager::write_dif()
 {
-    std::ofstream stream (out_directory+"/dimensions.dif");
+    std::ofstream stream (dif_file);
     if (stream.is_open()) {
         stream << "Delta-X 1" << std::endl;
         stream << "Delta-Y 1" << std::endl;
@@ -93,6 +121,9 @@ void Opt4D_manager::write_dif()
         stream << "ISO-Index-Dose-Y 0" << std::endl;
         stream << "ISO-Index-Dose-Z 0" << std::endl;
         stream.close();
+    } else {
+        std::cerr << "Can't open " + dif_file + " file" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -110,7 +141,7 @@ void Opt4D_manager::write_vv()
         {'v','v','-','o','p','t','4','D'}, 25185, '\n',
         {'#','V','O','I','s',':'}};
 
-    std::string strvv = out_directory+"/structures.vv";
+    std::string strvv = vv_file;
     // Write header
     std::ofstream stream1 (strvv);
     if (stream1.is_open()) {
@@ -120,6 +151,9 @@ void Opt4D_manager::write_vv()
         stream1.write((char*) &nVois_text1, 6);
         stream1.write((char*) &nVois_text2, 14);
         stream1.close();
+    } else {
+        std::cerr << "Can't open " + strvv + " file" << std::endl;
+        exit(EXIT_FAILURE);
     }
     // Write first dummy patient structure
     std::ofstream stream2 (strvv, std::ios::binary | std::ios::app);
@@ -131,10 +165,13 @@ void Opt4D_manager::write_vv()
             stream2.write((char*) &dummy, sizeof(unsigned char));
         }
         stream2.close();
+    } else {
+        std::cerr << "Can't open " + strvv + " file" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
-//-o /opt/utils/adaptive/test/water_patient/adaptation_x10_y20_z30/opt4D_reoptimization --lbfgs --lbfgs_m 20 --linesearch_steps 20 --dont_project_on_bounds --unit_initial_fluence --random_seed 0 --add_step_event "UPDATE_LAGRANGE_MULTIPLIERS,20,20" --add_step_event "UPDATE_PENALTY,20,20" --constraint_penalty_multiplier 2 --max_steps 2000 --min_steps 600 --max_time 1200 --write_dose --write_beam_dose opt4D_planfile.pln
+//-o /opt/utils/adaptive/test/water_patient/adaptation_x10_y20_z30/opt4D_reoptimization --initial_fluence_noise 0.5 --lbfgs --lbfgs_m 20 --linesearch_steps 20 --dont_project_on_bounds --unit_initial_fluence --random_seed 0 --add_step_event "UPDATE_LAGRANGE_MULTIPLIERS,20,20" --add_step_event "UPDATE_PENALTY,20,20" --constraint_penalty_multiplier 2 --max_steps 2000 --min_steps 600 --max_time 1200 --write_dose --write_beam_dose opt4D_planfile.pln
 void Opt4D_manager::write_dij(const Array4<double>& influence_cbct)
 {
     // Get normalizing factor
@@ -164,7 +201,7 @@ void Opt4D_manager::write_dij(const Array4<double>& influence_cbct)
     float dummy_float_1 = 1;
     int n_int = n;
     int dummy_int_1 = 1;
-    std::ofstream stream (out_directory+"/beam_1.dij", std::ios::binary);
+    std::ofstream stream (dij_file, std::ios::binary);
     if (stream.is_open()) {
         // gantry, table, collimator angles
         stream.write((char*) &dummy_float_0, sizeof(float));
@@ -203,24 +240,75 @@ void Opt4D_manager::write_dij(const Array4<double>& influence_cbct)
             }
             totalNonZero += non_zeros.at(i);
         }
+    } else {
+        std::cerr << "Can't open " + dij_file + " file" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
 
-void Opt4D_manager::write_reference_influence(const Array4<double>& influence)
+void Opt4D_manager::set_write_reference_influence(const Array4<double>& influence)
 {
     // Accumulate influence on voxel j by all spots i(0 -> n)
     std::vector<float> reference(n, 0);
+    float min_ref = 1000000000;
+    float max_ref = 0;
+    float ave_ref = 0;
     for(size_t j = 0; j<n; j++)
+    {
         for(size_t i = 0; i<n; i++)
             reference.at(j) += influence.at(n*i+j).w;
+        if (min_ref > reference.at(j))
+            min_ref = reference.at(j);
+        if (max_ref < reference.at(j))
+            max_ref = reference.at(j);
+        ave_ref += reference.at(j)/n;
+    }
+    std::cout << "Reference influence for optimization (min, max, ave): ";
+    std::cout << min_ref << ", " << max_ref << ", " << ave_ref << std::endl;
+    min_average_constrain = ave_ref;
 
     // Write data
-    std::ofstream stream (out_directory+"/reference_influence.dat", std::ios::binary);
+    std::ofstream stream (reference_file, std::ios::binary);
     if (stream.is_open()) {
         stream.write((char*) reference.data(), n*sizeof(float));
+    } else {
+        std::cerr << "Can't open " + reference_file + " file" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
 
+void Opt4D_manager::read_bwf_file()
+{
+    std::ifstream infile( bwf_file );
+    if (!infile.is_open()) {
+        std::cout << "Can't open file: " << bwf_file << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    weight_scaling.resize(n);
+
+    std::string line;
+    size_t i = 0;
+    while (std::getline(infile, line))
+    {
+        if (line.at(0) == '#')
+            continue;
+        double w_;
+        float dummy;
+        std::istringstream iss(line);
+        iss >> dummy >> w_ >> dummy >> dummy >> dummy >> dummy >> dummy >> dummy >> dummy;
+        weight_scaling.at(i) = w_;
+        i++;
+    }
+}
+
+
+std::vector<double> Opt4D_manager::get_weight_scaling()
+{
+    if(weight_scaling.empty())
+        read_bwf_file();
+    return weight_scaling;
+}
 

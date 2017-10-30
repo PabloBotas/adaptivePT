@@ -20,29 +20,35 @@ Dose_Delivery_Model standard
 
 ## Parameter Vector type
 parameter_type squarerootbixel
+# parameter_type bixel
 
 ### DEFINE PLAN OBJECTIVES ##########################
 OBJ 1  type voxeldose
 OBJ 1  VOI 1
 OBJ 1  dose_file_name reference_influence.dat
 OBJ 1  min_dose 20000
-OBJ 1  weight 3
+# OBJ 1  scale_factor 1.05
+OBJ 1  scale_factor 1.025
+OBJ 1  weight 20
+
+OBJ 2  type squaredmeanerror
+OBJ 2  VOI 1
+OBJ 2  min_mean_dose MINAVERAGECONS
+OBJ 2  weight_under 10
+OBJ 2  max_mean_dose MINAVERAGECONS
+OBJ 2  weight_over 0.0001
+
 
 # CONS 1  type constrainedobjective
 # CONS 1  OBJ 1
-# CONS 1  bound 1.31293
-# CONS 1  weight 10
+# CONS 1  bound 1.5
+# CONS 1  weight 1
 
 ### DEFINE PLAN CONSTRAINS ##########################
-# CTV
-# CONS 1  type doseconstraint
-# CONS 1  VOI 7
-# CONS 1  min_dose 60
-# CONS 1  weight 20
-# CONS 2  type doseconstraint
-# CONS 2  VOI 7
-# CONS 2  max_dose 64
-# CONS 2  weight 10
+# CONS 1  type meanconstraint
+# CONS 1  VOI 1
+# CONS 1  min_dose 22.709648
+# CONS 1  weight 10
 
 ### ASSORTED OTHER PROPERTIES #######################
 DVH_bin_size 0.1

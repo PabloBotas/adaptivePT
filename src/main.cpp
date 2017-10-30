@@ -51,11 +51,13 @@ void compute_in_cbct(Patient_Parameters_t& pat,
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
                     const std::vector<double>& energy_shift,
+                    const std::vector<double>& weight_scaling,
                     Array4<double>& pat_pos,
                     Array4<double>& pat_pos2,
                     const Warper_t& warper);
 
 void export_shifts(const std::vector<double>& e,
+                   const std::vector<double>& w,
                    const Array4<double>& p,
                    const std::string& file,
                    const short& beamid,
@@ -90,6 +92,7 @@ int main(int argc, char** argv)
     Array4<double> influence_ct(pat.total_spots*pat.total_spots);
     Array4<double> influence_cbct(pat.total_spots*pat.total_spots);
     std::vector<double> energy_shift(pat.total_spots);
+    std::vector<double> weight_scaling(pat.total_spots, 1.0);
 
     // Warper ----------------------------------------------------------------
     Warper_t warper(parser.vf_file, parser.output_vf);
@@ -111,16 +114,18 @@ int main(int argc, char** argv)
                          influence_cbct);                  // outputs
     }
     // 3: Correct weights
-    if (!parser.output_opt4D_files.empty())
-    {
+    if (!parser.output_opt4D_files.empty()) {
         Opt4D_manager opt4d(parser.output_opt4D_files);
         opt4d.populate_directory(influence_ct, influence_cbct);
-        if (parser.launch_opt4D)
+        if (parser.launch_opt4D) {
             opt4d.launch_optimization();
+            weight_scaling = opt4d.get_weight_scaling();
+        }
     }
 
     // Export results and report
-    export_adapted (pat, parser, energy_shift, warped_initpos, warped_endpoints, warper);
+    export_adapted (pat, parser, energy_shift, weight_scaling,
+                    warped_initpos, warped_endpoints, warper);
     if (!parser.report.empty())
         generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
 
@@ -202,6 +207,7 @@ void compute_in_cbct(Patient_Parameters_t& pat,
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
                     const std::vector<double>& energy_shift,
+                    const std::vector<double>& weight_scaling,
                     Array4<double>& warped_initpos,
                     Array4<double>& warped_endpoints,
                     const Warper_t& warper)
@@ -215,23 +221,23 @@ void export_adapted(Patient_Parameters_t& pat,
     // Assign to new spotmap
     for (size_t i = 0; i < pat.nbeams; i++)
     {
-        std::vector<double>::const_iterator f = energy_shift.begin();
-        if (i != 0)
-            f += pat.accu_spots_per_field.at(i-1);
-        std::vector<double>::const_iterator l = energy_shift.begin() + pat.accu_spots_per_field.at(i);
-        std::vector<double> subset_energies(f, l);
+        size_t offset_a = (i != 0) ? pat.accu_spots_per_field.at(i-1) : 0;
+        size_t offset_b = pat.accu_spots_per_field.at(i);
+        std::vector<double> subset_energies;
+        std::vector<double> subset_weights_scaling;
+        Array4<double> subset_pat_pos;
 
-        Array4<double>::const_iterator ff = warped_initpos.begin();
-        if (i != 0)
-            ff += pat.accu_spots_per_field.at(i-1);
-        Array4<double>::const_iterator ll = warped_initpos.begin() + pat.accu_spots_per_field.at(i);
-        Array4<double> subset_pat_pos(ff, ll);
+        utils::subset_vector<double>(subset_energies, energy_shift, offset_a, offset_b);
+        utils::subset_vector<double>(subset_weights_scaling, weight_scaling, offset_a, offset_b);
+        utils::subset_vector< Vector4_t<double> >(subset_pat_pos, warped_initpos, offset_a, offset_b);
 
         if (!pars.output_shifts.empty())
-            export_shifts(subset_energies, subset_pat_pos, pars.output_shifts, i, warper.vf_ave);
+            export_shifts(subset_energies, subset_weights_scaling,
+                          subset_pat_pos, pars.output_shifts, i, warper.vf_ave);
 
         Tramp_t tramp(pat.tramp_files.at(i));
         tramp.shift_energies(subset_energies);
+        tramp.scale_weights(subset_weights_scaling);
         tramp.set_pos(subset_pat_pos);
         tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
     }
@@ -239,6 +245,7 @@ void export_adapted(Patient_Parameters_t& pat,
 }
 
 void export_shifts(const std::vector<double>& e,
+                   const std::vector<double>& w,
                    const Array4<double>& p,
                    const std::string& file,
                    const short& beamid,
@@ -255,21 +262,23 @@ void export_shifts(const std::vector<double>& e,
     if (beamid == 0)
     {
         std::cout << "Writting adaptation shifts to " << file << std::endl;
-        std::string txt = "Isocenter shift: " + std::to_string(isocenter_shift.x) +
-                          ", " + std::to_string(isocenter_shift.y) +
-                          ", " + std::to_string(isocenter_shift.z) + " cm";
+        std::string txt = "Isocenter shift: " +
+                          std::to_string(isocenter_shift.x) + ", " + 
+                          std::to_string(isocenter_shift.y) + ", " + 
+                          std::to_string(isocenter_shift.z) + " cm";
         std::cout << txt << std::endl;
         ofs << "# " << txt << '\n';
-        ofs << "# e x y z d beamid spotid\n";
+        ofs << "# w e x y z d beamid spotid\n";
     }
 
     for (size_t spotid = 0; spotid < e.size(); spotid++)
     {
         double vx = p.at(spotid).x;
         double vy = p.at(spotid).y;
-        double z = p.at(spotid).z;
-        ofs << e.at(spotid) << " " << vx << " " << vy << " " << z << " ";
-        ofs << std::sqrt(vx*vx + vy*vy) << " " << beamid << " " << spotid << "\n";
+        ofs << w.at(spotid) << " " << e.at(spotid) << " ";
+        ofs << p.at(spotid).x << " " << p.at(spotid).y << " ";
+        ofs << p.at(spotid).z << " " << std::sqrt(vx*vx + vy*vy) << " ";
+        ofs << beamid << " " << spotid << "\n";
     }
 }
 
@@ -292,8 +301,7 @@ void generate_report(const std::string& report,
     std::cout << "Running: " << command << std::endl;
     int res = system(command.c_str());
 
-    if (res)
-    {
+    if (res) {
         std::cerr << "ERROR! Reporting failed with error code: " << res << std::endl;
         exit(EXIT_FAILURE);
     }

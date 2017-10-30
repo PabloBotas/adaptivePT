@@ -65,16 +65,18 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_matrix_CT.dat ..." << std::endl;
-    std::ofstream fout(parser.out_dir + "/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
+    std::string outputdir = parser.output_opt4D_files.empty() ? parser.out_dir :
+                                                                parser.output_opt4D_files;
+    std::ofstream fout(outputdir+"/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(double));
 
     std::cout << "Writting influence_cube_CT.dat ..." << std::endl;
-    std::ofstream fout2(parser.out_dir + "/influence_cube_CT.dat", std::ios::out | std::ios::binary);
-    fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
+    std::ofstream fout2(outputdir+"/influence_cube_CT.dat", std::ios::out | std::ios::binary);
+    fout2.write((char*)inf_cube.data(), inf_cube.size()*sizeof(float));
 
     std::cout << "Writting vox_endpoints_CT.dat ..." << std::endl;
-    std::ofstream fout3(parser.out_dir + "/vox_endpoints_CT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout3(outputdir+"/vox_endpoints_CT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < endpoints.size(); ++i)
     {
         unsigned int vox_x = floor(endpoints.at(i).x/ct.d.x);
@@ -138,16 +140,18 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     gpu_calculate_influence (pat.total_spots, endpoints, influence, spot_weights, inf_cube);
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_CBCT.dat ..." << std::endl;
-    std::ofstream fout(parser.out_dir + "/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
+    std::string outputdir = parser.output_opt4D_files.empty() ? parser.out_dir :
+                                                            parser.output_opt4D_files;
+    std::ofstream fout(outputdir+"/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(double));
     
     std::cout << "Writting influence_cube_CBCT.dat ..." << std::endl;
-    std::ofstream fout2(parser.out_dir + "/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
-    fout2.write((char*)&inf_cube[0], inf_cube.size()*sizeof(float));
+    std::ofstream fout2(outputdir+"/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
+    fout2.write((char*)inf_cube.data(), inf_cube.size()*sizeof(float));
 
     std::cout << "Writting vox_endpoints_CBCT.dat ..." << std::endl;
-    std::ofstream fout3(parser.out_dir + "/vox_endpoints_CBCT.dat", std::ios::out | std::ios::binary);
+    std::ofstream fout3(outputdir+"/vox_endpoints_CBCT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < endpoints.size(); ++i)
     {
         unsigned int vox_x = floor(endpoints.at(i).x/ct.d.x);

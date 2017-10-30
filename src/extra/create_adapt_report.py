@@ -8,13 +8,14 @@ import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import pandas as pd
 # plt.style.use('ggplot')
 mpl.rcParams['axes.labelpad'] = 2
 mpl.rcParams['axes.formatter.useoffset'] = False
 mpl.rcParams['font.size'] = 6
 mpl.rcParams['figure.titlesize'] = 14
 mpl.rcParams['figure.dpi'] = 250
-mpl.rcParams['figure.figsize'] = 10, 6
+mpl.rcParams['figure.figsize'] = 10, 8
 
 
 def find_range(a, margin=5., va=None):
@@ -180,7 +181,8 @@ def analize_vf(vf_file, pp):
 
 def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     r = np.genfromtxt(shifts_file, comments='#', delimiter=' ',
-                      names=['e', 'x', 'y', 'z', 'd', 'beamid', 'spotid']).T
+                      names=['w', 'e', 'x', 'y', 'z', 'd', 'beamid', 'spotid']).T
+    all_dw = np.array(r['w'])
     all_de = np.array(r['e']/1e6)
     all_x = 10*np.array(r['x'])
     all_y = 10*np.array(r['y'])
@@ -189,12 +191,14 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     beamid = np.array(r['beamid']).astype(int)
     # spotid = [r['spotid']]
 
+    all_dw = all_dw if hasattr(all_dw, "__len__") else np.array([all_dw])
     all_de = all_de if hasattr(all_de, "__len__") else np.array([all_de])
     all_x = all_x if hasattr(all_x, "__len__") else np.array([all_x])
     all_y = all_y if hasattr(all_y, "__len__") else np.array([all_y])
     beamid = beamid if hasattr(beamid, "__len__") else np.array([beamid])
 
     # Round
+    all_dw = np.round(all_dw, decimals=8)
     all_de = np.round(all_de, decimals=3)
     all_x = np.round(all_x, decimals=3)
     all_y = np.round(all_y, decimals=3)
@@ -215,7 +219,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         tramp_e = np.round(tramp_e, decimals=3)
         tramp_x = np.round(tramp_x, decimals=3)
         tramp_y = np.round(tramp_y, decimals=3)
+        tramp_w = np.round(tramp_w, decimals=8)
 
+        dw = np.array(all_dw[beamid == tramp_num])
         de = np.array(all_de[beamid == tramp_num])
         x = np.array(all_x[beamid == tramp_num])
         y = np.array(all_y[beamid == tramp_num])
@@ -231,7 +237,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         fig.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
 
         # FIGURE 1, PLOT 1 --------------------------------
-        ax = fig.add_subplot(3, 2, 1)
+        ax = fig.add_subplot(4, 2, 1)
         accu_len = 0
         for i, layer_energy in enumerate(unique_energies):
             bool_mask = tramp_e == layer_energy
@@ -258,7 +264,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
         # FIGURE 1, PLOT 2 --------------------------------
-        ax = fig.add_subplot(3, 2, 2)
+        ax = fig.add_subplot(4, 2, 2)
         nbins = 25
         color_range = find_range(de, 0.)
         if color_range[0] == color_range[1]:
@@ -273,7 +279,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.set_xlabel('Energy shift (MeV)', fontsize=7)
 
         # FIGURE 1, PLOT 3 --------------------------------
-        ax = fig.add_subplot(3, 2, 3)
+        ax = fig.add_subplot(4, 2, 3)
         cmap = plt.cm.get_cmap('rainbow')
         color_range = find_range(de, 0.)
         if color_range[0] == color_range[1]:
@@ -293,7 +299,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.set_ylabel('Y (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 4 --------------------------------
-        ax = fig.add_subplot(3, 2, 4)
+        ax = fig.add_subplot(4, 2, 4)
         nbins = 25
         if d.max()-d.min() < 0.1:
             ax.hist(d, bins=nbins, range=(d.min()-0.05, d.max()+0.05))
@@ -302,7 +308,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.set_xlabel('Shift size (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 5 --------------------------------
-        ax = fig.add_subplot(3, 2, 5)
+        ax = fig.add_subplot(4, 2, 5)
         ax.step(range(len(tramp_y)), tramp_y, color='black', alpha=0.5)
         ax.step(range(len(tramp_y)), y, color='blue', alpha=0.5)
         ax.plot(y, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
@@ -327,7 +333,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
 
-        ax = fig.add_subplot(3, 2, 6)
+        ax = fig.add_subplot(4, 2, 6)
         ax.plot(time, color='blue', alpha=0.5)
         ax.plot(time_adapted, color='red')
         accu_len = 0
@@ -347,6 +353,47 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.annotate(summary_adapted, family='monospace',
                     textcoords='axes fraction', xytext=(0.31, 0.64),
                     xy=(5, min(time)), fontsize=4, bbox=bbox_props_adapt)
+
+        # FIGURE 1, PLOT 7 --------------------------------
+        ax = fig.add_subplot(4, 2, 7)
+        ax.hist(dw, 50, facecolor='green', normed=True, alpha=0.75)
+        ax.set_xlabel("Weight change")
+        ax.set_ylabel("Frequency")
+
+        # FIGURE 1, PLOT 8 --------------------------------
+        positions_keys = [str(i) for i in np.round(unique_energies, 1)]
+        boxprops = dict(linewidth=0.6)
+        whiskerprops = dict(linestyle='-', linewidth=0.5)
+        medianprops = dict(linewidth=0.6)
+        meanprops = dict(markersize=2)
+        capprops = dict(linewidth=0.6)
+        flierprops = dict(marker='o', markersize=1, markerfacecolor='black')
+        box_kwargs = dict(return_type='dict', flierprops=flierprops, medianprops=medianprops,
+                          boxprops=boxprops, whiskerprops=whiskerprops, patch_artist=True,
+                          capprops=capprops, showmeans=True)
+
+        # Create pandas df to plot boxplot
+        weight_layers = list()
+        for i,layer_energy in enumerate(unique_energies):
+            weight_layers.append(dw[tramp_e == layer_energy])
+        df = pd.DataFrame(weight_layers)
+        df = df.transpose()
+        df.columns = positions_keys
+
+        ax = fig.add_subplot(4, 2, 8)
+        bp = df.boxplot(ax=ax, meanprops=meanprops, **box_kwargs)
+        ax.set_xlabel("Energy layer", fontsize=7)
+        ax.set_ylabel(r'$\Delta w$', fontsize=7)
+        ax.grid(False)
+        ax.grid(color='k', linestyle=':', linewidth=0.5, alpha=0.25, axis='y', zorder=1)
+
+        colors = ['#d9544d', '#3778bf', '#7bb274']
+        [item.set_color('black') for item in bp['boxes']]
+        [item.set_facecolor(colors[i%len(colors)]) for i,item in enumerate(bp['boxes'])]
+        [item.set_color('black') for item in bp['whiskers']]
+        [item.set_color('black') for item in bp['medians']]
+        [item.set_markerfacecolor(colors[(i-1)%len(colors)]) for i,item in enumerate(bp['means'])]
+
 
         pp.savefig(fig, bbox_inches='tight')
         fig.clf()

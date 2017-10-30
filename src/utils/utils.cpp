@@ -120,3 +120,19 @@ Vector3_t<double> utils::closest_point(const Vector3_t<double>& vec,
     return vec_p + (vec.dot(p-vec_p)/vec.length2())*vec;
 }
 
+
+template<class T>
+void utils::subset_vector(std::vector<T>& vout, const std::vector<T>& v,
+                          const size_t offset_a, const size_t offset_b)
+{
+    typename std::vector<T>::const_iterator a = v.begin() + offset_a;
+    typename std::vector<T>::const_iterator b = v.begin() + offset_b;
+    vout.assign(a, b);
+}
+template void
+utils::subset_vector<double>(std::vector<double>&, const std::vector<double>&,
+                             const size_t, const size_t);
+template void
+utils::subset_vector< Vector4_t<double> >(std::vector< Vector4_t<double> >&,
+                                          const std::vector< Vector4_t<double> >&,
+                                          const size_t, const size_t);
