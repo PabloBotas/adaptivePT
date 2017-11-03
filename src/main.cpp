@@ -11,6 +11,7 @@
 #include "patient_parameters.hpp"
 #include "program_options.hpp"
 #include "tramp.hpp"
+#include "structure_sampler.hpp"
 #include "utils.hpp"
 #include "volume.hpp"
 #include "warper.hpp"
@@ -89,15 +90,20 @@ int main(int argc, char** argv)
     Array4<double> warped_endpoints(pat.total_spots);
     Array4<double> warped_initpos(pat.total_spots);
     Array4<double> cbct_endpoints(pat.total_spots);
-    Array4<double> influence_ct(pat.total_spots*pat.total_spots);
-    Array4<double> influence_cbct(pat.total_spots*pat.total_spots);
     std::vector<double> energy_shift(pat.total_spots);
     std::vector<double> weight_scaling(pat.total_spots, 1.0);
 
     // Warper ----------------------------------------------------------------
     Warper_t warper(parser.vf_file, parser.output_vf);
+    warper.print_vf();
 
     // Adaptive steps --------------------------------------------------------
+    // Sample target for influence calculation
+    Array4<double> influence_ct(pat.total_spots*pat.total_spots);
+    Array4<double> influence_cbct(pat.total_spots*pat.total_spots);
+    structure_sampler (parser.ct_target_file, pat.total_spots, pat.total_spots, warper, pat.ct,
+                       influence_ct, influence_cbct);
+
     // 1: Get endpoints in CT
     compute_in_ct (pat, parser,                       // inputs
                    warper,                            // outputs
@@ -166,8 +172,8 @@ void compute_in_ct(const Patient_Parameters_t& pat,
     warped_initpos.resize(pat.total_spots);
     std::copy (endpoints.begin(), endpoints.end(), warped_endpoints.begin());
     std::copy (initpos.begin(), initpos.end(), warped_initpos.begin());
-    warper.apply_to(warped_endpoints, warped_initpos, pat.ct, pat.treatment_planes,
-                    pat.angles, pat.spots_per_field, parser.warp_opts);
+    warper.apply_to_plan(warped_endpoints, warped_initpos, pat.ct, pat.treatment_planes,
+                         pat.angles, pat.spots_per_field, parser.warp_opts);
 
     // Print results
     std::cout << "Warped patient positions and wepl (example):" << std::endl;

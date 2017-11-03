@@ -2,6 +2,9 @@
 #include <vector>
 #include <cmath>
 
+#include "vector2.hpp"
+#include "vector3.hpp"
+
 // Vector4_t ---------------------------------------
 template<class T>
 Vector4_t<T>::Vector4_t()

@@ -37,8 +37,8 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Parser& parser,
                           Array4<double>& influence);
 
-void gpu_calculate_influence (const short& pat,
-                              const Array4<double>& endpoints,
+void gpu_calculate_influence (const short& nspots,
+                              const short& nprobes,
                               Array4<double>& influence,
                               std::vector<float>& spot_weights,
                               std::vector<float>& inf_volume);

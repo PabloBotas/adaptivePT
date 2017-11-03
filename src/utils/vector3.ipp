@@ -2,6 +2,9 @@
 #include <iostream>
 #include <vector>
 
+#include "vector2.hpp"
+#include "vector4.hpp"
+
 // Vector3_t ---------------------------------------
 template<class T>
 Vector3_t<T>::Vector3_t()

@@ -17,6 +17,7 @@ Mha_reader_t::Mha_reader_t(std::string f) : file(f)
     read_file();
 }
 
+
 void Mha_reader_t::read_file()
 {
     read_header();
@@ -30,19 +31,21 @@ void Mha_reader_t::read_header()
     utils::check_fs(stream, file, std::string());
 
     // Get header values
-    ObjectType             = getHeaderValue<std::string>(stream);
-    NDims                  = getHeaderValue<unsigned int>(stream);
-    BinaryData             = getHeaderValue<bool>(stream);
-    BinaryDataByteOrderMSB = getHeaderValue<bool>(stream);
-    CompressedData         = getHeaderValue<bool>(stream);
-    transform_matrix       = getHeaderVector<double>(stream, 9);
-    origin                 = getHeaderVector<double>(stream, 3);
-    CenterOfRotation       = getHeaderVector<int>(stream, 9);
-    AnatomicalOrientation  = getHeaderValue<std::string>(stream);
-    spacing                = getHeaderVector<double>(stream, 3);
-    dim                    = getHeaderVector<unsigned int>(stream, 3);
-    std::string ElType     = getHeaderValue<std::string>(stream);
-    ElementDataFile        = getHeaderValue<std::string>(stream);
+    ObjectType              = getHeaderValue<std::string>(stream, "ObjectType");
+    NDims                   = getHeaderValue<unsigned int>(stream, "NDims");
+    BinaryData              = getHeaderValue<bool>(stream, "BinaryData");
+    BinaryDataByteOrderMSB  = getHeaderValue<bool>(stream, "BinaryDataByteOrderMSB");
+    CompressedData          = getHeaderValue<bool>(stream, "CompressedData");
+    transform_matrix        = getHeaderVector<double>(stream, "TransformMatrix", 9);
+    origin                  = getHeaderVector<double>(stream, "Offset", 3);
+    CenterOfRotation        = getHeaderVector<int>(stream, "CenterOfRotation", 9);
+    AnatomicalOrientation   = getHeaderValue<std::string>(stream, "AnatomicalOrientation");
+    spacing                 = getHeaderVector<double>(stream, "ElementSpacing", 3);
+    dim                     = getHeaderVector<unsigned int>(stream, "DimSize", 3);
+    ElementNumberOfChannels = getHeaderValue<unsigned int>(stream, "ElementNumberOfChannels",
+                                                           default_ElementNumberOfChannels);
+    std::string ElType      = getHeaderValue<std::string>(stream, "ElementType");
+    ElementDataFile         = getHeaderValue<std::string>(stream, "ElementDataFile");
 
     origin.x /= 10;
     origin.y /= 10;
@@ -53,16 +56,20 @@ void Mha_reader_t::read_header()
     nElements = dim.x*dim.y*dim.z;
 
     if (ElType.compare("MET_SHORT") == 0) {
-        nb = 2;
+        nb = sizeof(short);
         type_id = 1;
     } else if (ElType.compare("MET_USHORT") == 0) {
-        nb = 2;
+        nb = sizeof(unsigned short);
         type_id = 2;
     } else if (ElType.compare("MET_FLOAT") == 0) {
-        nb = 4;
+        nb = sizeof(float);
         type_id = 3;
+    } else if (ElType.compare("MET_UCHAR") == 0) {
+        nb = sizeof(unsigned char);
+        type_id = 4;
     } else {
-        std::cerr << "Unrecognized type" << std::endl;
+        std::cerr << "Unrecognized type \"" << ElType;
+        std::cerr << "\" in MHA header of file " << file << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -80,7 +87,7 @@ void Mha_reader_t::read_header()
 
 void Mha_reader_t::read_body()
 {
-    unsigned int bytes_to_read = nElements*nb;
+    unsigned int bytes_to_read = nElements*nb*ElementNumberOfChannels;
     std::ifstream stream(file, std::ios::binary | std::ios::in | std::ios::ate);
     unsigned int end = stream.tellg();
     unsigned int header_size = end - bytes_to_read;
@@ -93,14 +100,14 @@ void Mha_reader_t::read_body()
         {
             // std::cout << "INPUT IMAGE FORMAT IS SHORT" << std::endl;
             std::vector<short> temp(nElements);
-            stream.read(reinterpret_cast<char*>(&data[0]), bytes_to_read);
+            read_body_to_vector(data, stream);
             break;
         }
         case 2:
         {
             // std::cout << "INPUT IMAGE FORMAT IS UNSIGNED SHORT" << std::endl;
             std::vector<unsigned short> temp(nElements);
-            stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
+            read_body_to_vector(temp, stream);
             data.assign(temp.begin(), temp.end());
             break;
         }
@@ -108,7 +115,15 @@ void Mha_reader_t::read_body()
         {
             // std::cout << "INPUT IMAGE FORMAT IS FLOAT" << std::endl;
             std::vector<float> temp(nElements);
-            stream.read(reinterpret_cast<char*>(&temp[0]), bytes_to_read);
+            read_body_to_vector(temp, stream);
+            data.assign(temp.begin(), temp.end());
+            break;
+        }
+        case 4:
+        {
+            // std::cout << "INPUT IMAGE FORMAT IS UNSIGNED CHAR" << std::endl;
+            std::vector<unsigned char> temp(nElements);
+            read_body_to_vector<unsigned char>(temp, stream);
             data.assign(temp.begin(), temp.end());
             break;
         }
@@ -119,42 +134,70 @@ void Mha_reader_t::read_body()
     std::cout << "Bytes read: " << bytes_to_read << std::endl;
 }
 
-
 template<class T>
-T Mha_reader_t::getHeaderValue(std::ifstream &stream)
+void Mha_reader_t::read_body_to_vector(std::vector<T>& temp, std::ifstream& stream)
 {
-    std::string line;
-    std::getline(stream, line);
-    std::string dummy;
-    T out;
-    if (typeid(T) == typeid(bool))
-    {
-        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
-        std::istringstream ss(line);
-        ss >> dummy >> dummy >> std::boolalpha >> out;
+    if (ElementNumberOfChannels > 1) {
+        for (unsigned int i = 0; i < nElements; ++i) {
+            stream.read(reinterpret_cast<char*>(&temp[i]), nb);
+            stream.ignore((ElementNumberOfChannels-1)*nb);
+        }
+    } else {
+        stream.read(reinterpret_cast<char*>(&temp[0]), nElements*nb);
     }
-    else
-    {
-        std::istringstream ss(line);
-        ss >> dummy >> dummy >> out;
-    }
-    return out;
 }
 
 
 template<class T>
-std::vector<T> Mha_reader_t::getHeaderVector(std::ifstream &stream, const int n)
+T Mha_reader_t::getHeaderValue(std::ifstream &stream, std::string key, T default_value)
 {
+    size_t place = stream.tellg();
+
+    std::string line;
+    std::getline(stream, line);
+    std::string field, dummy;
+    T out;
+    if (typeid(T) == typeid(bool)) {
+        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+        std::istringstream ss(line);
+        ss >> field >> dummy >> std::boolalpha >> out;
+    } else {
+        std::istringstream ss(line);
+        ss >> field >> dummy >> out;
+    }
+
+    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+    std::transform(field.begin(), field.end(), field.begin(), ::tolower);
+    if (field != key) {
+        stream.seekg(place);
+        return default_value;
+    }
+
+    return out;
+}
+
+template<class T>
+std::vector<T> Mha_reader_t::getHeaderVector(std::ifstream &stream, std::string key, const int n)
+{
+    size_t place = stream.tellg();
     std::string line;
     std::getline(stream, line);
 
     std::istringstream ss(line);
-    std::string dummy;
+    std::string field, dummy;
+    ss >> field >> dummy;
+
+    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+    std::transform(field.begin(), field.end(), field.begin(), ::tolower);
+    if (field != key) {
+        stream.seekg(place);
+        return std::vector<T>();
+    }
+
     std::vector<T> out(n);
-    ss >> dummy >> dummy;
-    for (int i = 0; i < n; i++)
-    {
+    for (int i = 0; i < n; i++) {
         ss >> out[i];
     }
+
     return out;
 }

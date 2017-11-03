@@ -35,21 +35,33 @@ void Warper_t::set (const std::string vf_file,
     set_vf_origins();
 }
 
-void Warper_t::apply_to (Array4<double>& endpoints,
-                         Array4<double>& init_pos,
-                         const CT_Dims_t& ct,
-                         Planes_t treatment_plane,
-                         const std::vector<BeamAngles_t>& angles,
-                         const std::vector<short>& spots_per_field,
-                         const Warp_opts_t options)
+void Warper_t::apply_to_plan (Array4<double>& endpoints,
+                              Array4<double>& init_pos,
+                              const CT_Dims_t& ct,
+                              Planes_t treatment_plane,
+                              const std::vector<BeamAngles_t>& angles,
+                              const std::vector<short>& spots_per_field,
+                              const Warp_opts_t options)
 {
     probe (endpoints, ct);
+    set_average();
     apply_position_options(options, spots_per_field);
     if(exp_file)
         write_to_file (endpoints, spots_per_field);
 
     warp_points (endpoints);
     warp_init_points (init_pos, treatment_plane, spots_per_field, angles);
+    // print_vf();
+}
+
+Array4<double> Warper_t::apply_to_points (const Array4<double>& pos,
+                                          const CT_Dims_t& ct)
+{
+    probe (pos, ct);
+    Array4<double> newpos(pos.size());
+    newpos.assign(pos.begin(), pos.end());
+    warp_points (newpos);
+    return newpos;
 }
 
 void Warper_t::apply_position_options (Warp_opts_t options,
@@ -354,6 +366,8 @@ void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
     // Get vf from stdout
     std::stringstream ss_per_line(str);
     std::string line;
+    if (vf.size() > 0)
+        vf.clear();
     vf.reserve(p.size());
 
     if (!str.empty())
@@ -380,8 +394,6 @@ void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
             vf.push_back(v);
         }
     }
-
-    set_average();
 }
 
 void Warper_t::set_average ()
@@ -423,3 +435,11 @@ std::string Warper_t::to_location_str (const Vector3_t<double>& p,
         s += "; ";
     return s;
 }
+
+void Warper_t::print_vf (unsigned int n)
+{
+    unsigned int m = vf.size() < n ? vf.size() : n;
+    for (unsigned int i = 0; i < m; ++i)
+        std::cout << vf.at(i).x << " " << vf.at(i).y << " " << vf.at(i).z << std::endl;
+}
+

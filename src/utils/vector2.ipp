@@ -1,7 +1,8 @@
-#include "vector2.hpp"
-
 #include <iostream>
 #include <vector>
+
+#include "vector4.hpp"
+#include "vector3.hpp"
 
 // Vector2_t ---------------------------------------
 template<class T>

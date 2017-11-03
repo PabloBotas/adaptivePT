@@ -20,9 +20,6 @@ public:
     std::string patient;
     std::string cbct_file;
     std::string vf_file;
-    std::string dose_file;
-    double dose_presc;
-    double spot_factor;
     // Output files
     std::string out_dir;
     std::string output_shifts;
@@ -32,6 +29,7 @@ public:
     std::string output_cbct_traces;
     std::string output_opt4D_files;
     bool launch_opt4D;
+    std::string ct_target_file;
     // Adaptation methods
     Warp_opts_t warp_opts;
 

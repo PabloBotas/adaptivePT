@@ -1,8 +1,8 @@
 #ifndef __VECTOR2_HPP__
 #define __VECTOR2_HPP__
 
-#include "vector3.hpp"
-#include "vector4.hpp"
+// #include "vector3.hpp"
+// #include "vector4.hpp"
 #include <string>
 #include <vector>
 

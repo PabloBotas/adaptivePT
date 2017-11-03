@@ -15,13 +15,16 @@ public:
     Warper_t(const std::string vf_file,
              const std::string output_vf);
     void set(const std::string vf_file, const std::string output_vf);
-    void apply_to (Array4<double>& endpoints,
-                   Array4<double>& init_pos,
-                   const CT_Dims_t& ct,
-                   Planes_t treatment_plane,
-                   const std::vector<BeamAngles_t>& angles,
-                   const std::vector<short>& spots_per_field,
-                   const Warp_opts_t opts);
+    void apply_to_plan (Array4<double>& endpoints,
+                        Array4<double>& init_pos,
+                        const CT_Dims_t& ct,
+                        Planes_t treatment_plane,
+                        const std::vector<BeamAngles_t>& angles,
+                        const std::vector<short>& spots_per_field,
+                        const Warp_opts_t opts);
+    Array4<double> apply_to_points (const Array4<double>& pos,
+                                    const CT_Dims_t& ct);
+    void print_vf (unsigned int n = 10);
     Vector3_t<double> vf_ave;
     Array3<double> vf_ave_planes;
     
