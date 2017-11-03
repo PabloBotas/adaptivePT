@@ -386,6 +386,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.set_ylabel(r'$\Delta w$', fontsize=7)
         ax.grid(False)
         ax.grid(color='k', linestyle=':', linewidth=0.5, alpha=0.25, axis='y', zorder=1)
+        ax.set_xticklabels(labels=ax.get_xticklabels(), rotation=30, horizontalalignment='center')
 
         colors = ['#d9544d', '#3778bf', '#7bb274']
         [item.set_color('black') for item in bp['boxes']]
