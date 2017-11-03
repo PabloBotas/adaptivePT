@@ -22,17 +22,27 @@ __device__ AnalyticalBeam::~AnalyticalBeam ()
 
 __device__ void AnalyticalBeam::fill_pars ()
 {
-    b = tex2D(bp_b_tex, energy_index, depth_index);
     n = tex2D(bp_n_tex, energy_index, depth_index);
-    s = tex2D(bp_s_tex, energy_index, depth_index);
-    w = tex2D(bp_w_tex, energy_index, depth_index);
+    if (n > 0) {
+        b = tex2D(bp_b_tex, energy_index, depth_index);
+        s = tex2D(bp_s_tex, energy_index, depth_index);
+        w = tex2D(bp_w_tex, energy_index, depth_index);
+    } else {
+        b = 1;
+        s = 1;
+        w = 1;
+    }
+    
 }
 
 
 __device__ double AnalyticalBeam::get_dose_at (double const wepl_r)
 {
-    return fabs(n * (w/(sqrtf(2*PI)*s) * exp(-0.5 * wepl_r*wepl_r/(s*s)) +
-        (1-w) * 2*pow(b, 1.5)/PI *1/pow(wepl_r*wepl_r + b, 2)) );
+    if (n == 0)
+        return 0;
+    else
+        return fabs(n * (w/(sqrtf(2*PI)*s) * exp(-0.5 * wepl_r*wepl_r/(s*s)) +
+               (1-w) * 2*pow(b, 1.5)/PI *1/pow(wepl_r*wepl_r + b, 2)) );
 }
 
 
