@@ -39,13 +39,13 @@ __device__ void get_q50_blur_step(double& step,
                                   double& de,
                                   const double max_step,
                                   const Ray& ray,
+                                  double const energy_in,
                                   const int4& vox)
 {
-    double const energy_in = ray.get_energy();
     // Select density and voxel corresponding to the Q50 across a 9 position
     double density;
     int4 q50_vox;
-    q50_density_blur(density, q50_vox, ray, vox);
+    q50_density_blur(density, q50_vox, ray, energy_in, vox);
 
     // Get stp ratio
     double const mass_stp_ratio = massStpRatio(energy_in, q50_vox);
@@ -63,15 +63,15 @@ __device__ void get_q50_blur_step(double& step,
 }
 
 
-__device__ void q50_density_blur(double& density, int4& q50_vox,
-                                 const Ray& ray, const int4& vox)
+__device__ void q50_density_blur(double& density, int4& q50_vox, const Ray& ray,
+                                 double const energy_in, const int4& vox)
 {
     int const N = 9;
     int const q50_index = int(N/2+0.5);
     double const sigma_scale = 0.5;
     int voxels_array[N];
     // Set 8 points at a distance from the central axis
-    step_blur_get_voxels(voxels_array, ray, vox, N, sigma_scale);
+    step_blur_get_voxels(voxels_array, ray, energy_in, vox, N, sigma_scale);
     // Calculate 50 percentile of the density
     double density_array[N];
     for (int i = 0; i < N; ++i)
@@ -91,12 +91,12 @@ __device__ void get_average_blur_step(double& step,
                                       double& de,
                                       const double max_step,
                                       const Ray& ray,
+                                      const double energy_in,
                                       const int4& vox)
 {
-    double const energy_in = ray.get_energy();
     // Select density and voxel corresponding to the Q50 across a 9 position
     double density, mass_stp_ratio;
-    average_blur(density, mass_stp_ratio, ray, vox);
+    average_blur(density, mass_stp_ratio, ray, energy_in, vox);
     
     // Set steps
     step = max_step;
@@ -112,13 +112,13 @@ __device__ void get_average_blur_step(double& step,
 
 
 __device__ void average_blur (double& density, double& mass_stp_ratio,
-                              const Ray& ray, const int4& vox)
+                              const Ray& ray, const double energy_in, const int4& vox)
 {
     int const N = 9;
     double const sigma_scale = 1;
     int voxels_array[N];
     // Set 8 points at a distance from the central axis
-    step_blur_get_voxels(voxels_array, ray, vox, N, sigma_scale);
+    step_blur_get_voxels(voxels_array, ray, energy_in, vox, N, sigma_scale);
     // Calculate 50 percentile of the density
     double density_array[N], mass_stp_ratio_array[N];
     for (int i = 0; i < N; ++i)
@@ -138,44 +138,31 @@ __device__ void average_blur (double& density, double& mass_stp_ratio,
     // mass_stp_ratio /= N-1;
     // density = (density + density_array[N-1])/2;
     // mass_stp_ratio = (mass_stp_ratio + mass_stp_ratio_array[N-1])/2;
-    // case 2
+    double rel_weight;
+#if defined(__STEP_AVERAGE__)
+    rel_weight = 0.606530659;
+#elif defined(__STEP_AVERAGE2__)
+    rel_weight = 0.882496902;
+#elif defined(__STEP_AVERAGE3__)
+    rel_weight = 0.969233234;
+#endif
     for (int i = 0; i < N-1; ++i)
     {
-        density += 0.606530659*density_array[i];
-        mass_stp_ratio += 0.606530659*mass_stp_ratio_array[i];
+        density += rel_weight*density_array[i];
+        mass_stp_ratio += rel_weight*mass_stp_ratio_array[i];
     }
     density += density_array[N-1];
     mass_stp_ratio += mass_stp_ratio_array[N-1];
-    density /= 0.606530659*(N-1)+1;
-    mass_stp_ratio /= 0.606530659*(N-1)+1;
-    // case 3
-    // for (int i = 0; i < N-1; ++i)
-    // {
-    //     density += 0.882496902*density_array[i];
-    //     mass_stp_ratio += 0.882496902*mass_stp_ratio_array[i];
-    // }
-    // density += density_array[N-1];
-    // mass_stp_ratio += mass_stp_ratio_array[N-1];
-    // density /= 0.882496902*(N-1)+1;
-    // mass_stp_ratio /= 0.882496902*(N-1)+1;
-    // // CASE 4
-    // for (int i = 0; i < N-1; ++i)
-    // {
-    //     density += 0.969233234*density_array[i];
-    //     mass_stp_ratio += 0.969233234*mass_stp_ratio_array[i];
-    // }
-    // density += density_array[N-1];
-    // mass_stp_ratio += mass_stp_ratio_array[N-1];
-    // density /= 0.969233234*(N-1)+1;
-    // mass_stp_ratio /= 0.969233234*(N-1)+1;
+    density /= rel_weight*(N-1)+1;
+    mass_stp_ratio /= rel_weight*(N-1)+1;
 }
 
 
-__device__ void step_blur_get_voxels(int* voxels, const Ray& ray, const int4& vox,
-                                     const int n, const double scale)
+__device__ void step_blur_get_voxels(int* voxels, const Ray& ray, const double energy_in,
+                                     const int4& vox, const int n, const double scale)
 {
     // CALCULATE AND APPLY BLURRING AT BEGINNING OF STEP
-    AnalyticalBeam beam(ray.get_energy(), ray.get_wepl());
+    AnalyticalBeam beam(energy_in, ray.get_wepl());
     double sigma = scale*beam.get_sigma();
 
     // Get perpendicular vectors on ray plane v1, v2

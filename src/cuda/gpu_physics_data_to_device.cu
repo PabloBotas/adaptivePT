@@ -147,7 +147,7 @@ void read_parameterization_file(std::string& file,
             energies.push_back(temp);
     
     // Read the rest of the file
-    while(getline(stream, line)) {
+    while(std::getline(stream, line)) {
         std::stringstream ss(line);
         ss >> temp;
         if (readInfo)
@@ -181,7 +181,7 @@ void gpu_physics_to_device::sendBraggPeakFits()
     //TODO FIX THIS!!!
     float const delta_energy = (energies.at(2)-energies.at(1)) * MeV2eV;
     // !!!!!!!!!!!
-    float const minimum_energy = (energies.at(1)-delta_energy) * MeV2eV;
+    float const minimum_energy = (energies.at(1)*MeV2eV-delta_energy);
     // Get depths data 
     size_t const n_depths = depths.size();
     float const delta_depths = depths.at(1)-depths.at(0);
@@ -193,23 +193,35 @@ void gpu_physics_to_device::sendBraggPeakFits()
 
     //  create textures on device
     cudaMallocArray(&bp_b_array, &bp_b_tex.channelDesc, n_energies, n_depths);
-    cudaMemcpyToArray(bp_b_array, 0,0, &b[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    cudaMemcpyToArray(bp_b_array, 0, 0, &b[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    bp_b_tex.normalized = false; 
     bp_b_tex.filterMode = cudaFilterModeLinear;
+    bp_b_tex.addressMode[0] = cudaAddressModeBorder;
+    bp_b_tex.addressMode[1] = cudaAddressModeBorder;
     cudaBindTextureToArray(bp_b_tex, bp_b_array);
 
     cudaMallocArray(&bp_n_array, &bp_n_tex.channelDesc, n_energies, n_depths);
-    cudaMemcpyToArray(bp_n_array, 0,0, &n[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    cudaMemcpyToArray(bp_n_array, 0, 0, &n[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    bp_n_tex.normalized = false; 
     bp_n_tex.filterMode = cudaFilterModeLinear;
+    bp_n_tex.addressMode[0] = cudaAddressModeBorder;
+    bp_n_tex.addressMode[1] = cudaAddressModeBorder;
     cudaBindTextureToArray(bp_n_tex, bp_n_array);
 
     cudaMallocArray(&bp_s_array, &bp_s_tex.channelDesc, n_energies, n_depths);
-    cudaMemcpyToArray(bp_s_array, 0,0, &s[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    cudaMemcpyToArray(bp_s_array, 0, 0, &s[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    bp_s_tex.normalized = false; 
     bp_s_tex.filterMode = cudaFilterModeLinear;
+    bp_s_tex.addressMode[0] = cudaAddressModeBorder;
+    bp_s_tex.addressMode[1] = cudaAddressModeBorder;
     cudaBindTextureToArray(bp_s_tex, bp_s_array);
 
     cudaMallocArray(&bp_w_array, &bp_w_tex.channelDesc, n_energies, n_depths);
-    cudaMemcpyToArray(bp_w_array, 0,0, &w[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    cudaMemcpyToArray(bp_w_array, 0, 0, &w[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
+    bp_w_tex.normalized = false; 
     bp_w_tex.filterMode = cudaFilterModeLinear;
+    bp_w_tex.addressMode[0] = cudaAddressModeBorder;
+    bp_w_tex.addressMode[1] = cudaAddressModeBorder;
     cudaBindTextureToArray(bp_w_tex, bp_w_array);
 }
 

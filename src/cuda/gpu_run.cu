@@ -26,7 +26,7 @@ void do_raytrace (const std::vector<short>& spots_per_field,
     short* spf_gpu = NULL;
     array_to_device<short>(spf_gpu, spots_per_field.data(), spots_per_field.size());
     
-    short total_spots = std::accumulate(spots_per_field.begin(), spots_per_field.end(), 0);
+    ushort total_spots = std::accumulate(spots_per_field.begin(), spots_per_field.end(), 0);
     std::cout << std::endl;
     std::cout << "Calculating " << total_spots << " rays ..." << std::endl;
     int nblocks = 1 + (total_spots-1)/NTHREAD_PER_BLOCK_RAYS;

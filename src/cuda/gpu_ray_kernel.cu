@@ -6,7 +6,7 @@
 #include "gpu_ray_class.cuh"
 
 
-__global__ void raytrace_plan_kernel(const short num,
+__global__ void raytrace_plan_kernel(const ushort num,
                                      const short* spots_per_field,
                                      const double4* const orig_endpoints,
                                      double4 *pos_scorer,
@@ -33,7 +33,7 @@ __global__ void raytrace_plan_kernel(const short num,
             double step_water = 0, step = 0, de = 0;
             double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                           vox, voxUpdater, voxStepper);
-            get_average_blur_step(step, step_water, de, max_step, ray, vox);
+            get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
             ray.move(step, step_water, de);
 
             if(traces)
@@ -51,12 +51,9 @@ __global__ void raytrace_plan_kernel(const short num,
         if(orig_endpoints)
         {
             const double accu_wepl = ray.get_wepl();
-            const double sample_energy = initial_energy;
-            const double sample_wepl   = 0;
-                    
             double3 plan_endpoint = make_double3(orig_endpoints[thread]);
-            ray.set_energy(sample_energy);
-            ray.set_wepl(sample_wepl);
+            ray.set_energy(initial_energy);
+            ray.set_wepl(0);
             int sign = ahead_or_behind(ray.dir, plan_endpoint, ray.pos);
             ray.dir *= sign;
 
@@ -65,7 +62,11 @@ __global__ void raytrace_plan_kernel(const short num,
                 double step_water = 0, step = 0, de = 0;
                 double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                               vox, voxUpdater, voxStepper, plan_endpoint);
-                get_average_blur_step(step, step_water, de, max_step, ray, vox);
+#if defined(__STEP_Q50__)
+                get_q50_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+#else
+                get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+#endif
                 ray.move(step, step_water, de);
 
                 if (voxUpdater != NONE)
@@ -86,20 +87,24 @@ __global__ void raytrace_plan_kernel(const short num,
             }
 
             const double total_wepl = accu_wepl + sign*ray.get_wepl();
-            const double alpha1 = 1.63455120e-05;
-            const double alpha2 = 7.72957942e-04;
-            const double alpha3 = 3.07077098e-14;
-            const double p1 = 1.80084932;
-            const double p2 = 0.669078092;
-            const double p3 = 1.80100517;
+            const float alpha1 = 1.63455120e-05;
+            const float alpha2 = 7.72957942e-04;
+            const float alpha3 = 3.07077098e-14;
+            const float p1 = 1.80084932;
+            const float p2 = 0.669078092;
+            const float p3 = 1.80100517;
             const double E = pow(total_wepl/alpha1, 1/p1) + pow(total_wepl/alpha2, 1/p2) + pow(total_wepl/alpha3, 1/p3);
-            const double delta_E = E - initial_energy;
-            pos_scorer[ind].w = delta_E;
+            double dev = 100*(E - initial_energy)/initial_energy;
+            // Coerce change to 0.25% steps
+            const float energy_grid_step = 0.25;
+            dev = floor(dev/energy_grid_step + 0.5)*energy_grid_step;
+            double delta = dev*initial_energy/100;
+            pos_scorer[ind].w = delta;
         }
     }
 }
 
-
+// run --patient Opt4D/P01_mcgrm2425358/cbct_1 --cbct Opt4D/P01_mcgrm2425358/cbct_1/cbct_1.mha --ct_target ../patients/P01_mcgrm2425358/contours/base_plan/CTV\ OP.mha --vf ../patients/P01_mcgrm2425358/transforms/xform_deform_cCBCT1-pCT.mha --outdir Opt4D/P01_mcgrm2425358/cbct_1/adapt_free --out_vf --out_shifts --free --opt4D_out Opt4D/P01_mcgrm2425358/cbct_1/adapt_free/opt_reoptimization_files --report Opt4D/P01_mcgrm2425358/cbct_1/adapt_free/adapt_free_P01_cbct_1.pdf
 __device__ void score_traces(float *traces, int voxnum, bool last)
 {
     bool del_content = voxnum < 0;

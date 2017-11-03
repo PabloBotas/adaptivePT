@@ -3,8 +3,8 @@
 
 #include "gpu_ray_class.cuh"
 
-__global__ void get_influence_kernel(const short num,
-                                     const double4* const endpos,
+__global__ void get_influence_kernel(const ushort nspots,
+                                     const ushort nprobes,
                                      double4* influence,
                                      float* spot_weights,
                                      float* inf_volume);

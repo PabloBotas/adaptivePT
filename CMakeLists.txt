@@ -54,6 +54,31 @@ option(INFLUENCE_MATRICES "Output the 64bit-float binary influence matrices betw
 if(INFLUENCE_MATRICES)
   add_definitions(-D__INFLUENCE_MATRICES__)
 endif()
+
+option(STEP_DEFAULT "Step using Q50 statistics" ON)
+if(STEP_DEFAULT)
+  add_definitions(-D__STEP_AVERAGE__)
+endif()
+
+option(STEP_Q50 "Step using Q50 statistics" OFF)
+if(STEP_Q50)
+  add_definitions(-D__STEP_Q50__)
+endif()
+
+option(STEP_AVERAGE "Step using average at 1 sigma" OFF)
+if(STEP_AVERAGE)
+  add_definitions(-D__STEP_AVERAGE__)
+endif()
+
+option(STEP_AVERAGE2 "Step using average at 0.5 sigma" OFF)
+if(STEP_AVERAGE2)
+  add_definitions(-D__STEP_AVERAGE2__)
+endif()
+
+option(STEP_AVERAGE3 "Step using average at 0.25 sigma" OFF)
+if(STEP_AVERAGE3)
+  add_definitions(-D__STEP_AVERAGE3__)
+endif()
 # option(DEBUG_RAYS "Use mode to export a CT volume with the ray paths" OFF)
 # if(DEBUG_RAYS)
 #   add_definitions(-D__OUTPUT_SCORER_VOLUME__)
