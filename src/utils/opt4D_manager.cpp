@@ -45,7 +45,7 @@ void Opt4D_manager::launch_optimization()
 void Opt4D_manager::populate_directory(const Array4<double>& influence_ct,
                                        const Array4<double>& influence_cbct)
 {
-    std::cout << "Writting Opt4D files: ";
+    std::cout << "Writting Opt4D files:" << std::endl;
     mkdir(out_directory.c_str(), 0774);
     n = (unsigned int)(sqrt(influence_ct.size() + 0.5));
     std::cout << "\t- " << dif_file_base << std::endl;
@@ -226,9 +226,8 @@ void Opt4D_manager::write_dij(const Array4<double>& influence_cbct)
         int totalNonZero=0;
         for(size_t i=0; i < n; i++)
         {
-            float energy = influence_cbct.at(i*n).x;
             float i_float = i;
-            stream.write((char*) &energy, sizeof(float));
+            stream.write((char*) &i_float, sizeof(float));
             stream.write((char*) &i_float, sizeof(float));
             stream.write((char*) &dummy_float_0, sizeof(float));
             stream.write((char*) &non_zeros.at(i), sizeof(int));
