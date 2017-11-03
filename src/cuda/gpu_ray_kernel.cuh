@@ -3,7 +3,7 @@
 
 #include "gpu_ray_class.cuh"
 
-__global__ void raytrace_plan_kernel(const short num,
+__global__ void raytrace_plan_kernel(const ushort num,
                                      const short *spots_per_beam,
                                      const double4* const orig_endpoints,
                                      double4 *pos_scorer,

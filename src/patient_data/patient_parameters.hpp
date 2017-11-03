@@ -28,7 +28,7 @@ public:
     std::vector<std::string> tramp_files;
     std::vector<std::string> topas_files;
 
-    short total_spots;
+    ushort total_spots;
     std::vector<short> spots_per_field;
     std::vector<short> accu_spots_per_field;
     std::vector< std::vector<short> > energy_layers;
