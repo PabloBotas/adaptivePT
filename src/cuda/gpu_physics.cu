@@ -95,18 +95,17 @@ __device__ void get_average_blur_step(double& step,
                                       const int4& vox)
 {
     // Select density and voxel corresponding to the Q50 across a 9 position
-    double density, mass_stp_ratio;
+    double density=0, mass_stp_ratio=0;
     average_blur(density, mass_stp_ratio, ray, energy_in, vox);
-    
+    double ray_energy = ray.get_energy();
     // Set steps
     step = max_step;
     step_water = mass_stp_ratio*density*max_step;
-    de = get_energy_loss (step_water, energy_in);
+    de = get_energy_loss (step_water, ray_energy);
 
-    if (de >= energy_in)
-    {
-        step_water = get_residual_range (energy_in);
-        step = step_water/(massStpRatio(energy_in/2, vox)*density);
+    if (de >= ray_energy) {
+        step_water = get_residual_range (ray_energy);
+        step = step_water/(massStpRatio(ray_energy/2, vox)*density);
     }
 }
 
@@ -115,39 +114,27 @@ __device__ void average_blur (double& density, double& mass_stp_ratio,
                               const Ray& ray, const double energy_in, const int4& vox)
 {
     int const N = 9;
-    double const sigma_scale = 1;
+    double sigma_scale = 0; // this value is never used
+#if defined(__STEP_AVERAGE__)
+    sigma_scale = 1;
+#elif defined(__STEP_AVERAGE2__)
+    sigma_scale = 0.5;
+#elif defined(__STEP_AVERAGE3__)
+    sigma_scale = 0.25;
+#endif
     int voxels_array[N];
     // Set 8 points at a distance from the central axis
     step_blur_get_voxels(voxels_array, ray, energy_in, vox, N, sigma_scale);
-    // Calculate 50 percentile of the density
     double density_array[N], mass_stp_ratio_array[N];
-    for (int i = 0; i < N; ++i)
-    {
+    for (int i = 0; i < N; ++i) {
         int4 voxid = make_int4(getVoxelCoords(voxels_array[i]), voxels_array[i]);
         density_array[i] = tex3D(dens_tex, voxid.z, voxid.y, voxid.x);
         mass_stp_ratio_array[i] = massStpRatio(ray.get_energy(), voxid);
     }
 
-    // Find resultant density
-    // for (int i = 0; i < N-1; ++i)
-    // {
-    //     density += density_array[i];
-    //     mass_stp_ratio += mass_stp_ratio_array[i];
-    // }
-    // density /= N-1;
-    // mass_stp_ratio /= N-1;
-    // density = (density + density_array[N-1])/2;
-    // mass_stp_ratio = (mass_stp_ratio + mass_stp_ratio_array[N-1])/2;
-    double rel_weight;
-#if defined(__STEP_AVERAGE__)
-    rel_weight = 0.606530659;
-#elif defined(__STEP_AVERAGE2__)
-    rel_weight = 0.882496902;
-#elif defined(__STEP_AVERAGE3__)
-    rel_weight = 0.969233234;
-#endif
-    for (int i = 0; i < N-1; ++i)
-    {
+    // Find resultant density and STP
+    double rel_weight = exp(-0.5*sigma_scale*sigma_scale);
+    for (int i = 0; i < N-1; ++i) {
         density += rel_weight*density_array[i];
         mass_stp_ratio += rel_weight*mass_stp_ratio_array[i];
     }
@@ -155,6 +142,15 @@ __device__ void average_blur (double& density, double& mass_stp_ratio,
     mass_stp_ratio += mass_stp_ratio_array[N-1];
     density /= rel_weight*(N-1)+1;
     mass_stp_ratio /= rel_weight*(N-1)+1;
+
+    // printf("%f %f %f %f %f %f %f %f %f %f\n", mass_stp_ratio_array[0], mass_stp_ratio_array[1], mass_stp_ratio_array[2],
+    //     mass_stp_ratio_array[3], mass_stp_ratio_array[4], mass_stp_ratio_array[5], mass_stp_ratio_array[6], mass_stp_ratio_array[7],
+    //     mass_stp_ratio_array[8], mass_stp_ratio);
+    // printf("%f %f %f %f %f %f %f %f %f %f\n", density_array[0], density_array[1],
+    //     density_array[2], density_array[3], density_array[4], density_array[5],
+    //     density_array[6], density_array[7], density_array[8], density);
+    // printf("%f %f - ", density_array[8], density);
+    // printf("%f %f %f %f - ", density_array[8], density, mass_stp_ratio_array[8], mass_stp_ratio);
 }
 
 
@@ -181,24 +177,19 @@ __device__ void step_blur_get_voxels(int* voxels, const Ray& ray, const double e
     v2 = normalize(v2);
 
     // Get a random number depending on the 3D position (unique)
+    // The length of p is coerced to an integer and close positions may
+    // have the same integer values, so I multiply by 10000 to separate them
     curandState localState;
-    curand_init(length(p), 0, 0, &localState);
+    curand_init(10000*length(p), 0, 0, &localState);
     double rand = 2*PI*curand_uniform(&localState);
 
-    int voxid;
     double3 temp;
-    for (int i = 0; i < n; ++i)
-    {
+    for (int i = 0; i < n-1; ++i) {
         // get positions around nominal ray and voxid
-        if (i < n-1)
-        {
-            temp = p + sigma*sin(i*2*PI/(n-1)+rand)*v1 + sigma*cos(i*2*PI/(n-1)+rand)*v2;
-            voxid = get_voxel_abs(temp);
-        }
-        else
-            voxid = vox.w;
-        voxels[i] = voxid;
+        temp = p + sigma*sin(i*2*PI/(n-1)+rand)*v1 + sigma*cos(i*2*PI/(n-1)+rand)*v2;
+        voxels[i] = get_voxel_abs(temp);
     }
+    voxels[n-1] = vox.w;
 }
 
 

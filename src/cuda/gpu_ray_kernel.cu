@@ -33,7 +33,13 @@ __global__ void raytrace_plan_kernel(const ushort num,
             double step_water = 0, step = 0, de = 0;
             double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                           vox, voxUpdater, voxStepper);
-            get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+#if defined(__STEP_CENTRAL_AXIS__)
+                get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+#elif defined(__STEP_Q50__)
+                get_q50_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+#else
+                get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+#endif
             ray.move(step, step_water, de);
 
             if(traces)
@@ -62,24 +68,22 @@ __global__ void raytrace_plan_kernel(const ushort num,
                 double step_water = 0, step = 0, de = 0;
                 double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                               vox, voxUpdater, voxStepper, plan_endpoint);
-#if defined(__STEP_Q50__)
+#if defined(__STEP_CENTRAL_AXIS__)
+                get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+#elif defined(__STEP_Q50__)
                 get_q50_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
 #else
                 get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
 #endif
                 ray.move(step, step_water, de);
 
-                if (voxUpdater != NONE)
-                {
-                    if (traces)
-                    {
+                if (voxUpdater != NONE) {
+                    if (traces) {
                         int tempvox = sign < 0 ? -vox.w : vox.w;
                         score_traces(traces, tempvox, false);
                     }
                     changeVoxel(vox, voxUpdater, voxStepper);
-                }
-                else
-                {
+                } else {
                     if (traces)
                         score_traces(traces, vox.w, true);
                     break;
@@ -104,16 +108,12 @@ __global__ void raytrace_plan_kernel(const ushort num,
     }
 }
 
-// run --patient Opt4D/P01_mcgrm2425358/cbct_1 --cbct Opt4D/P01_mcgrm2425358/cbct_1/cbct_1.mha --ct_target ../patients/P01_mcgrm2425358/contours/base_plan/CTV\ OP.mha --vf ../patients/P01_mcgrm2425358/transforms/xform_deform_cCBCT1-pCT.mha --outdir Opt4D/P01_mcgrm2425358/cbct_1/adapt_free --out_vf --out_shifts --free --opt4D_out Opt4D/P01_mcgrm2425358/cbct_1/adapt_free/opt_reoptimization_files --report Opt4D/P01_mcgrm2425358/cbct_1/adapt_free/adapt_free_P01_cbct_1.pdf
 __device__ void score_traces(float *traces, int voxnum, bool last)
 {
     bool del_content = voxnum < 0;
-    if (del_content)
-    {
+    if (del_content) {
         atomicExch(&traces[abs(voxnum)], 0.0f);
-    }
-    else
-    {
+    } else {
         float val = last ? 50.0f : 1.0f;
         atomicExch(&traces[voxnum], val);
     }

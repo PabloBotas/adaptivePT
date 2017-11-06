@@ -87,7 +87,13 @@ __device__ double wepl_to_point (Ray& ray, double3 stop_point, bool overwrite_en
         double step_water = 0, step = 0, de = 0;
         double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                       vox, voxUpdater, voxStepper, stop_point);
+#if defined(__STEP_CENTRAL_AXIS__)
+        get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+#elif defined(__STEP_Q50__)
+        get_q50_blur_step(step, step_water, de, max_step, ray, 190000000, vox);
+#else
         get_average_blur_step(step, step_water, de, max_step, ray, 190000000, vox);
+#endif
         ray.move(step, step_water, de);
 
         if (voxUpdater == NONE) {
