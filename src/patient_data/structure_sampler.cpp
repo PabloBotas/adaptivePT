@@ -66,9 +66,9 @@ void structure_sampler (const std::string& file, const ushort nprobes,
     }
 
     // Adjust array size
-    if (ct_pos.size() < nprobes*nspots)
+    if (ct_pos.size() < (size_t)nprobes*nspots)
         ct_pos.resize(nprobes*nspots);
-    if (ct_pos.size() > nprobes*nspots) {
+    if (ct_pos.size() > (size_t)nprobes*nspots) {
         ct_pos.resize(nprobes*nspots);
         ct_pos.shrink_to_fit();
     }
@@ -93,9 +93,9 @@ void structure_sampler (const std::string& file, const ushort nprobes,
 
     // CBCT:
     // Adjust array size
-    if (cbct_pos.size() < nprobes*nspots)
+    if (cbct_pos.size() < (size_t)nprobes*nspots)
         cbct_pos.resize(nprobes*nspots);
-    if (cbct_pos.size() > nprobes*nspots) {
+    if (cbct_pos.size() > (size_t)nprobes*nspots) {
         cbct_pos.resize(nprobes*nspots);
         cbct_pos.shrink_to_fit();
     }
