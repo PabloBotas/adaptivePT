@@ -10,8 +10,7 @@ void virtual_src_to_treatment_plane(const unsigned int& num,
                                     const float3& ct_offsets)
 {
     std::vector<float2> temp(angles.size());
-    for (size_t i = 0; i < angles.size(); i++)
-    {
+    for (size_t i = 0; i < angles.size(); i++) {
         temp[i].x = angles.at(i).gantry;
         temp[i].y = angles.at(i).couch;
     }
@@ -32,8 +31,7 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
-    if (tid < num)
-    {
+    if (tid < num) {
         float4 pos  = xdata[tid];
         float4 vel  = vxdata[tid];
         short2 meta = ixdata[tid]; // x = beam_id, y = spot_id
@@ -76,8 +74,7 @@ __global__ void correct_offsets_kernel(const int num,
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
-    if (tid < num)
-    {
+    if (tid < num) {
         float4 pos  = xdata[tid];
         float4 vel  = vxdata[tid];
 
@@ -123,8 +120,7 @@ __global__ void correct_offsets_kernel(const int num,
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
-    if (tid < num)
-    {
+    if (tid < num) {
         dev_orig_endpoints[tid].x += original_offsets.x - offsets.x;
         dev_orig_endpoints[tid].y += original_offsets.y - offsets.y;
         dev_orig_endpoints[tid].z += original_offsets.z - offsets.z;
@@ -140,16 +136,14 @@ __host__ void treatment_plane_to_virtual_src(Array4<float>& pos,
                                              const Vector3_t<float>& isocenter_shift)
 {
     std::vector<float2> temp(pat.angles.size());
-    for (size_t i = 0; i < pat.nbeams; i++)
-    {
+    for (size_t i = 0; i < pat.nbeams; i++) {
         temp[i].x = pat.angles.at(i).gantry;
         temp[i].y = pat.angles.at(i).couch;
     }
     float3 offset = make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z);
     offset -= make_float3(isocenter_shift.x, isocenter_shift.y, isocenter_shift.z);
 
-    for (size_t i = 0; i < dir.size(); i++)
-    {
+    for (size_t i = 0; i < dir.size(); i++) {
         // turn dir, containing a point, to a direction
         dir.at(i) -= pos.at(i);
         dir.at(i).normalize();
@@ -201,8 +195,7 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
-    if (tid < num)
-    {
+    if (tid < num) {
         float3 pos  = make_float3(pos_[tid]);
         float3 vel  = make_float3(dir_[tid]);
         short beamid = pos_[tid].w;
@@ -211,8 +204,7 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
 
         // Ray trace to virtual source plane if necessary
         float d = dot((p_pos - pos), p_dir) / dot(vel, p_dir);
-        if ( fabs(d) > 0.000001f )
-        {
+        if ( fabs(d) > 0.000001f ) {
             pos.x += d*vel.x;
             pos.y += d*vel.y;
             pos.z += d*vel.z;
@@ -263,20 +255,15 @@ __device__ __host__ float4 ray_trace_to_CT_volume(const float4& p,
     float3 d_1 = (0.0001f*dvox - p)/v;
     float3 d_n = (CT_size - 0.0001f*dvox - p)/v;
 
-    if((d_1.x < 0.0f && d_n.x < 0.0f) ||
-       (d_1.y < 0.0f && d_n.y < 0.0f) ||
-       (d_1.z < 0.0f && d_n.z < 0.0f))
-    {
+    if ((d_1.x < 0.0f && d_n.x < 0.0f) ||
+        (d_1.y < 0.0f && d_n.y < 0.0f) ||
+        (d_1.z < 0.0f && d_n.z < 0.0f)) {
 
-    }
-    else if((d_1.x*d_n.x <= 0.0f) &&
-            (d_1.y*d_n.y <= 0.0f) &&
-            (d_1.z*d_n.z <= 0.0f))
-    {
+    } else if ((d_1.x*d_n.x <= 0.0f) &&
+              (d_1.y*d_n.y <= 0.0f) &&
+              (d_1.z*d_n.z <= 0.0f)) {
 
-    }
-    else
-    {
+    } else {
         float temp = min(d_1.x, d_n.x);
         float alphaMin = -1.0f;
         alphaMin = max(alphaMin, temp);

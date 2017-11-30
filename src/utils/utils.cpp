@@ -15,16 +15,14 @@
 
 void utils::check_fs(const std::ofstream& fs, std::string f, std::string msg)
 {
-    if( !fs.is_open() )
-    {
+    if ( !fs.is_open() ) {
         std::cerr << "Can not open file " << f << " " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 void utils::check_fs(const std::ifstream& fs, std::string f, std::string msg)
 {
-    if( !fs.is_open() )
-    {
+    if ( !fs.is_open() ) {
         std::cerr << "Can not open file " << f << " " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -54,11 +52,10 @@ std::string utils::replace_substring(std::string const& str,
                                      std::string const& to_replace)
 {
     std::string out = str;
-    for (size_t pos = 0; ; pos += to_replace.length())
-    {
+    for (size_t pos = 0; ; pos += to_replace.length()) {
         // Locate the substring to replace
         pos = str.find(what, pos );
-        if( pos == std::string::npos ) break;
+        if ( pos == std::string::npos ) break;
         // Replace by erasing and inserting
         out.erase(pos, what.length());
         out.insert( pos, to_replace );
@@ -72,8 +69,7 @@ std::string utils::run_command(const std::string cmd)
 
     std::string cmd_trimmed;
     const std::string* to_output = &cmd;
-    if(cmd.size() > 160)
-    {
+    if (cmd.size() > 160) {
         std::cout << " (trimmed)";
         cmd_trimmed = cmd.substr(0, 50) + " ...//... " + cmd.substr(cmd.size()-50, 50);
         to_output = &cmd_trimmed;
@@ -85,8 +81,7 @@ std::string utils::run_command(const std::string cmd)
     std::array<char, 512> buffer;
     std::string stdout;
     std::shared_ptr<std::FILE> pipe(popen(cmd.c_str(), "r"), pclose);
-    if (!pipe)
-    {
+    if (!pipe) {
         std::cerr << std::endl << "Could not launch command:" << std::endl;
         std::cerr << *to_output << std::endl;
         std::cerr << "Error number: " << errno << std::endl;
@@ -104,8 +99,7 @@ std::string utils::run_command(const std::string cmd)
 void utils::cm_to_mm(Array4<float>& vec)
 {
     const int CM2MM = 10;
-    for (size_t i = 0; i < vec.size(); i++)
-    {
+    for (size_t i = 0; i < vec.size(); i++) {
         vec[i].x *= CM2MM;
         vec[i].y *= CM2MM;
         vec[i].z *= CM2MM;

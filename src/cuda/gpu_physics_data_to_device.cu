@@ -39,8 +39,7 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_star
     float delta_energy;
     
     // Read data
-    for (size_t imat = 0; imat < n_materials; imat++)
-    {
+    for (size_t imat = 0; imat < n_materials; imat++) {
         // Get number of energies per material
         std::getline(stream, line);
         std::getline(stream, line);
@@ -49,13 +48,11 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_star
               dummy >> n_energies >> minimum_energy >> delta_energy;
         std::getline(stream, line);
 
-        if (imat == 0)
-        {
+        if (imat == 0) {
             stp_ratios.resize(n_energies*n_materials);
         }
 
-        for (size_t i = 0; i < n_energies; i++)
-        {
+        for (size_t i = 0; i < n_energies; i++) {
             std::getline(stream, line);
             std::istringstream ss(line);
             ss >> dummy >> stp_ratios.at(i + imat*n_energies);
@@ -103,8 +100,7 @@ void gpu_physics_to_device::sendWaterRestrictedSPower()
     std::getline(stream, line);
     std::getline(stream, line);
 
-    for(size_t i = 0; i < ndata; i++)
-    {
+    for (size_t i = 0; i < ndata; i++) {
         std::getline(stream, line, '\n');
         ss.clear();
         ss.str(line);

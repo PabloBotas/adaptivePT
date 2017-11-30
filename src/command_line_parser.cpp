@@ -127,11 +127,10 @@ void Parser::process_command_line(int argc, char** argv)
         po::notify(vm);
 
         // Check required options
-        if(!skip_cbct)
-        {
-            if(cbct_file.empty())
+        if (!skip_cbct) {
+            if (cbct_file.empty())
                 throw std::invalid_argument("the option \'--cbct\' is required but missing");
-            if(vf_file.empty())
+            if (vf_file.empty())
                 throw std::invalid_argument("the option \'--vf\' is required but missing");
         }
 
@@ -141,7 +140,7 @@ void Parser::process_command_line(int argc, char** argv)
         }
     
         // WARPING OPTIONS
-        if(FREE_POS_RIGID_ENERGY)
+        if (FREE_POS_RIGID_ENERGY)
             warp_opts = Warp_opts_t::FREE_POS_RIGID_ENERGY;
         else if(FREE_POS_RIGID_BEAMS_ENERGY)
             warp_opts = Warp_opts_t::FREE_POS_RIGID_BEAMS_ENERGY;

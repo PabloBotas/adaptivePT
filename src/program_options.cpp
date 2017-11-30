@@ -38,11 +38,9 @@ void apply_rigid_energy_per_beam (std::vector<float>& energy,
     // Calculate average per field
     float accu_spots = 0;
     std::vector<float> avgs(spots_per_field.size());
-    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
-    {
+    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++) {
         // std::cout << "BEAM " << ibeam << std::endl;
-        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++)
-        {
+        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
             size_t idx;
             if (ibeam > 0)
                 idx = ispot + accu_spots;
@@ -58,10 +56,8 @@ void apply_rigid_energy_per_beam (std::vector<float>& energy,
 
     // Set average per field
     accu_spots = 0;
-    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
-    {
-        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++)
-        {
+    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++) {
+        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
             size_t idx;
             if (ibeam > 0)
                 idx = ispot+accu_spots;

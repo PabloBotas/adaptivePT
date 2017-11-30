@@ -8,12 +8,11 @@
 
 void gpuAssert(cudaError_t code, char const *file, int line, bool abort)
 {
-    if (code != cudaSuccess)
-    {
+    if (code != cudaSuccess) {
         std::cerr << "Error code " << code << ": " << cudaGetErrorString(code) << std::endl;
         std::cerr << "File: " << file << std::endl;
         std::cerr << "Line: " << line << std::endl;
-        if(abort)
+        if (abort)
             exit(code);
     }
 }

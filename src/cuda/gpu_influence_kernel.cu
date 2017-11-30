@@ -18,7 +18,7 @@ __global__ void get_influence_kernel(const uint nspots,
     const uint spot_i = thread / nprobes;
     const uint probe_j = thread % nprobes;
     // Influence of spot i on probe j
-    if(spot_i < nspots && probe_j < nprobes) {
+    if (spot_i < nspots && probe_j < nprobes) {
         float wepl_r = -1.0, wepl_d = -1.0;
 
         // Initialize probe ray

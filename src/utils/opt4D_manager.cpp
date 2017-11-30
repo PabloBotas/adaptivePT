@@ -64,7 +64,7 @@ void Opt4D_manager::populate_directory(const Array4<float>& influence_ct,
 void Opt4D_manager::write_templates()
 {
     std::ifstream src1(template_plan_file);
-    if(!src1) {
+    if (!src1) {
         std::cerr << "Can't open " + template_plan_file + " file" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -90,7 +90,7 @@ void Opt4D_manager::write_templates()
 
     // Bash script
     std::ifstream src2(template_launcher_file);
-    if(!src2) {
+    if (!src2) {
         std::cerr << "Can't open " + template_launcher_file +
                      " file" << std::endl;
         exit(EXIT_FAILURE);
@@ -100,8 +100,7 @@ void Opt4D_manager::write_templates()
 }
 
 
-void Opt4D_manager::write_dif()
-{
+void Opt4D_manager::write_dif() {
     std::ofstream stream (dif_file);
     if (stream.is_open()) {
         stream << "Delta-X 1" << std::endl;
@@ -183,11 +182,11 @@ void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
     std::vector<int> non_zeros(n, 0);
     std::vector< std::vector<int> > indexes(n);
     std::vector< std::vector<short> > values(n);
-    for(size_t i = 0; i<n; i++) {
+    for (size_t i = 0; i<n; i++) {
         for (size_t j = 0; j<n; j++) {
             int index = n*i+j;
             short value = (short)( influence_cbct.at(index).w/factor + 0.5 );
-            if(value > 0) {
+            if (value > 0) {
                 indexes.at(i).push_back( (int)j );
                 values.at(i).push_back( value );
                 non_zeros.at(i) += 1;
@@ -223,16 +222,14 @@ void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
         stream.write((char*) &factor, sizeof(float));
 
         int totalNonZero=0;
-        for(size_t i=0; i < n; i++)
-        {
+        for (size_t i=0; i < n; i++) {
             float i_float = i;
             stream.write((char*) &i_float, sizeof(float));
             stream.write((char*) &i_float, sizeof(float));
             stream.write((char*) &dummy_float_0, sizeof(float));
             stream.write((char*) &non_zeros.at(i), sizeof(int));
 
-            for(int j=0; j < non_zeros.at(i); j++)
-            {
+            for (int j=0; j < non_zeros.at(i); j++) {
                 stream.write((char*) &indexes.at(i).at(j), sizeof(int));
                 stream.write((char*) &values.at(i).at(j), sizeof(short));
             }
@@ -252,8 +249,7 @@ void Opt4D_manager::set_write_reference_influence(const Array4<float>& influence
     float min_ref = 1000000000;
     float max_ref = 0;
     float ave_ref = 0;
-    for(size_t j = 0; j<n; j++)
-    {
+    for (size_t j = 0; j<n; j++) {
         for(size_t i = 0; i<n; i++)
             reference.at(j) += influence.at(n*i+j).w;
         if (min_ref > reference.at(j))
@@ -305,7 +301,7 @@ void Opt4D_manager::read_bwf_file()
 
 std::vector<float> Opt4D_manager::get_weight_scaling()
 {
-    if(weight_scaling.empty())
+    if (weight_scaling.empty())
         read_bwf_file();
     return weight_scaling;
 }

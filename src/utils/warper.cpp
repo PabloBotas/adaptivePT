@@ -46,7 +46,7 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
     probe (endpoints, ct);
     set_average();
     apply_position_options(options, spots_per_field);
-    if(exp_file)
+    if (exp_file)
         write_to_file (endpoints, spots_per_field);
 
     warp_points (endpoints);
@@ -296,8 +296,7 @@ void Warper_t::write_to_file(const Array4<float>& p,
 void Warper_t::set_probes (const Array4<float>& p)
 {
     probes.resize(p.size());
-    for (size_t i = 0; i < p.size(); i++)
-    {
+    for (size_t i = 0; i < p.size(); i++) {
         probes.at(i).x = p.at(i).x;
         probes.at(i).y = p.at(i).y;
         probes.at(i).z = p.at(i).z;

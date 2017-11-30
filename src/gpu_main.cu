@@ -41,8 +41,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 
     gpuErrchk( cudaMemcpyFromSymbol(&(initpos[0].x), xdata, sizeof(float4)*xbuffer.size(), 0, cudaMemcpyDeviceToHost) );
     // Copy buffer with initial positions and wepl
-    for (size_t i = 0; i < xbuffer.size(); i++)
-    {
+    for (size_t i = 0; i < xbuffer.size(); i++) {
         initpos_xbuffer_dbg.at(i).x = xbuffer[i].x;
         initpos_xbuffer_dbg.at(i).y = xbuffer[i].y;
         initpos_xbuffer_dbg.at(i).z = xbuffer[i].z;
@@ -54,8 +53,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     // INFLUENCE
     std::vector<float> inf_cube(ct.nElements);
     std::vector<float> spot_weights;
-    for (size_t i = 0; i < pat.tramp_files.size(); ++i)
-    {
+    for (size_t i = 0; i < pat.tramp_files.size(); ++i) {
         Tramp_t tramp(pat.tramp_files.at(i), pat.machine);
         std::vector<float> w = tramp.get_weights();
         spot_weights.reserve(spot_weights.size() + tramp.nspots);
@@ -78,8 +76,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 
     std::cout << "Writting vox_endpoints_CT.dat ..." << std::endl;
     std::ofstream fout3(outputdir+"/vox_endpoints_CT.dat", std::ios::out | std::ios::binary);
-    for (size_t i = 0; i < pat.total_spots; ++i)
-    {
+    for (size_t i = 0; i < pat.total_spots; ++i) {
         unsigned int vox_x = floor(influence.at(i).x/ct.d.x);
         unsigned int vox_y = floor(influence.at(i).y/ct.d.y);
         unsigned int vox_z = floor(influence.at(i).z/ct.d.z);
@@ -131,8 +128,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 
     std::vector<float> inf_cube(ct.nElements);
     std::vector<float> spot_weights;
-    for (size_t i = 0; i < pat.tramp_files.size(); ++i)
-    {
+    for (size_t i = 0; i < pat.tramp_files.size(); ++i) {
         Tramp_t tramp(pat.tramp_files.at(i), pat.machine);
         std::vector<float> w = tramp.get_weights();
         spot_weights.reserve(spot_weights.size() + tramp.nspots);
@@ -160,8 +156,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 
     std::cout << "Writting vox_endpoints_CBCT.dat ..." << std::endl;
     std::ofstream fout3(outputdir+"/vox_endpoints_CBCT.dat", std::ios::out | std::ios::binary);
-    for (size_t i = 0; i < pat.total_spots; ++i)
-    {
+    for (size_t i = 0; i < pat.total_spots; ++i) {
         unsigned int vox_x = floor(influence.at(i).x/ct.d.x);
         unsigned int vox_y = floor(influence.at(i).y/ct.d.y);
         unsigned int vox_z = floor(influence.at(i).z/ct.d.z);
@@ -194,12 +189,9 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     allocate_scorer<float4>(pos_scorer, pat.total_spots);
 
     // Calculate rays
-    if (traces_file.empty())
-    {
+    if (traces_file.empty()) {
         do_raytrace(pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
-    }
-    else
-    {
+    } else {
         float* traces_scorer = NULL;
         allocate_scorer<float>(traces_scorer, pat.ct.total);
         do_raytrace(pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
@@ -297,8 +289,7 @@ void printDevProp(const int device, bool verbose)
 {
     cudaDeviceProp devProp;
     cudaGetDeviceProperties(&devProp, device);
-    if(verbose)
-    {
+    if (verbose) {
         std::cout << "Using device #:        " << device << std::endl;
         std::cout << "Name:                  " << devProp.name << std::endl;
         std::cout << "Compute capability:    " << devProp.major << "." << devProp.minor << std::endl;
@@ -316,9 +307,7 @@ void printDevProp(const int device, bool verbose)
         std::cout << "Concurrent copy/exec:  " << (devProp.deviceOverlap ? "Yes" : "No") << std::endl;
         std::cout << "Multiprocessors:       " << devProp.multiProcessorCount << std::endl;
         std::cout << "Kernel timeout:        " << (devProp.kernelExecTimeoutEnabled ? "Yes" : "No") << std::endl;
-    }
-    else
-    {
+    } else {
         std::cout << "Using card (" << device << "): " << devProp.name << std::endl;
     }
 }

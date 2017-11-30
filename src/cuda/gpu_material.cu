@@ -27,8 +27,7 @@ std::vector<float> readDensityCorrect(const std::string file)
 
     std::vector<float> dcfactor;
     dcfactor.reserve(nfactors);
-    for (size_t i = 0; i < nfactors; i++)
-    {
+    for (size_t i = 0; i < nfactors; i++) {
         std::string s;
         getline(ss, s, ',');
         dcfactor.push_back(stoi(s));
@@ -61,9 +60,8 @@ float HU2dens(const short val)
 int HU2matId(const int val, const std::vector<int> hu_indexes)
 {
 //  conert HU to material id according to hu_indexes
-    for(size_t i = 0; i < hu_indexes.size()-1; i++)
-    {
-        if(val >= hu_indexes[i] && val < hu_indexes[i+1])
+    for (size_t i = 0; i < hu_indexes.size()-1; i++) {
+        if (val >= hu_indexes[i] && val < hu_indexes[i+1])
             return i;
     }
     return hu_indexes.size()-1;

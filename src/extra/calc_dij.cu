@@ -48,8 +48,7 @@ int main(int argc, char* argv[])
     cublasCreate(&handle);
 
     std::vector<float> dose(nvox);
-    for (size_t i = 0; i < nfiles; i++)
-    {
+    for (size_t i = 0; i < nfiles; i++) {
         Tramp_t tramp(tramp_files.at(i));
         std::vector<float> weights = tramp.get_weights();
         const uint nspots = weights.size();
@@ -145,8 +144,7 @@ void read_dose (std::vector<float>& dose, std::string& file, uint nvox)
     }
     std::cout << "Reading input file ..." << std::endl;
 
-    if (nvox == 0)
-    {
+    if (nvox == 0) {
         ifs.seekg (0, ifs.end);
         nvox = ifs.tellg() / sizeof(float);
         ifs.seekg (0, ifs.beg);

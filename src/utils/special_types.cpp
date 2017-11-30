@@ -43,7 +43,7 @@ SAD_t::SAD_t()
 
 SAD_t::SAD_t(std::string machine)
 {
-    if(machine.compare(utils::toLower("TopasSmallSpots"))      == 0 ||
+    if (machine.compare(utils::toLower("TopasSmallSpots"))      == 0 ||
        machine.compare(utils::toLower("Topas_a5_SmallSpots"))  == 0 ||
        machine.compare(utils::toLower("TopasMediumSpots"))     == 0 ||
        machine.compare(utils::toLower("Topas_a5_MediumSpots")) == 0)
@@ -51,8 +51,7 @@ SAD_t::SAD_t(std::string machine)
         a = 1940.f;
         b = 2340.f;
     }
-    else if(machine.compare(utils::toLower("TopasMGHR4")) == 0)
-    {
+    else if(machine.compare(utils::toLower("TopasMGHR4")) == 0) {
         a = 2340.f;
         b = 1940.f;
     }

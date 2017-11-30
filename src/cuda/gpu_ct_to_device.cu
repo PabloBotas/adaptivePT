@@ -57,8 +57,7 @@ void gpu_ct_to_device::sendDensities(const Volume_t &ct)
 //    gpuErrchk( cudaThreadSynchronize() );
 //    gpuErrchk( cudaMemcpy(&densities[0], gpu_densities, ct.nElements*sizeof(float), cudaMemcpyDeviceToHost) );
 
-    for(size_t i = 0; i < ct.nElements; i++)
-    {
+    for (size_t i = 0; i < ct.nElements; i++) {
         short  val = std::max(ct.data.at(i), -1000.f);
         size_t ind = std::min(val+1000, (int)density_correction::factor.size()-1);
         densities.push_back(HU2dens(val)*density_correction::factor.at(ind));
@@ -75,8 +74,7 @@ void gpu_ct_to_device::sendMaterialId(const Volume_t &ct,
 
     std::cout << "sendMatID: Converting HU to material ID ..." << std::endl;
 
-    for(size_t i = 0; i < ct.nElements; i++)
-    {
+    for (size_t i = 0; i < ct.nElements; i++) {
         short val = std::max(ct.data.at(i), -1000.f);
         materialID[i] = HU2matId(val, hu_indexes);
     }

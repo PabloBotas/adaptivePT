@@ -51,8 +51,7 @@ void buffers_to_device(const std::vector<float4>& xbuffer,
     // prepare GPU
     size_t bytes1 = sizeof(float4)*num;
     size_t bytes2 = sizeof(short2)*num;
-    if (alloc)
-    {
+    if (alloc) {
         gpuErrchk( cudaMalloc((void **) &xdata,  bytes1) );
         gpuErrchk( cudaMalloc((void **) &vxdata, bytes1) );
         gpuErrchk( cudaMalloc((void **) &ixdata, bytes2) );

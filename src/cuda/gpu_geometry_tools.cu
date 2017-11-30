@@ -23,8 +23,7 @@ __device__ float to_boundary(const float3& pos,
     invcos = (dir.y != 0.0f) ? 1.0f/dir.y : INF;
     ifNext = (invcos > 0.0f) ? 1 : 0;
     float tempstep = ((vox.y+ifNext) * ctVoxSize.y - pos.y) * invcos;
-    if (tempstep < step)
-    {
+    if (tempstep < step) {
         step = tempstep;
         voxUpdater = UPDATEY;
         voxStepper = ifNext ? FORWARD : BACKWARD;
@@ -33,8 +32,7 @@ __device__ float to_boundary(const float3& pos,
     invcos = (dir.x != 0.0f) ? 1.0f/dir.x : INF;
     ifNext = (invcos > 0.0f) ? 1 : 0;
     tempstep = ((vox.x+ifNext) * ctVoxSize.x - pos.x) * invcos;
-    if (tempstep < step)
-    {
+    if (tempstep < step) {
         step = tempstep;
         voxUpdater = UPDATEX;
         voxStepper = ifNext ? FORWARD : BACKWARD;
@@ -64,7 +62,7 @@ __device__ float to_boundary(const float3& pos,
     float dist = length(r);
     float cos_to_point = dot(r, dir)/(dist*length(dir));
 
-    if(dist > min_dist &&
+    if (dist > min_dist &&
        !(cos_to_point >  0.9995 && cos_to_point < 1.0005) &&
        !(cos_to_point > -0.0005 && cos_to_point < 0.0005)) {
         int i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -79,13 +77,11 @@ __device__ float to_boundary(const float3& pos,
                (cos_to_point > -0.0005 && cos_to_point < 0.0005));
     }
 
-    if(dist <= min_dist)
-    {
+    if (dist <= min_dist) {
         boundary = 0;
         voxUpdater = NONE;
     }
-    else if(dist < boundary)
-    {
+    else if(dist < boundary) {
         boundary = dist;
         voxUpdater = NONE;
     }
@@ -108,25 +104,22 @@ __device__ void changeVoxel(int4& vox,
                             const VoxelStepper stepper)
 //    Changes voxel according to the information passed by inters()
 {
-    if (updater == UPDATEZ)
-    {
+    if (updater == UPDATEZ) {
         vox.z += stepper;
         vox.w += stepper;
     }
-    else if (updater == UPDATEY)
-    {
+    else if (updater == UPDATEY) {
         vox.y += stepper;
         vox.w += stepper*ctVox.z;
     }
-    else if (updater == UPDATEX)
-    {
+    else if (updater == UPDATEX) {
         vox.x += stepper;
         vox.w += stepper*ctVox.z*ctVox.y;
     }
 
-    if(vox.x < 0 || vox.x > ctVox.x ||
-       vox.y < 0 || vox.y > ctVox.y ||
-       vox.z < 0 || vox.z > ctVox.z)
+    if (vox.x < 0 || vox.x > ctVox.x ||
+        vox.y < 0 || vox.y > ctVox.y ||
+        vox.z < 0 || vox.z > ctVox.z)
         vox.w = -1;
 }
 
@@ -175,8 +168,7 @@ __device__ int get_voxel_abs (float3 pos)
 __device__ int3 getVoxelCoords(unsigned int index)
 {
     int3 vox = make_int3(-1,-1,-1);
-    if(index < ctTotalVoxN)
-    {
+    if (index < ctTotalVoxN) {
         vox.x = index/(ctVox.y*ctVox.z) % ctVox.x;
         vox.y = index/ctVox.z % ctVox.y;
         vox.z = index % ctVox.z;

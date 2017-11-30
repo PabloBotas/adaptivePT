@@ -104,7 +104,7 @@ void Tramp_t::read_()
     std::getline(stream, line);
     while ( std::getline(stream, line) )
     {
-        if( line.empty() || line.find_first_not_of(' ') == std::string::npos )
+        if ( line.empty() || line.find_first_not_of(' ') == std::string::npos )
             continue;
 
         Spot_t thisSpot(line);
@@ -115,12 +115,12 @@ void Tramp_t::read_()
         nspots++;
     }
 
-    if( nspots != nspots_header ) {
+    if ( nspots != nspots_header ) {
         std::cerr << "Warning! Inconsistent tramp. ";
         std::cerr << "spots in header (" << nspots_header << ") != ";
         std::cerr << "spots (" << nspots << ")" << std::endl;
     }
-    if( int(1000.*gigaprotons) != int(1000.*gigaprotons_header) ) {
+    if ( int(1000.*gigaprotons) != int(1000.*gigaprotons_header) ) {
         std::cerr << "Warning! Inconsistent tramp. ";
         std::cerr << "GP in header (" << gigaprotons_header << ") != ";
         std::cerr << "GP (" << gigaprotons << ")" << std::endl;
@@ -161,8 +161,7 @@ void Tramp_t::print(unsigned int n0, unsigned int n1)
     assert ( n0 < n1 );
 
     std::cout << "Energy (MeV)  |  x (cm)  |  y (cm) |  Weight\n";
-    for (unsigned int i = n0; i < n1; i++)
-    {
+    for (unsigned int i = n0; i < n1; i++) {
         std::cout << spots.at(i) << '\n';
     }
 }
@@ -173,7 +172,7 @@ void Tramp_t::to_file(std::string f, std::string dir)
     if (f.find("_modified") == std::string::npos) {
         f += "_modified";
     }
-    if(!dir.empty()) {
+    if (!dir.empty()) {
         mkdir(dir.c_str(), 0774);
         f = f.substr(f.find_last_of("/"));
         f = dir + "/" + f;
@@ -193,8 +192,7 @@ void Tramp_t::to_file(std::string f, std::string dir)
     os << "# rows_total "              << nspots                 << '\n';
     os << "# E(MeV) X(mm) Y(mm) N(Gp)" << '\n';
 
-    for (size_t i = 0; i < nspots; i++)
-    {
+    for (size_t i = 0; i < nspots; i++) {
         Spot_t thisspot = spots.at(i);
         thisspot.x *= CM2MM;
         thisspot.y *= CM2MM;
@@ -205,8 +203,7 @@ void Tramp_t::to_file(std::string f, std::string dir)
 void Tramp_t::setEnergies()
 {
     energies.reserve(nspots);
-    for (size_t i = 0; i < nspots; i++)
-    {
+    for (size_t i = 0; i < nspots; i++) {
         energies.push_back(spots[i].e);
     }
 }
@@ -214,8 +211,7 @@ void Tramp_t::setEnergies()
 
 void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
 {
-    if (e_.size() != nspots)
-    {
+    if (e_.size() != nspots) {
         std::cerr << "Number of energies to shift " << e_.size();
         std::cerr << " is bigger than the number of spots " << nspots;
         std::cerr << std::endl;
@@ -223,8 +219,7 @@ void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
     }
 
     float conv = units ? 1/1e6 : 1;
-    for (size_t i = 0; i < nspots; i++)
-    {
+    for (size_t i = 0; i < nspots; i++) {
         energies.at(i) += e_.at(i)*conv;
         spots.at(i).e += e_.at(i)*conv;
     }
@@ -232,15 +227,13 @@ void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
 
 void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
 {
-    if (p.size() != nspots)
-    {
+    if (p.size() != nspots) {
         std::cerr << "Number of positions to set " << p.size();
         std::cerr << " is bigger than the number of spots " << nspots;
         std::cerr << std::endl;
         exit(EXIT_FAILURE);
     }
-    for (size_t i = 0; i < nspots; i++)
-    {
+    for (size_t i = 0; i < nspots; i++) {
         spots.at(i).x = p.at(i).x;
         spots.at(i).y = p.at(i).y;
     }
@@ -249,7 +242,7 @@ void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
 void Tramp_t::setWEPLs()
 {
     std::vector<float> temp;
-    if(internal_energy_set)
+    if (internal_energy_set)
         temp = energies_internal;
     else
         temp = energies;
@@ -261,7 +254,7 @@ void Tramp_t::setWEPLs()
 
 std::vector<float> Tramp_t::getWEPLs()
 {
-    if(wepls.empty())
+    if (wepls.empty())
         setWEPLs();
     return wepls;
 }
@@ -269,8 +262,7 @@ std::vector<float> Tramp_t::getWEPLs()
 std::vector<float> Tramp_t::get_weights()
 {
     std::vector<float> weights(spots.size());
-    for (size_t i = 0; i < spots.size(); i++)
-    {
+    for (size_t i = 0; i < spots.size(); i++) {
         weights.at(i) = spots.at(i).w;
     }
     return weights;
@@ -279,8 +271,7 @@ std::vector<float> Tramp_t::get_weights()
 std::vector<float> Tramp_t::get_energies()
 {
     std::vector<float> temp(spots.size());
-    for (size_t i = 0; i < spots.size(); i++)
-    {
+    for (size_t i = 0; i < spots.size(); i++) {
         temp.at(i) = spots.at(i).e;
     }
     return temp;
@@ -289,8 +280,7 @@ std::vector<float> Tramp_t::get_energies()
 std::vector<float> Tramp_t::get_ypos()
 {
     std::vector<float> temp(spots.size());
-    for (size_t i = 0; i < spots.size(); i++)
-    {
+    for (size_t i = 0; i < spots.size(); i++) {
         temp.at(i) = spots.at(i).y;
     }
     return temp;
@@ -299,8 +289,7 @@ std::vector<float> Tramp_t::get_ypos()
 std::vector<float> Tramp_t::get_xpos()
 {
     std::vector<float> temp(spots.size());
-    for (size_t i = 0; i < spots.size(); i++)
-    {
+    for (size_t i = 0; i < spots.size(); i++) {
         temp.at(i) = spots.at(i).x;
     }
     return temp;
@@ -334,12 +323,10 @@ float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
     if (j < 0) j=0;
     if (j+order > npoints ) j=npoints-order;
     result = 0.0;
-    for (int is = j; is < j+order; is++)
-    {
+    for (int is = j; is < j+order; is++) {
         lambda[is] = 1.0;
-        for (int il=j; il < j+order; il++)
-        {
-            if(il != is) lambda[is] = lambda[is]*(x-vector_X[il])/(vector_X[is]-vector_X[il]);
+        for (int il=j; il < j+order; il++) {
+            if (il != is) lambda[is] = lambda[is]*(x-vector_X[il])/(vector_X[is]-vector_X[il]);
         }
         result += vector_Y[is]*lambda[is];
     }
@@ -349,7 +336,7 @@ float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
 void Tramp_t::energy_to_internal()
 {
     energies_internal.reserve(energies.size());
-    if(machine.compare("topasmghr4") == 0 ||
+    if (machine.compare("topasmghr4") == 0 ||
        machine.compare("topasmghr5") == 0)
     {
         float R80AstroidTopasb8[3][27] =
@@ -374,8 +361,7 @@ void Tramp_t::energy_to_internal()
               296.79, 307.55, 313.34 }
         };
 
-        for (size_t i = 0; i < energies.size(); i++)
-        {
+        for (size_t i = 0; i < energies.size(); i++) {
             // converts energy from MGHR4 machine to the one used by the virtual machines
             float range = InterpTable(&(R80AstroidTopasb8[0][0]),
                                       &(R80AstroidTopasb8[1][0]),
@@ -385,11 +371,8 @@ void Tramp_t::energy_to_internal()
                                       range, 27);
             energies_internal.push_back(ECorr);
         }
-    }
-    else
-    {
-        for (size_t i = 0; i < energies.size(); i++)
-        {
+    } else {
+        for (size_t i = 0; i < energies.size(); i++) {
             energies_internal.push_back(energies[i]);
         }
     }
@@ -403,8 +386,7 @@ std::string toLower(std::string s) {
 void Tramp_t::scale_weights(std::vector<float> ratio)
 {
     gigaprotons = 0;
-    for (size_t i = 0; i < nspots; i++)
-    {
+    for (size_t i = 0; i < nspots; i++) {
         spots.at(i).w *= ratio.at(i);
         gigaprotons += spots.at(i).w;
     }

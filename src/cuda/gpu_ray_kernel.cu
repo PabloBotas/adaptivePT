@@ -13,7 +13,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
                                      float* traces)
 {
     const int thread = blockIdx.x*blockDim.x + threadIdx.x;
-    if(thread < num) {
+    if (thread < num) {
         Ray ray(xdata[thread], vxdata[thread], ixdata[thread]);
         size_t const ind = get_endpoints_index(ray.get_beam_id(),
                                                ray.get_spot_id(),
@@ -40,7 +40,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
 #endif
             ray.move(step, step_water, de);
 
-            if(traces)
+            if (traces)
                 score_traces(traces, vox.w, !ray.is_alive());
             if (step == max_step)
                 changeVoxel(vox, voxUpdater, voxStepper);
@@ -51,7 +51,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
         pos_scorer[ind].y = ray.pos.y;
         pos_scorer[ind].z = ray.pos.z;
 
-        if(orig_endpoints) {
+        if (orig_endpoints) {
             const float accu_wepl = ray.get_wepl();
             float3 plan_endpoint = make_float3(orig_endpoints[thread]);
             ray.set_energy(initial_energy);

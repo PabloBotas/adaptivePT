@@ -20,8 +20,7 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
 //  initialize particle buffer
 {
     std::cout << "Gantry: " << pat.machine << std::endl;
-    for (unsigned int ibeam = 0; ibeam < pat.beam_names.size(); ibeam++)
-    {
+    for (unsigned int ibeam = 0; ibeam < pat.beam_names.size(); ibeam++) {
         std::cout << "Loading beam: " << pat.beam_names.at(ibeam) << std::endl;
         std::cout << "    Beam #:     " << ibeam << std::endl;
         std::cout << "    Tramp file: " << pat.tramp_files.at(ibeam) << std::endl;
@@ -29,12 +28,10 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
         Tramp_t src(pat.tramp_files.at(ibeam), pat.machine);
         src.z = - pat.isocenter_to_beam_distance.at(ibeam); // cm
 
-        if(pat.range_shifters[ibeam].exists)
-        {
+        if (pat.range_shifters[ibeam].exists) {
             RangeShifter_Dims_t rs = pat.range_shifters[ibeam];
             std::cout << "    Range shifter thickness:    " << rs.thick << " cm" << std::endl;
-            for (size_t i = 0; i < src.wepls.size(); i++)
-            {
+            for (size_t i = 0; i < src.wepls.size(); i++) {
                 src.wepls.at(i) -= rs.wepl;
             }
         }
@@ -45,8 +42,7 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
         xbuffer.reserve(src.nspots);
         vxbuffer.reserve(src.nspots);
         ixbuffer.reserve(src.nspots);
-        for(unsigned int i=0; i < src.nspots; i++)
-        { // LOOP OVER SPOTS
+        for (unsigned int i=0; i < src.nspots; i++) { // LOOP OVER SPOTS
             Spot_t& spot = src.spots[i];
             float3 pos  = iso_to_virtual_src_pos(src.z, SAD, make_float2(spot.x, spot.y)); // cm
             float3 dCos = getDirection(pos, make_float2(spot.x, spot.y));
@@ -71,8 +67,7 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
     xbuffer.resize(s);
     vxbuffer.resize(s);
     ixbuffer.resize(s);
-    for (size_t i = 0; i < s; i++)
-    {
+    for (size_t i = 0; i < s; i++) {
         float3 start = make_float3(init_pos.at(i).x, init_pos.at(i).y, init_pos.at(i).z);
         float3 end   = make_float3(endpoints.at(i).x, endpoints.at(i).y, endpoints.at(i).z);
         float3 dir   = end - start;
@@ -117,8 +112,7 @@ float2 virtual_src_to_iso_pos(float3 pos, float2 SAD)
 
 void virtual_src_to_iso_pos(Array4<float>& pos, SAD_t SAD)
 {
-    for (size_t i = 0; i < pos.size(); i++)
-    {
+    for (size_t i = 0; i < pos.size(); i++) {
         pos.at(i).x = pos.at(i).x * SAD.a / (SAD.a - std::abs(pos.at(i).z));
         pos.at(i).y = pos.at(i).y * SAD.b / (SAD.b - std::abs(pos.at(i).z));
     }
@@ -146,8 +140,7 @@ float3 getDirection(float3 pos, float2 spot)
 short2 get_beam_spot_id (size_t num, const std::vector<short>& spots_per_field)
 {
     size_t beamid = 0;
-    for (; beamid < spots_per_field.size(); beamid++)
-    {
+    for (; beamid < spots_per_field.size(); beamid++) {
         if (num >= (size_t)spots_per_field.at(beamid))
             num -= (size_t)spots_per_field.at(beamid);
         else

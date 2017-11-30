@@ -45,8 +45,7 @@ Volume_t::Volume_t(const std::string& f,
 Volume_t::Volume_t(const CT_Dims_t& dims, bool long_data_)
 {
     nElements = dims.total;
-    if (long_data_)
-    {
+    if (long_data_) {
         long_data.resize(nElements);
         high_precision = true;
     }
@@ -127,8 +126,7 @@ void Volume_t::read_volume()
 template <class T>
 void Volume_t::import_from_metaimage(const std::vector<T>& vec)
 {
-    if (data.size() != vec.size())
-    {
+    if (data.size() != vec.size()) {
         std::cerr << "ERROR! in file " << __FILE__ << ", line " << __LINE__;
         std::cerr << "\nSizes are incompatible: " << data.size() << " != " << vec.size();
         std::cerr << std::endl;
@@ -206,8 +204,7 @@ void Volume_t::output(std::string outfile)
 {
     std::string out_type = outfile.substr(outfile.find_last_of(".")+1);
     std::cout << "Writting file: " << outfile << std::endl;
-    if (out_type == "mhd")
-    {
+    if (out_type == "mhd") {
         std::string file_basename = outfile.substr(0, outfile.find_last_of("/"));
         std::string file_noext = outfile.substr(0, outfile.find_last_of("."));
         std::string mhd_header_file = file_noext + ".mhd";
@@ -216,17 +213,12 @@ void Volume_t::output(std::string outfile)
         std::cout << "Writting file: " << mhd_binary_file << std::endl;
         export_header_metaimage(mhd_header_file, mhd_binary_filename);
         export_binary_metaimage(mhd_binary_file);
-    }
-    else if(out_type == "mha")
-    {
+    } else if(out_type == "mha") {
         export_header_metaimage(outfile);
         export_binary_metaimage(outfile, std::ios::app);
-    }
-    else if(out_type == "bin" || out_type == "dat")
-    {
+    } else if(out_type == "bin" || out_type == "dat") {
         export_binary(outfile);
-    }
-    else
+    } else
         std::cerr << "Output type not supported, supported type: mhd" << std::endl;
 }
 
@@ -304,8 +296,7 @@ void Volume_t::do_interpolate(std::vector<float>& dest,
                                       const CT_Dims_t& pat_ct, 
                                       const float extrapolationValue) 
 { 
-    for (size_t tid = 0; tid < pat_ct.total; tid++) 
-    { 
+    for (size_t tid = 0; tid < pat_ct.total; tid++)  { 
         size_t zInd = tid%pat_ct.n.z; 
         size_t yInd = (tid/pat_ct.n.z)%pat_ct.n.y; 
         size_t xInd = tid/pat_ct.n.z/pat_ct.n.y; 
@@ -331,9 +322,9 @@ void Volume_t::do_interpolate(std::vector<float>& dest,
         supCT.z = (int) floorf(sup.z/this->d.z); 
  
         //loop over the CT grid voxels which overlap with the current interpolated grid voxel 
-        for(int zvox = infCT.z; zvox <= supCT.z; zvox++) { 
-            for(int yvox = infCT.y; yvox <= supCT.y; yvox++) { 
-                for(int xvox = infCT.x; xvox <= supCT.x; xvox++) { 
+        for (int zvox = infCT.z; zvox <= supCT.z; zvox++) { 
+            for (int yvox = infCT.y; yvox <= supCT.y; yvox++) { 
+                for (int xvox = infCT.x; xvox <= supCT.x; xvox++) { 
  
                     float ctValue; 
  
@@ -349,37 +340,37 @@ void Volume_t::do_interpolate(std::vector<float>& dest,
  
                     Vector3_t<float> fractions; 
                     // determine the overlap along x direction 
-                    if(xvox == infCT.x) { 
-                        if(xvox == supCT.x) 
+                    if (xvox == infCT.x) { 
+                        if (xvox == supCT.x) 
                             fractions.x = pat_ct.d.x / this->d.x; 
                         else 
                             fractions.x = ((xvox+1)*this->d.x - inf.x) / this->d.x; 
                     } else { 
-                        if(xvox == supCT.x) 
+                        if (xvox == supCT.x) 
                             fractions.x = (sup.x - xvox*this->d.x) / this->d.x; 
                         else 
                             fractions.x = 1.0f; 
                     } 
                     // determine the overlap along y direction 
-                    if(yvox == infCT.y) { 
-                        if(yvox == supCT.y) 
+                    if (yvox == infCT.y) { 
+                        if (yvox == supCT.y) 
                             fractions.y = pat_ct.d.y / this->d.y; 
                         else 
                             fractions.y = ((yvox+1)*this->d.y - inf.y) / this->d.y; 
                     } else { 
-                        if(yvox == supCT.y) 
+                        if (yvox == supCT.y) 
                             fractions.y = (sup.y - yvox*this->d.y) / this->d.y; 
                         else 
                             fractions.y = 1.0f; 
                     } 
                     // determine the overlap along z direction 
-                    if(zvox == infCT.z) { 
-                        if(zvox == supCT.z) 
+                    if (zvox == infCT.z) { 
+                        if (zvox == supCT.z) 
                             fractions.z = pat_ct.d.z / this->d.z; 
                         else 
                             fractions.z = ((zvox+1)*this->d.z - inf.z) / this->d.z; 
                     } else { 
-                        if(zvox == supCT.z) 
+                        if (zvox == supCT.z) 
                             fractions.z = (sup.z - zvox*this->d.z) / this->d.z; 
                         else 
                             fractions.z = 1.0f; 
@@ -392,7 +383,7 @@ void Volume_t::do_interpolate(std::vector<float>& dest,
                 } 
             } 
         } 
-        if(mass > 0.0) { 
+        if (mass > 0.0) { 
             dest.at(tid) = interpolatedValue/mass; 
         } else { 
             dest.at(tid) = extrapolationValue; 

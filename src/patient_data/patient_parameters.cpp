@@ -36,26 +36,21 @@ void Patient_Parameters_t::exploreBeamDirectories()
     
     // Get beam names
     beam_names.resize(nbeams);
-    for(unsigned int i=0; i<nbeams; i++)
-    {
+    for (unsigned int i=0; i<nbeams; i++) {
         size_t pos = beam_dirs.at(i).rfind("/");
-        if (pos != std::string::npos)
-        {
+        if (pos != std::string::npos) {
             if (pos != beam_dirs.at(i).size() - 1)
                 beam_names.at(i) = beam_dirs.at(i).substr(pos + 1);
             else
                 beam_names.at(i) = beam_dirs.at(i);
-        }
-        else
-        {
+        } else {
             beam_names.push_back(beam_dirs.at(i));
         }
     }
 
     // Set run directories
     run_dir.resize(nbeams);
-    for (unsigned int i = 0; i < nbeams; i++)
-    {
+    for (unsigned int i = 0; i < nbeams; i++) {
         run_dir[i] = beam_dirs[i];
         run_dir[i].append("/run");
     }
@@ -66,8 +61,7 @@ void Patient_Parameters_t::exploreBeamDirectories()
 
     // Get topas parameter files
     topas_files.resize(nbeams);
-    for(unsigned int i = 0; i < nbeams; i++)
-    {
+    for (unsigned int i = 0; i < nbeams; i++) {
         topas_files.at(i) = getFilesWithSuffix(beam_dirs[i], "MCAUTO_DICOM.txt")[0];
     }
 }
@@ -128,8 +122,7 @@ void Patient_Parameters_t::getTopasBeamParameters()
     angles.resize(nbeams);
     isocenter_to_beam_distance.resize(nbeams);
 
-    for(size_t i = 0; i < nbeams; i++)
-    {
+    for (size_t i = 0; i < nbeams; i++) {
         // Beam data from MCAUTO_DICOM.txt
         Patient_Parameters_Parser_t pars(topas_files.at(i));
 
@@ -141,16 +134,14 @@ void Patient_Parameters_t::getTopasBeamParameters()
 
         // Aperture
         ap.exists = pars.readBool("Rt/beam/IncludeAperture", false);
-        if(ap.exists)
-        {
+        if (ap.exists) {
             ap.thick =  pars.readReal<float>("Rt/beam/BlockThickness", 0);
             ap.zdown = -pars.readReal<float>("Rt/beam/IsocenterToBlockTrayDistance", 0);
         }
 
         // Range shifter
         rs.exists = pars.readBool("Rt/beam/IncludeRangeShifter", false);
-        if(rs.exists)
-        {
+        if (rs.exists) {
             rs.thick = pars.readReal<float>("Rt/beam/RangeShifterThickness", 0);
             rs.zdown = pars.readReal<float>("Rt/beam/IsocenterToRangeShifterTrayDistance", 0);
         }
@@ -184,15 +175,13 @@ void Patient_Parameters_t::print()
         std::cout << "        " << tramp_files.at(i) << std::endl;
 
     std::cout << "Beam angles:" << std::endl;
-    for (size_t i = 0; i < nbeams; i++)
-    {
+    for (size_t i = 0; i < nbeams; i++) {
         std::cout << "    - " << beam_names.at(i) << ":" << std::endl;
         std::cout << "        - gantry: " << angles.at(i).gantry*180.0/M_PI << " deg" << std::endl;
         std::cout << "        - couch:  " << angles.at(i).couch*180.0/M_PI  << " deg" << std::endl;
     }
     std::cout << "Isocenter to beam distance:" << std::endl;
-    for (size_t i = 0; i < nbeams; i++)
-    {
+    for (size_t i = 0; i < nbeams; i++) {
         std::cout << "    - " << beam_names.at(i) << ": " << isocenter_to_beam_distance.at(i) << " cm" << std::endl;
     }
     std::cout << "CT data:" << std::endl;
@@ -220,8 +209,7 @@ void Patient_Parameters_t::ct_to_int_coordinates()
     ct.offset.y -= 0.5*ct.n.y*ct.d.y;
     ct.offset.z -= 0.5*ct.n.z*ct.d.z;
 
-    for(size_t i = 0; i < angles.size(); i++)
-    {
+    for (size_t i = 0; i < angles.size(); i++) {
         angles[i].couch *= -1.0; //reverse couch angle
         angles[i].gantry = (270.0 * (M_PI/180.0)) - angles[i].gantry;
     }
@@ -239,8 +227,7 @@ void Patient_Parameters_t::ct_to_ext_coordinates()
     std::swap(ct.n.x, ct.n.z);
     std::swap(ct.offset.x, ct.offset.z);
 
-    for(size_t i = 0; i < angles.size(); i++)
-    {
+    for (size_t i = 0; i < angles.size(); i++) {
         angles[i].couch *= -1.0; //reverse couch angle
         angles[i].gantry = (270.0 * (M_PI/180.0)) - angles[i].gantry;
     }
@@ -264,8 +251,7 @@ void Patient_Parameters_t::set_spots_data()
 {
     spots_per_field.reserve(nbeams);
     short acc = 0;
-    for(size_t i=0; i < nbeams; i++)
-    {
+    for (size_t i=0; i < nbeams; i++) {
         Tramp_t tramp(tramp_files.at(i));
 
         spots_per_field.push_back(tramp.nspots);
@@ -274,8 +260,7 @@ void Patient_Parameters_t::set_spots_data()
 
         float temp = tramp.energies.front();
         std::vector<short> idxs;
-        for (size_t j=1; j < tramp.nspots; j++)
-        {
+        for (size_t j=1; j < tramp.nspots; j++) {
             if (temp != tramp.energies.at(j))
                 idxs.push_back(j);
         }
@@ -289,8 +274,7 @@ void Patient_Parameters_t::set_treatment_planes()
 {
     // External to internal coordinates would do: x -> -y; y -> -x, they are all 0 here.
     treatment_planes = Planes_t(nbeams);
-    for (size_t i = 0; i < nbeams; i++)
-    {
+    for (size_t i = 0; i < nbeams; i++) {
         // Set default
         treatment_planes.p.at(i) = Vector3_t<float>(0, 0, -isocenter_to_beam_distance.at(i));
         treatment_planes.dir.at(i) = Vector3_t<float>(0, 0, 1);

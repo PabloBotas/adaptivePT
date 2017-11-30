@@ -223,8 +223,7 @@ void export_adapted(Patient_Parameters_t& pat,
     virtual_src_to_iso_pos(warped_initpos, pat.virtualSAD);
     
     // Assign to new spotmap
-    for (size_t i = 0; i < pat.nbeams; i++)
-    {
+    for (size_t i = 0; i < pat.nbeams; i++) {
         size_t offset_a = (i != 0) ? pat.accu_spots_per_field.at(i-1) : 0;
         size_t offset_b = pat.accu_spots_per_field.at(i);
         std::vector<float> subset_energies;
@@ -263,8 +262,7 @@ void export_shifts(const std::vector<float>& e,
 
     utils::check_fs(ofs, file, "to write adaptation shifts.");
 
-    if (beamid == 0)
-    {
+    if (beamid == 0) {
         std::cout << "Writting adaptation shifts to " << file << std::endl;
         std::string txt = "Isocenter shift: " +
                           std::to_string(isocenter_shift.x) + ", " + 
@@ -275,8 +273,7 @@ void export_shifts(const std::vector<float>& e,
         ofs << "# w e x y z d beamid spotid\n";
     }
 
-    for (size_t spotid = 0; spotid < e.size(); spotid++)
-    {
+    for (size_t spotid = 0; spotid < e.size(); spotid++) {
         float vx = p.at(spotid).x;
         float vy = p.at(spotid).y;
         ofs << w.at(spotid) << " " << e.at(spotid) << " ";

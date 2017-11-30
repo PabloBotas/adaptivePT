@@ -243,11 +243,11 @@ bool Patient_Parameters_Parser_t::readBool(std::string quantity, bool defaultVal
 {
     // Parameter format: <Type>:<Quantity> = <String>
     std::string defaultString = "false";
-    if(defaultValue)
+    if (defaultValue)
         defaultString = "true";
     
     std::string value = readString(quantity, defaultString);
-    if(utils::toLower(value) == "true")
+    if (utils::toLower(value) == "true")
         return true;
     else
         return false;
@@ -324,8 +324,7 @@ std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string 
     DIR *dirp = NULL;
 
     dirp = opendir(folderpath.c_str());
-    if (dirp == NULL)
-    {
+    if (dirp == NULL) {
         std::cerr << "ERROR, " << folderpath << " cannot be openned!" << std::endl;
         std::cerr << "Was searching for " << name  << std::endl;
         perror("Cannot open directory");
@@ -344,15 +343,14 @@ std::vector<std::string> getFoldersWithFile(std::string folderpath, std::string 
         std::string full_name;
 
         full_name = std::string(folderpath);
-        if(*(full_name.end()-1) != '/')
+        if (*(full_name.end()-1) != '/')
             full_name += std::string("/");
         full_name += std::string(direntp->d_name);
 
         // Get only if it is really directory.
         if (stat(full_name.c_str(), &fstat) < 0)
             continue;
-        if (S_ISDIR(fstat.st_mode))
-        {
+        if (S_ISDIR(fstat.st_mode)) {
             // Check name
             if (stat((full_name + "/" + name).c_str() , &fstat) < 0)
                 continue;
@@ -374,8 +372,7 @@ std::vector<std::string> getFilesWithSuffix(std::string folderpath, std::string 
     DIR *dirp = NULL;
 
     dirp = opendir(folderpath.c_str());
-    if (dirp == NULL)
-    {
+    if (dirp == NULL) {
         std::cerr << "ERROR, " << folderpath << " cannot be openned!" << std::endl;
         std::cerr << "Was searching for " << suffix  << std::endl;
         perror("Cannot open directory");
@@ -403,14 +400,13 @@ std::vector<std::string> getFilesWithSuffix(std::string folderpath, std::string 
             continue;
 
         //  if a file, check it
-        if(!S_ISDIR(fstat.st_mode))
-        {
+        if (!S_ISDIR(fstat.st_mode)) {
             std::string temp(direntp->d_name);
             int n = temp.size();
             int start = n-suffix.size();
             std::string MacFilesPref = "._";
-            if(start<0) continue;  //the current file name is shorter than suffix
-            if(suffix == temp.substr(n-suffix.size(),n) && temp.substr(0,2) != MacFilesPref) {
+            if (start<0) continue;  //the current file name is shorter than suffix
+            if (suffix == temp.substr(n-suffix.size(),n) && temp.substr(0,2) != MacFilesPref) {
                 // Check name
                 if (contains.empty() || temp.find(contains) != std::string::npos) {
                     returnStrings.push_back(full_name);

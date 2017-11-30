@@ -52,12 +52,10 @@ void DataTable_t::resize(Dim_t dim, size_t sz)
     switch(dim)
     {
         case Dim_t::X:
-            if (data.empty())
-            {
+            if (data.empty()) {
                 data.resize(1);
             }
-            for (size_t i = 0; i < data.size(); i++)
-            {
+            for (size_t i = 0; i < data.size(); i++) {
                 data.at(i).resize(sz);
             }
             break;
@@ -94,8 +92,7 @@ float DataTable_t::at(std::string colname, size_t j)
 size_t DataTable_t::getColNumber(std::string colname)
 {
     std::vector<std::string>::iterator it = std::find(cols.begin(), cols.end(), colname);
-    if (std::distance(it, cols.end()) == 0)
-    {
+    if (std::distance(it, cols.end()) == 0) {
         std::cerr << "ERROR! Column " << colname << " not found in data table." << std::endl;
         std::copy(cols.begin(), cols.end(), std::ostream_iterator<std::string>(std::cerr, " "));
     }
@@ -125,15 +122,12 @@ float DataTable_t::getVal(std::string col_out_name, std::string col_in_name, flo
     float val = *it;
     
     float out;
-    if( round(100.*val) != round(100.*x) )
-    {
+    if ( round(100.*val) != round(100.*x) ) {
         // Value not exact in x, call spline
         Spline_t spline;
         spline.set_points(data.at(col_in), data.at(col_out));
         out = spline(x);
-    }
-    else
-    {
+    } else {
         out = data.at(col_out).at(idx);
     }
 

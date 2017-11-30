@@ -44,16 +44,16 @@ void band_matrix::resize(int dim, int n_u, int n_l)
     assert(n_l>=0);
     m_upper.resize(n_u+1);
     m_lower.resize(n_l+1);
-    for(size_t i=0; i<m_upper.size(); i++) {
+    for (size_t i=0; i<m_upper.size(); i++) {
         m_upper[i].resize(dim);
     }
-    for(size_t i=0; i<m_lower.size(); i++) {
+    for (size_t i=0; i<m_lower.size(); i++) {
         m_lower[i].resize(dim);
     }
 }
 int band_matrix::dim() const
 {
-    if(m_upper.size()>0) {
+    if (m_upper.size()>0) {
         return m_upper[0].size();
     } else {
         return 0;
@@ -69,7 +69,7 @@ float & band_matrix::operator () (int i, int j)
     assert( (i>=0) && (i<dim()) && (j>=0) && (j<dim()) );
     assert( (-num_lower()<=k) && (k<=num_upper()) );
     // k=0 -> diogonal, k<0 lower left part, k>0 upper right part
-    if(k>=0)   return m_upper[k][i];
+    if (k>=0)   return m_upper[k][i];
     else        return m_lower[-k][i];
 }
 float band_matrix::operator () (int i, int j) const
@@ -78,7 +78,7 @@ float band_matrix::operator () (int i, int j) const
     assert( (i>=0) && (i<dim()) && (j>=0) && (j<dim()) );
     assert( (-num_lower()<=k) && (k<=num_upper()) );
     // k=0 -> diogonal, k<0 lower left part, k>0 upper right part
-    if(k>=0)   return m_upper[k][i];
+    if (k>=0)   return m_upper[k][i];
     else        return m_lower[-k][i];
 }
 // second diag (used in LU decomposition), saved in m_lower
@@ -102,26 +102,26 @@ void band_matrix::lu_decompose()
 
     // preconditioning
     // normalize column i so that a_ii=1
-    for(int i=0; i<this->dim(); i++) {
+    for (int i=0; i<this->dim(); i++) {
         assert(this->operator()(i,i) != 0.0);
         this->saved_diag(i)=1.0/this->operator()(i,i);
         j_min=std::max(0,i-this->num_lower());
         j_max=std::min(this->dim()-1,i+this->num_upper());
-        for(int j=j_min; j<=j_max; j++) {
+        for (int j=j_min; j<=j_max; j++) {
             this->operator()(i,j) *= this->saved_diag(i);
         }
         this->operator()(i,i)=1.0;          // prevents rounding errors
     }
 
     // Gauss LR-Decomposition
-    for(int k=0; k<this->dim(); k++) {
+    for (int k=0; k<this->dim(); k++) {
         i_max=std::min(this->dim()-1,k+this->num_lower());  // num_lower not a mistake!
-        for(int i=k+1; i<=i_max; i++) {
+        for (int i=k+1; i<=i_max; i++) {
             assert(this->operator()(k,k)!=0.0);
             x=-this->operator()(i,k)/this->operator()(k,k);
             this->operator()(i,k)=-x;                         // assembly part of L
             j_max=std::min(this->dim()-1,k+this->num_upper());
-            for(int j=k+1; j<=j_max; j++) {
+            for (int j=k+1; j<=j_max; j++) {
                 // assembly part of R
                 this->operator()(i,j)=this->operator()(i,j)+x*this->operator()(k,j);
             }
@@ -135,7 +135,7 @@ std::vector<float> band_matrix::l_solve(const std::vector<float>& b) const
     std::vector<float> x(this->dim());
     int j_start;
     float sum;
-    for(int i=0; i<this->dim(); i++) {
+    for (int i=0; i<this->dim(); i++) {
         sum=0;
         j_start=std::max(0,i-this->num_lower());
         for(int j=j_start; j<i; j++) sum += this->operator()(i,j)*x[j];
@@ -150,7 +150,7 @@ std::vector<float> band_matrix::r_solve(const std::vector<float>& b) const
     std::vector<float> x(this->dim());
     int j_stop;
     float sum;
-    for(int i=this->dim()-1; i>=0; i--) {
+    for (int i=this->dim()-1; i>=0; i--) {
         sum=0;
         j_stop=std::min(this->dim()-1,i+this->num_upper());
         for(int j=i+1; j<=j_stop; j++) sum += this->operator()(i,j)*x[j];
@@ -164,7 +164,7 @@ std::vector<float> band_matrix::lu_solve(const std::vector<float>& b,
 {
     assert( this->dim()==(int)b.size() );
     std::vector<float>  x,y;
-    if(is_lu_decomposed==false) {
+    if (is_lu_decomposed==false) {
         this->lu_decompose();
     }
     y=this->l_solve(b);
@@ -218,23 +218,23 @@ void Spline_t::set_points(const std::vector<float>& x,
     m_y=y;
     int   n=x.size();
     // maybe sort x and y, rather than returning an error
-    for(int i=0; i<n-1; i++) {
+    for (int i=0; i<n-1; i++) {
         assert(m_x[i]<m_x[i+1]);
     }
 
-    if(cubic_spline==true) { // cubic spline interpolation
+    if (cubic_spline==true) { // cubic spline interpolation
         // setting up the matrix and right hand side of the equation system
         // for the parameters b[]
         band_matrix A(n,1,1);
         std::vector<float>  rhs(n);
-        for(int i=1; i<n-1; i++) {
+        for (int i=1; i<n-1; i++) {
             A(i,i-1)=1.0/3.0*(x[i]-x[i-1]);
             A(i,i)=2.0/3.0*(x[i+1]-x[i-1]);
             A(i,i+1)=1.0/3.0*(x[i+1]-x[i]);
             rhs[i]=(y[i+1]-y[i])/(x[i+1]-x[i]) - (y[i]-y[i-1])/(x[i]-x[i-1]);
         }
         // boundary conditions
-        if(m_left == Spline_t::second_deriv) {
+        if (m_left == Spline_t::second_deriv) {
             // 2*b[0] = f''
             A(0,0)=2.0;
             A(0,1)=0.0;
@@ -248,7 +248,7 @@ void Spline_t::set_points(const std::vector<float>& x,
         } else {
             assert(false);
         }
-        if(m_right == Spline_t::second_deriv) {
+        if (m_right == Spline_t::second_deriv) {
             // 2*b[n-1] = f''
             A(n-1,n-1)=2.0;
             A(n-1,n-2)=0.0;
@@ -270,7 +270,7 @@ void Spline_t::set_points(const std::vector<float>& x,
         // calculate parameters a[] and c[] based on b[]
         m_a.resize(n);
         m_c.resize(n);
-        for(int i=0; i<n-1; i++) {
+        for (int i=0; i<n-1; i++) {
             m_a[i]=1.0/3.0*(m_b[i+1]-m_b[i])/(x[i+1]-x[i]);
             m_c[i]=(y[i+1]-y[i])/(x[i+1]-x[i])
                    - 1.0/3.0*(2.0*m_b[i]+m_b[i+1])*(x[i+1]-x[i]);
@@ -279,7 +279,7 @@ void Spline_t::set_points(const std::vector<float>& x,
         m_a.resize(n);
         m_b.resize(n);
         m_c.resize(n);
-        for(int i=0; i<n-1; i++) {
+        for (int i=0; i<n-1; i++) {
             m_a[i]=0.0;
             m_b[i]=0.0;
             m_c[i]=(m_y[i+1]-m_y[i])/(m_x[i+1]-m_x[i]);
@@ -296,7 +296,7 @@ void Spline_t::set_points(const std::vector<float>& x,
     // m_b[n-1] is determined by the boundary condition
     m_a[n-1]=0.0;
     m_c[n-1]=3.0*m_a[n-2]*h*h+2.0*m_b[n-2]*h+m_c[n-2];   // = f'_{n-2}(x_{n-1})
-    if(m_force_linear_extrapolation==true)
+    if (m_force_linear_extrapolation==true)
         m_b[n-1]=0.0;
 }
 
@@ -310,7 +310,7 @@ float Spline_t::operator() (float x) const
 
     float h=x-m_x[idx];
     float interpol;
-    if(x<m_x[0]) {
+    if (x<m_x[0]) {
         // extrapolation to the left
         interpol=(m_b0*h + m_c0)*h + m_y[0];
     } else if(x>m_x[n-1]) {
