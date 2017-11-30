@@ -80,16 +80,16 @@ def analize_vf(vf_file, pp):
     beamid = np.array(r['beamid']).astype(int)
     spotid = np.array(r['spotid']).astype(int)
 
-    x = x if hasattr(x, "__len__") else np.array([x])
-    y = y if hasattr(y, "__len__") else np.array([y])
-    z = z if hasattr(z, "__len__") else np.array([z])
-    vx = vx if hasattr(vx, "__len__") else np.array([vx])
-    vy = vy if hasattr(vy, "__len__") else np.array([vy])
-    vz = vz if hasattr(vz, "__len__") else np.array([vz])
-    beamid = beamid if hasattr(beamid, "__len__") else np.array([beamid])
-    spotid = spotid if hasattr(spotid, "__len__") else np.array([spotid])
+    x = x if x.size > 1 else np.array([x])
+    y = y if y.size > 1 else np.array([y])
+    z = z if z.size > 1 else np.array([z])
+    vx = vx if vx.size > 1 else np.array([vx])
+    vy = vy if vy.size > 1 else np.array([vy])
+    vz = vz if vz.size > 1 else np.array([vz])
+    beamid = beamid if beamid.size > 1 else np.array([beamid])
+    spotid = spotid if spotid.size > 1 else np.array([spotid])
 
-    npoints = len(x)
+    npoints = x.size
 
     d = np.sqrt(vx*vx + vy*vy + vz*vz)
     ang_x = np.array([np.arccos(vx[i]/d[i]) if d[i] != 0 else 0 for i in range(npoints)])
@@ -191,11 +191,11 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
     beamid = np.array(r['beamid']).astype(int)
     # spotid = [r['spotid']]
 
-    all_dw = all_dw if hasattr(all_dw, "__len__") else np.array([all_dw])
-    all_de = all_de if hasattr(all_de, "__len__") else np.array([all_de])
-    all_x = all_x if hasattr(all_x, "__len__") else np.array([all_x])
-    all_y = all_y if hasattr(all_y, "__len__") else np.array([all_y])
-    beamid = beamid if hasattr(beamid, "__len__") else np.array([beamid])
+    all_dw = all_dw if all_dw.size > 1 else np.array([all_dw])
+    all_de = all_de if all_de.size > 1 else np.array([all_de])
+    all_x  = all_x  if all_x.size  > 1 else np.array([all_x])
+    all_y  = all_y  if all_y.size  > 1 else np.array([all_y])
+    beamid = beamid if beamid.size > 1 else np.array([beamid])
 
     # Round
     all_dw = np.round(all_dw, decimals=8)
@@ -210,10 +210,10 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         tramp_y = np.array(tramp_r['y'])
         tramp_w = np.array(tramp_r['w'])
 
-        tramp_e = tramp_e if hasattr(tramp_e, "__len__") else np.array([tramp_e])
-        tramp_x = tramp_x if hasattr(tramp_x, "__len__") else np.array([tramp_x])
-        tramp_y = tramp_y if hasattr(tramp_y, "__len__") else np.array([tramp_y])
-        tramp_w = tramp_w if hasattr(tramp_w, "__len__") else np.array([tramp_w])
+        tramp_e = tramp_e if tramp_e.size > 1 else np.array([tramp_e])
+        tramp_x = tramp_x if tramp_x.size > 1 else np.array([tramp_x])
+        tramp_y = tramp_y if tramp_y.size > 1 else np.array([tramp_y])
+        tramp_w = tramp_w if tramp_w.size > 1 else np.array([tramp_w])
 
         # Round
         tramp_e = np.round(tramp_e, decimals=3)
