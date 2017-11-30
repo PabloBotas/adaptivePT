@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <limits>
 
 #include "command_line_parser.hpp"
 #include "initialize_rays.cuh"
@@ -101,7 +102,10 @@ int main(int argc, char** argv)
     // Sample target for influence calculation
     Array4<double> influence_ct(pat.total_spots*pat.total_spots);
     Array4<double> influence_cbct(pat.total_spots*pat.total_spots);
-    structure_sampler (parser.ct_target_file, pat.total_spots, pat.total_spots, warper, pat.ct,
+    // uint nprobes = std::numeric_limits<uint>::max();
+    // uint nprobes = pat.total_spots;
+    float percentage = 25;
+    structure_sampler (parser.ct_target_file, percentage, pat.total_spots, warper, pat.ct,
                        influence_ct, influence_cbct);
 
     // 1: Get endpoints in CT
@@ -111,8 +115,7 @@ int main(int argc, char** argv)
                    warped_endpoints, warped_initpos,  // outputs
                    influence_ct);                     // outputs
 
-    if (!parser.skip_cbct)
-    {
+    if (!parser.skip_cbct) {
         // 2: Get endpoints in CBCT and compare with CT to correct energy
         compute_in_cbct (pat, parser,                      // inputs
                          warped_endpoints, warped_initpos, // inputs
@@ -140,11 +143,6 @@ int main(int argc, char** argv)
     exit(EXIT_SUCCESS);
 }
 
-
-// void process_influences (Array4<double> influence_ct,
-//                          Array4<double> influence_cbct)
-// {
-// }
 
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,

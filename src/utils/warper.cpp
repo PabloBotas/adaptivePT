@@ -92,11 +92,9 @@ void Warper_t::apply_rigid_positions_per_beam (const std::vector<short>& spots_p
     // Calculate average per field
     double accu_spots = 0;
     Array3<double> avgs(spots_per_field.size());
-    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
-    {
+    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++) {
         // std::cout << "BEAM " << ibeam << std::endl;
-        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++)
-        {
+        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
             size_t idx;
             if (ibeam > 0)
                 idx = ispot + accu_spots;
@@ -112,10 +110,8 @@ void Warper_t::apply_rigid_positions_per_beam (const std::vector<short>& spots_p
 
     // Set average per field
     accu_spots = 0;
-    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
-    {
-        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++)
-        {
+    for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++) {
+        for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
             size_t idx;
             if (ibeam > 0)
                 idx = ispot+accu_spots;
@@ -136,15 +132,12 @@ void Warper_t::set_vf_origins()
     std::stringstream ss_per_line(str);
     std::string line;
 
-    if (!str.empty())
-    {
-        while(std::getline(ss_per_line, line, '\n'))
-        {
+    if (!str.empty()) {
+        while(std::getline(ss_per_line, line, '\n')) {
             if (line.find("Origin") == std::string::npos)
                 continue;
             std::istringstream ss_per_space(line);
-            while (ss_per_space)
-            {
+            while (ss_per_space) {
                 std::string dummy;
                 ss_per_space >> dummy >> dummy;
                 ss_per_space >> origins.x >> origins.y >> origins.z;
@@ -181,8 +174,7 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
     std::cout << "Working warp_init_points " << std::endl;
     project_vf_on_plane (pln, spots_per_field);
 
-    for (size_t i = 0, ibeam = 0; i < vf_planes.size(); i++)
-    {
+    for (size_t i = 0, ibeam = 0; i < vf_planes.size(); i++) {
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
 
@@ -218,8 +210,7 @@ void Warper_t::warp_init_points (Array4<double>& init_pos,
         Vector3_t<double> X(-X_y, -X_x, b2.z);
         X.rotate(angles.at(ibeam).gantry, angles.at(ibeam).couch);
         
-        // if (i == 0)
-        // {
+        // if (i == 0) {
         //     // std::cout << "a:  " << a.x << " " << a.y << " " << a.z << std::endl;
         //     std::cout << "b:  " << b.x << " " << b.y << " " << b.z << std::endl;
         //     std::cout << "c:  " << c.x << " " << c.y << " " << c.z << std::endl;
@@ -247,8 +238,7 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
 {
     vf_planes.resize(vf.size());
     vf_ave_planes.resize(spots_per_field.size());
-    for (size_t i = 0, ibeam = 0; i < vf.size(); i++)
-    {
+    for (size_t i = 0, ibeam = 0; i < vf.size(); i++) {
         if (i == (size_t)spots_per_field.at(ibeam))
             ibeam += 1;
         double inner = vf.at(i).x*pln.dir.at(ibeam).x +
@@ -270,8 +260,7 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
 
 void Warper_t::warp_points (Array4<double>& p)
 {
-    for (size_t i = 0; i < p.size(); i++)
-    {
+    for (size_t i = 0; i < p.size(); i++) {
         p.at(i).x += vf.at(i).x;
         p.at(i).y += vf.at(i).y;
         p.at(i).z += vf.at(i).z;
@@ -290,10 +279,8 @@ void Warper_t::write_to_file(const Array4<double>& p,
 
     int beamid = 0;
     ofs << "vx vy vz x y z beamid spotid\n";
-    for (short i = 0, spotid = 0; i < (short)vf.size(); i++, spotid++)
-    {
-        if (i == spots_per_field.at(beamid))
-        {
+    for (short i = 0, spotid = 0; i < (short)vf.size(); i++, spotid++) {
+        if (i == spots_per_field.at(beamid)) {
             spotid -= spots_per_field.at(beamid);
             beamid += 1;
         }
@@ -322,11 +309,16 @@ void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
     set_probes(p);
 
     std::cout << "Probing vector field ..." << std::endl;
+    // // TEMP!!
+    // vf.reserve(p.size());
+    // Vector3_t<double> v(0, 0, -2);
+    // for (size_t i = 0; i < p.size(); ++i)
+    //     vf.push_back(v);
+    // // TEMP!!
 
     // Get vector field image
     if ( ! (utils::ends_with_string(file, ".mha") || 
-            utils::ends_with_string(file, ".mhd")) )
-    {
+            utils::ends_with_string(file, ".mhd")) ) {
         std::string ext = utils::get_file_extension(file);
         std::string trans_cmd;
         trans_cmd = "plastimatch xf-convert --input " + file;
@@ -344,11 +336,9 @@ void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
     size_t elements = probes.size();
     const size_t locs_per_batch = 3000;
     size_t nbatches = size_t(elements/locs_per_batch)+1;
-    for (size_t batch = 0; batch < nbatches; batch++)
-    {
+    for (size_t batch = 0; batch < nbatches; batch++) {
         std::string locations;
-        for (size_t i = batch*locs_per_batch; i < elements && i < (batch+1)*locs_per_batch; i++)
-        {
+        for (size_t i = batch*locs_per_batch; i < elements && i < (batch+1)*locs_per_batch; i++) {
             Vector4_t<double> temp;
             temp.x = ct.n.x*ct.d.x - probes.at(i).x + origins.x;
             temp.y = probes.at(i).y + origins.y;
@@ -370,16 +360,13 @@ void Warper_t::probe (const Array4<double>& p, const CT_Dims_t& ct)
         vf.clear();
     vf.reserve(p.size());
 
-    if (!str.empty())
-    {
-        while(std::getline(ss_per_line, line, '\n'))
-        {
+    if (!str.empty()) {
+        while(std::getline(ss_per_line, line, '\n')) {
             std::istringstream ss_per_space(line);
 
             double z, y, x;
             Vector3_t<double> v;
-            while (ss_per_space)
-            {
+            while (ss_per_space) {
                 std::string dummy;
                 ss_per_space >> dummy;
                 ss_per_space >> dummy >> dummy >> dummy;
@@ -410,17 +397,13 @@ void Warper_t::flip_positions_X (Array4<double>& vec,
                                  const CT_Dims_t dims)
 {
     for (size_t i = 0; i < vec.size(); i++)
-    {
         vec.at(i).x = dims.n.x*dims.d.x - vec.at(i).x;
-    }
 }
 
 void Warper_t::flip_direction_X (Array4<double>& vec)
 {
     for (size_t i = 0; i < vec.size(); i++)
-    {
         vec.at(i).x *= -1;
-    }
 }
 
 

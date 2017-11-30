@@ -76,7 +76,8 @@ void gpu_physics_to_device::sendMassStoppingPowerRatio(std::vector<int>& HU_star
 
 void gpu_physics_to_device::sendWaterRestrictedSPower()
 {
-    std::string file = std::string(INSTALLATION_PATH) + "/src/phys_data/nist_stopping_power_water.dat";
+    std::string file = std::string(INSTALLATION_PATH) + "/src/phys_data/restricted_stopping_power_water.G410.dat";
+    // std::string file = std::string(INSTALLATION_PATH) + "/src/phys_data/restricted_stopping_power_water.dat";
     std::cout << "sendWaterRestrictedSPower: Reading " << file << std::endl;
     std::ifstream stream(file);
     utils::check_fs(stream, file, "to read restricted stopping powers.");
@@ -141,10 +142,11 @@ void read_parameterization_file(std::string& file,
 
     // Header line with energy vector
     std::getline(stream, line);
-    std::stringstream ss(line);
-    if (readInfo)
+    if (readInfo) {
+        std::stringstream ss(line);
         while (ss >> temp)
             energies.push_back(temp);
+    }
     
     // Read the rest of the file
     while(std::getline(stream, line)) {
@@ -163,7 +165,7 @@ void gpu_physics_to_device::sendBraggPeakFits()
     // Declare vectors to fill
     std::vector<float> energies;
     std::vector<float> depths;
-    std::vector<float> b, n, s, w;
+    std::vector<float> b, n, s, w, ranges;
 
     // Declare files to read
     std::string file;
@@ -175,13 +177,13 @@ void gpu_physics_to_device::sendBraggPeakFits()
     read_parameterization_file(file, energies, depths, s, false);
     file = std::string(INSTALLATION_PATH) + "/src/phys_data/Bragg_peak_prof_w.dat";
     read_parameterization_file(file, energies, depths, w, false);
+    file = std::string(INSTALLATION_PATH) + "/src/phys_data/Bragg_peak_prof_central_axis_R80.dat";
+    read_parameterization_file(file, energies, depths, ranges, false);
 
     // Get energies data
     size_t const n_energies = energies.size();
-    //TODO FIX THIS!!!
-    float const delta_energy = (energies.at(2)-energies.at(1)) * MeV2eV;
-    // !!!!!!!!!!!
-    float const minimum_energy = (energies.at(1)*MeV2eV-delta_energy);
+    float const delta_energy = (energies.at(1)-energies.at(0)) * MeV2eV;
+    float const minimum_energy = energies.at(0)*MeV2eV;
     // Get depths data 
     size_t const n_depths = depths.size();
     float const delta_depths = depths.at(1)-depths.at(0);
@@ -194,7 +196,7 @@ void gpu_physics_to_device::sendBraggPeakFits()
     //  create textures on device
     cudaMallocArray(&bp_b_array, &bp_b_tex.channelDesc, n_energies, n_depths);
     cudaMemcpyToArray(bp_b_array, 0, 0, &b[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
-    bp_b_tex.normalized = false; 
+    bp_b_tex.normalized = false;
     bp_b_tex.filterMode = cudaFilterModeLinear;
     bp_b_tex.addressMode[0] = cudaAddressModeBorder;
     bp_b_tex.addressMode[1] = cudaAddressModeBorder;
@@ -202,7 +204,7 @@ void gpu_physics_to_device::sendBraggPeakFits()
 
     cudaMallocArray(&bp_n_array, &bp_n_tex.channelDesc, n_energies, n_depths);
     cudaMemcpyToArray(bp_n_array, 0, 0, &n[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
-    bp_n_tex.normalized = false; 
+    bp_n_tex.normalized = false;
     bp_n_tex.filterMode = cudaFilterModeLinear;
     bp_n_tex.addressMode[0] = cudaAddressModeBorder;
     bp_n_tex.addressMode[1] = cudaAddressModeBorder;
@@ -210,7 +212,7 @@ void gpu_physics_to_device::sendBraggPeakFits()
 
     cudaMallocArray(&bp_s_array, &bp_s_tex.channelDesc, n_energies, n_depths);
     cudaMemcpyToArray(bp_s_array, 0, 0, &s[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
-    bp_s_tex.normalized = false; 
+    bp_s_tex.normalized = false;
     bp_s_tex.filterMode = cudaFilterModeLinear;
     bp_s_tex.addressMode[0] = cudaAddressModeBorder;
     bp_s_tex.addressMode[1] = cudaAddressModeBorder;
@@ -218,11 +220,18 @@ void gpu_physics_to_device::sendBraggPeakFits()
 
     cudaMallocArray(&bp_w_array, &bp_w_tex.channelDesc, n_energies, n_depths);
     cudaMemcpyToArray(bp_w_array, 0, 0, &w[0], sizeof(float)*n_energies*n_depths, cudaMemcpyHostToDevice);
-    bp_w_tex.normalized = false; 
+    bp_w_tex.normalized = false;
     bp_w_tex.filterMode = cudaFilterModeLinear;
     bp_w_tex.addressMode[0] = cudaAddressModeBorder;
     bp_w_tex.addressMode[1] = cudaAddressModeBorder;
     cudaBindTextureToArray(bp_w_tex, bp_w_array);
+
+    cudaMallocArray(&bp_range_array, &bp_range_tex.channelDesc, n_energies, 1);
+    cudaMemcpyToArray(bp_range_array, 0, 0, &ranges[0], sizeof(float)*n_energies, cudaMemcpyHostToDevice);
+    bp_range_tex.normalized = false;
+    bp_range_tex.filterMode = cudaFilterModeLinear;
+    bp_range_tex.addressMode[0] = cudaAddressModeBorder;
+    cudaBindTextureToArray(bp_range_tex, bp_range_array);
 }
 
 void freePhysicsMemory()
@@ -241,4 +250,6 @@ void freePhysicsMemory()
     cudaUnbindTexture(bp_s_tex);
     cudaFreeArray(bp_b_array);
     cudaUnbindTexture(bp_b_tex);
+    cudaFreeArray(bp_range_array);
+    cudaUnbindTexture(bp_range_tex);
 }

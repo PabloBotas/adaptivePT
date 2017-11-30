@@ -46,35 +46,37 @@ extern __device__ __constant__ size_t ctTotalVoxN;
 
 // Density-filled array
 extern cudaArray* dens;
-extern texture<float, 3, cudaReadModeElementType> dens_tex;
+extern texture<float, cudaTextureType3D, cudaReadModeElementType> dens_tex;
 
 // Material ID-filled array
 extern cudaArray* matid;
-extern texture<float, 3, cudaReadModeElementType> matid_tex;
+extern texture<float, cudaTextureType3D, cudaReadModeElementType> matid_tex;
 
 // Water resticted stopping power
 extern __device__ __constant__ float stp_w_min_e;
 extern __device__ __constant__ float stp_w_delta_e;
 extern cudaArray *stp_w_array, *stp_w_b_coeff_array;
-extern texture<float, 1, cudaReadModeElementType> stp_w_tex, stp_w_b_coeff_tex;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> stp_w_tex, stp_w_b_coeff_tex;
 
 // Stopping power ratio table
 extern __device__ __constant__ float stp_ratio_min_e;
 extern __device__ __constant__ float stp_ratio_delta_e;
 extern cudaArray* stp_ratio_array;
-extern texture<float, 2, cudaReadModeElementType> stp_ratio_tex;
+extern texture<float, cudaTextureType2D, cudaReadModeElementType> stp_ratio_tex;
 
 // Bragg peaks LUTs
 extern __device__ __constant__ float bp_energy_min;
 extern __device__ __constant__ float bp_energy_delta;
 extern __device__ __constant__ float bp_depth_delta;
 extern cudaArray* bp_b_array;
-extern texture<float, 2, cudaReadModeElementType> bp_b_tex;
+extern texture<float, cudaTextureType2D, cudaReadModeElementType> bp_b_tex;
 extern cudaArray* bp_n_array;
-extern texture<float, 2, cudaReadModeElementType> bp_n_tex;
+extern texture<float, cudaTextureType2D, cudaReadModeElementType> bp_n_tex;
 extern cudaArray* bp_s_array;
-extern texture<float, 2, cudaReadModeElementType> bp_s_tex;
+extern texture<float, cudaTextureType2D, cudaReadModeElementType> bp_s_tex;
 extern cudaArray* bp_w_array;
-extern texture<float, 2, cudaReadModeElementType> bp_w_tex;
+extern texture<float, cudaTextureType2D, cudaReadModeElementType> bp_w_tex;
+extern cudaArray* bp_range_array;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> bp_range_tex;
 
 #endif

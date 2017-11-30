@@ -13,8 +13,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
                                      float* traces)
 {
     const int thread = blockIdx.x*blockDim.x + threadIdx.x;
-    if(thread < num)
-    {
+    if(thread < num) {
         Ray ray(xdata[thread], vxdata[thread], ixdata[thread]);
         size_t const ind = get_endpoints_index(ray.get_beam_id(),
                                                ray.get_spot_id(),
@@ -28,23 +27,21 @@ __global__ void raytrace_plan_kernel(const ushort num,
         pos_scorer[ind].w = initial_energy;
 
         // ray.print();
-        while (ray.is_alive() && vox.w >= -1)
-        {
+        while (ray.is_alive() && vox.w >= -1) {
             double step_water = 0, step = 0, de = 0;
             double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                           vox, voxUpdater, voxStepper);
 #if defined(__STEP_CENTRAL_AXIS__)
                 get_step(step, step_water, de, max_step, ray.get_energy(), vox);
 #elif defined(__STEP_Q50__)
-                get_q50_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+                get_q50_blur_step(step, step_water, de, max_step, ray, vox);
 #else
-                get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+                get_average_blur_step(step, step_water, de, max_step, ray, vox);
 #endif
             ray.move(step, step_water, de);
 
             if(traces)
                 score_traces(traces, vox.w, !ray.is_alive());
-
             if (step == max_step)
                 changeVoxel(vox, voxUpdater, voxStepper);
         }
@@ -54,8 +51,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
         pos_scorer[ind].y = ray.pos.y;
         pos_scorer[ind].z = ray.pos.z;
 
-        if(orig_endpoints)
-        {
+        if(orig_endpoints) {
             const double accu_wepl = ray.get_wepl();
             double3 plan_endpoint = make_double3(orig_endpoints[thread]);
             ray.set_energy(initial_energy);
@@ -63,17 +59,16 @@ __global__ void raytrace_plan_kernel(const ushort num,
             int sign = ahead_or_behind(ray.dir, plan_endpoint, ray.pos);
             ray.dir *= sign;
 
-            while (ray.is_alive() && vox.w != -1)
-            {
+            while (ray.is_alive() && vox.w != -1) {
                 double step_water = 0, step = 0, de = 0;
                 double max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                               vox, voxUpdater, voxStepper, plan_endpoint);
 #if defined(__STEP_CENTRAL_AXIS__)
                 get_step(step, step_water, de, max_step, ray.get_energy(), vox);
 #elif defined(__STEP_Q50__)
-                get_q50_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+                get_q50_blur_step(step, step_water, de, max_step, ray, vox);
 #else
-                get_average_blur_step(step, step_water, de, max_step, ray, initial_energy, vox);
+                get_average_blur_step(step, step_water, de, max_step, ray, vox);
 #endif
                 ray.move(step, step_water, de);
 
@@ -100,9 +95,12 @@ __global__ void raytrace_plan_kernel(const ushort num,
             const double E = pow(total_wepl/alpha1, 1/p1) + pow(total_wepl/alpha2, 1/p2) + pow(total_wepl/alpha3, 1/p3);
             double dev = 100*(E - initial_energy)/initial_energy;
             // Coerce change to 0.25% steps
-            const float energy_grid_step = 0.25;
-            dev = floor(dev/energy_grid_step + 0.5)*energy_grid_step;
-            double delta = dev*initial_energy/100;
+            const float energy_grid_step = 0.0f;
+            double delta = E - initial_energy;
+            if (energy_grid_step > 0.0f) {
+                dev = floor(dev/energy_grid_step + 0.5)*energy_grid_step;
+                delta = dev*initial_energy/100;
+            }
             pos_scorer[ind].w = delta;
         }
     }

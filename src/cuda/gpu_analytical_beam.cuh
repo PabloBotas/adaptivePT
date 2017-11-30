@@ -8,9 +8,6 @@ class AnalyticalBeam
     double n;
     double s;
     double w;
-    double energy_index;
-    double depth_index;
-    __device__ void fill_pars();
 public:
     // CONSTRUCTORS ----------------------------------------------------------
     __device__ AnalyticalBeam (double const energy, double const wepl_d);

@@ -7,9 +7,30 @@
 // CONSTRUCTORS --------------------------------------------------------------
 __device__ AnalyticalBeam::AnalyticalBeam (double const energy, double const wepl_d)
 {
-    energy_index = (energy - bp_energy_min)/bp_energy_delta + 0.5;
-    depth_index = wepl_d/bp_depth_delta + 0.5;
-    fill_pars();
+    float energy_index = (energy - bp_energy_min)/bp_energy_delta + 0.5;
+    float range_fraction = wepl_d/tex1D(bp_range_tex, energy_index);
+
+    float energy_index_0 = floor(energy_index - 0.5) + 0.5;
+    float energy_index_1 = energy_index_0 + 1;
+    float equiv_wepl_0 = range_fraction*tex1D(bp_range_tex, energy_index_0);
+    float equiv_wepl_1 = range_fraction*tex1D(bp_range_tex, energy_index_1);
+    float equiv_depth_index_0 = equiv_wepl_0/bp_depth_delta + 0.5;
+    float equiv_depth_index_1 = equiv_wepl_1/bp_depth_delta + 0.5;
+
+    float b_0 = tex2D(bp_b_tex, energy_index_0, equiv_depth_index_0);
+    float n_0 = tex2D(bp_n_tex, energy_index_0, equiv_depth_index_0);
+    float s_0 = tex2D(bp_s_tex, energy_index_0, equiv_depth_index_0);
+    float w_0 = tex2D(bp_w_tex, energy_index_0, equiv_depth_index_0);
+    float b_1 = tex2D(bp_b_tex, energy_index_1, equiv_depth_index_1);
+    float n_1 = tex2D(bp_n_tex, energy_index_1, equiv_depth_index_1);
+    float s_1 = tex2D(bp_s_tex, energy_index_1, equiv_depth_index_1);
+    float w_1 = tex2D(bp_w_tex, energy_index_1, equiv_depth_index_1);
+
+    float weight = energy_index-energy_index_0;
+    b = (1-weight)*b_0 + weight*b_1;
+    n = (1-weight)*n_0 + weight*n_1;
+    s = (1-weight)*s_0 + weight*s_1;
+    w = (1-weight)*w_0 + weight*w_1;
 }
 
 
@@ -18,31 +39,17 @@ __device__ AnalyticalBeam::~AnalyticalBeam ()
 }
 
 // BASIC GETTERS -------------------------------------------------------------
-
-
-__device__ void AnalyticalBeam::fill_pars ()
+__device__ double AnalyticalBeam::get_dose_at (double const R)
 {
-    n = tex2D(bp_n_tex, energy_index, depth_index);
-    if (n > 0) {
-        b = tex2D(bp_b_tex, energy_index, depth_index);
-        s = tex2D(bp_s_tex, energy_index, depth_index);
-        w = tex2D(bp_w_tex, energy_index, depth_index);
+    if (n == 0) {
+        return 0;
     } else {
-        b = 1;
-        s = 1;
-        w = 1;
+        double norma = w/(sqrtf(2*PI)*s) + 2*(1-w)/(PI*sqrtf(b));
+        double gauss = 1/(sqrtf(2*PI)*s) * exp(-0.5 * R*R/(s*s));
+        double ruthe = 2*pow(b, 1.5)/(PI*pow(R*R + b, 2));
+        return fabs(n/norma * (w*gauss + (1-w)*ruthe));
     }
     
-}
-
-
-__device__ double AnalyticalBeam::get_dose_at (double const wepl_r)
-{
-    if (n == 0)
-        return 0;
-    else
-        return fabs(n * (w/(sqrtf(2*PI)*s) * exp(-0.5 * wepl_r*wepl_r/(s*s)) +
-               (1-w) * 2*pow(b, 1.5)/PI *1/pow(wepl_r*wepl_r + b, 2)) );
 }
 
 

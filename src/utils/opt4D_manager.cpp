@@ -69,8 +69,7 @@ void Opt4D_manager::write_templates()
         exit(EXIT_FAILURE);
     }
     std::ofstream dst1(plan_file);
-    if (min_average_constrain > 0)
-    {
+    if (min_average_constrain > 0) {
         std::string planfile_contents;
         for (char ch; src1.get(ch); planfile_contents.push_back(ch)) {
         }

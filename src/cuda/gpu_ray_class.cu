@@ -15,6 +15,7 @@ __device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
     dir.y  = vx_.y;
     dir.z  = vx_.z;
     energy = vx_.w;
+    initial_energy = energy;
 
     beam_id = ix_.x;
     spot_id = ix_.y;
@@ -40,6 +41,11 @@ __device__ double Ray::get_wepl () const
 __device__ double Ray::get_energy () const
 {
     return energy;
+}
+
+__device__ double Ray::get_initial_energy () const
+{
+    return initial_energy;
 }
 
 __device__ short Ray::get_beam_id () const

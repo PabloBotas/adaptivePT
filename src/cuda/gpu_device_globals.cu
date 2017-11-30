@@ -41,3 +41,5 @@ cudaArray* bp_s_array;
 texture<float, cudaTextureType2D, cudaReadModeElementType> bp_s_tex;
 cudaArray* bp_b_array;
 texture<float, cudaTextureType2D, cudaReadModeElementType> bp_b_tex;
+cudaArray* bp_range_array;
+texture<float, cudaTextureType1D, cudaReadModeElementType> bp_range_tex;

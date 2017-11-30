@@ -61,7 +61,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         spot_weights.reserve(spot_weights.size() + tramp.nspots);
         spot_weights.insert(spot_weights.end(), w.begin(), w.end());
     }
-    uint nprobes = int(influence.size()/pat.total_spots + 0.5);
+    uint nprobes = uint(influence.size()/pat.total_spots + 0.5);
     gpu_calculate_influence (pat.total_spots, nprobes, influence, spot_weights, inf_cube);
 
 #ifdef __INFLUENCE_MATRICES__
@@ -138,8 +138,14 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
         spot_weights.reserve(spot_weights.size() + tramp.nspots);
         spot_weights.insert(spot_weights.end(), w.begin(), w.end());
     }
-    uint nprobes = int(influence.size()/pat.total_spots + 0.5);
-    gpu_calculate_influence (pat.total_spots, nprobes, influence, spot_weights, inf_cube);
+    std::vector<double> new_energies(endpoints.size());
+    for (size_t i = 0; i < new_energies.size(); ++i) {
+        new_energies.at(i) = vxbuffer.at(i).w + endpoints.at(i).w;
+    }
+
+    uint nprobes = uint(influence.size()/pat.total_spots + 0.5);
+    gpu_calculate_influence (pat.total_spots, nprobes, influence,
+                             spot_weights, inf_cube, new_energies);
 #ifdef __INFLUENCE_MATRICES__
     std::cout << "Writting influence_CBCT.dat ..." << std::endl;
     std::string outputdir = parser.output_opt4D_files.empty() ? parser.out_dir :
@@ -210,11 +216,12 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     gpuErrchk( cudaFree(pos_scorer) );
 }
 
-void gpu_calculate_influence (const short& nspots,
-                              const short& nprobes,
+void gpu_calculate_influence (const uint& nspots,
+                              const uint& nprobes,
                               Array4<double>& influence,
                               std::vector<float>& spot_weights,
-                              std::vector<float>& inf_volume)
+                              std::vector<float>& inf_volume,
+                              const std::vector<double>& new_energies)
 {
     // Create scorer array
     double4 *dev_influence = NULL;
@@ -225,15 +232,19 @@ void gpu_calculate_influence (const short& nspots,
     // Create weights array
     float *dev_spot_weights = NULL;
     array_to_device<float>(dev_spot_weights, &spot_weights[0], spot_weights.size());
+    // Create new energies array
+    double *dev_new_energies = NULL;
+    array_to_device<double>(dev_new_energies, &new_energies[0], new_energies.size());
     
     // Launch influence kernel
-    std::cout << "Calculating influence matrix ..." << std::endl;
+    std::cout << "Calculating influence matrix with " << nspots*nprobes << " elements ..." << std::endl;
 
-    int nblocks = 1 + (nspots*nprobes-1)/NTHREAD_PER_BLOCK_INFLUENCE;
+    uint nblocks = 1 + (nspots*nprobes-1)/NTHREAD_PER_BLOCK_INFLUENCE;
     get_influence_kernel<<<nblocks, NTHREAD_PER_BLOCK_INFLUENCE>>>(nspots, nprobes,
                                                                    dev_influence,
                                                                    dev_spot_weights,
-                                                                   dev_inf_volume);
+                                                                   dev_inf_volume,
+                                                                   dev_new_energies);
     check_kernel_execution(__FILE__, __LINE__);
     retrieve_scorer<double, double4>(&(influence[0].x), dev_influence, influence.size());
     retrieve_scorer<float, float>(&(inf_volume[0]), dev_inf_volume, inf_volume.size());
@@ -242,6 +253,7 @@ void gpu_calculate_influence (const short& nspots,
     gpuErrchk( cudaFree(dev_influence) );
     gpuErrchk( cudaFree(dev_inf_volume) );
     gpuErrchk( cudaFree(dev_spot_weights) );
+    gpuErrchk( cudaFree(dev_new_energies) );
     freeCTMemory();
 }
 
@@ -256,6 +268,7 @@ void initialize_device(cudaEvent_t& start)
     cudaSetDevice(device);
     bool verbose = false;
     printDevProp(device, verbose);
+    // cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 1024000*30);
 
     gpu_physics_to_device::sendWaterRestrictedSPower();
     gpu_physics_to_device::sendMassStoppingPowerRatio();

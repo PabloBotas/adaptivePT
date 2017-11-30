@@ -35,6 +35,7 @@ void array_to_device(T*& dest, const S* src, size_t n)
 }
 template void array_to_device<short>(short*&, const short*, size_t);
 template void array_to_device<float>(float*&, const float*, size_t);
+template void array_to_device<double>(double*&, const double*, size_t);
 template void array_to_device<double2>(double2*&, const double2*, size_t);
 template void array_to_device<double3>(double3*&, const double3*, size_t);
 template void array_to_device<double4>(double4*&, const double4*, size_t);
@@ -64,7 +65,7 @@ void sendVectorToTexture(size_t w, size_t h, size_t d,
     gpuErrchk( cudaMalloc3DArray(&array, &tex.channelDesc, extent) );
 
     // copy data to GPU
-    cudaMemcpy3DParms pars = {0};
+    cudaMemcpy3DParms pars = cudaMemcpy3DParms();
     pars.srcPtr   = make_cudaPitchedPtr((void *)host_vec.data(),
                                         extent.width*sizeof(T),
                                         extent.width, extent.height);

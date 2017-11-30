@@ -5,6 +5,7 @@ class Ray
 {
     double wepl;
     double energy;
+    double initial_energy;
     short  beam_id;
     short  spot_id;
 public:
@@ -20,6 +21,7 @@ public:
     __device__ short get_beam_id () const;
     __device__ short get_spot_id () const;
     __device__ double get_energy () const;
+    __device__ double get_initial_energy () const;
     __device__ double get_wepl () const;
     // GETTERS ---------------------------------------------------------------
     __device__ bool is_alive ();
