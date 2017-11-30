@@ -21,25 +21,25 @@
 
 void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             const Volume_t& ct,
-                            Array4<double>& endpoints,
-                            Array4<double>& initpos_xbuffer_dbg,
-                            Array4<double>& initpos,
+                            Array4<float>& endpoints,
+                            Array4<float>& initpos_xbuffer_dbg,
+                            Array4<float>& initpos,
                             const Parser& parser,
-                            Array4<double>& influence)
+                            Array4<float>& influence)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
 
     // Create host buffers and initialize rays
-    std::vector<double4> xbuffer;
-    std::vector<double4> vxbuffer;
+    std::vector<float4> xbuffer;
+    std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
     create_virtual_source_buffers (pat, xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer, true);
     virtual_src_to_treatment_plane (xbuffer.size(), pat.angles,
-                                    make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
+                                    make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
 
-    gpuErrchk( cudaMemcpyFromSymbol(&(initpos[0].x), xdata, sizeof(double4)*xbuffer.size(), 0, cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpyFromSymbol(&(initpos[0].x), xdata, sizeof(float4)*xbuffer.size(), 0, cudaMemcpyDeviceToHost) );
     // Copy buffer with initial positions and wepl
     for (size_t i = 0; i < xbuffer.size(); i++)
     {
@@ -70,7 +70,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
                                                                 parser.output_opt4D_files;
     std::ofstream fout(outputdir+"/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
-        fout.write((char*)&influence[i].w, sizeof(double));
+        fout.write((char*)&influence[i].w, sizeof(float));
 
     std::cout << "Writting influence_cube_CT.dat ..." << std::endl;
     std::ofstream fout2(outputdir+"/influence_cube_CT.dat", std::ios::out | std::ios::binary);
@@ -104,28 +104,28 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Volume_t &ct,
-                          const Array4<double>& orig_endpoints,
-                          const Array4<double>& init_pos,
-                          Array4<double>& endpoints,
+                          const Array4<float>& orig_endpoints,
+                          const Array4<float>& init_pos,
+                          Array4<float>& endpoints,
                           const Parser& parser,
-                          Array4<double>& influence)
+                          Array4<float>& influence)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
 
     // Create host buffers and initialize rays
-    std::vector<double4> xbuffer;
-    std::vector<double4> vxbuffer;
+    std::vector<float4> xbuffer;
+    std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
     create_treatment_plane_buffers (pat, orig_endpoints, init_pos,
                                     xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer, false);
     correct_offsets (xbuffer.size(), 
-                     make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                     make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
-    Array4<double> off_endpoints = offset_endpoints (orig_endpoints, 
-                                                     make_double3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                                                     make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                     make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+    Array4<float> off_endpoints = offset_endpoints (orig_endpoints, 
+                                                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                                                     make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
     gpu_raytrace (pat, endpoints, parser.output_cbct_traces, off_endpoints);
 
@@ -138,7 +138,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
         spot_weights.reserve(spot_weights.size() + tramp.nspots);
         spot_weights.insert(spot_weights.end(), w.begin(), w.end());
     }
-    std::vector<double> new_energies(endpoints.size());
+    std::vector<float> new_energies(endpoints.size());
     for (size_t i = 0; i < new_energies.size(); ++i) {
         new_energies.at(i) = vxbuffer.at(i).w + endpoints.at(i).w;
     }
@@ -152,7 +152,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                                             parser.output_opt4D_files;
     std::ofstream fout(outputdir+"/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
     for (size_t i = 0; i < influence.size(); ++i)
-        fout.write((char*)&influence[i].w, sizeof(double));
+        fout.write((char*)&influence[i].w, sizeof(float));
     
     std::cout << "Writting influence_cube_CBCT.dat ..." << std::endl;
     std::ofstream fout2(outputdir+"/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
@@ -185,13 +185,13 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
-                   Array4<double>& endpoints,
+                   Array4<float>& endpoints,
                    std::string traces_file,
-                   const Array4<double>& orig_endpoints)
+                   const Array4<float>& orig_endpoints)
 {
     // Create scorer array
-    double4* pos_scorer = NULL;
-    allocate_scorer<double4>(pos_scorer, pat.total_spots);
+    float4* pos_scorer = NULL;
+    allocate_scorer<float4>(pos_scorer, pat.total_spots);
 
     // Calculate rays
     if (traces_file.empty())
@@ -211,21 +211,21 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
         gpuErrchk( cudaFree(traces_scorer) );
     }
 
-    retrieve_scorer<double, double4>(&(endpoints[0].x), pos_scorer, pat.total_spots);
+    retrieve_scorer<float, float4>(&(endpoints[0].x), pos_scorer, pat.total_spots);
     // Free memory
     gpuErrchk( cudaFree(pos_scorer) );
 }
 
 void gpu_calculate_influence (const uint& nspots,
                               const uint& nprobes,
-                              Array4<double>& influence,
+                              Array4<float>& influence,
                               std::vector<float>& spot_weights,
                               std::vector<float>& inf_volume,
-                              const std::vector<double>& new_energies)
+                              const std::vector<float>& new_energies)
 {
     // Create scorer array
-    double4 *dev_influence = NULL;
-    array_to_device<double4, Vector4_t<double> >(dev_influence, influence.data(), influence.size());
+    float4 *dev_influence = NULL;
+    array_to_device<float4, Vector4_t<float> >(dev_influence, influence.data(), influence.size());
     // Create scorer array
     float *dev_inf_volume = NULL;
     allocate_scorer<float>(dev_inf_volume, inf_volume.size());
@@ -233,8 +233,8 @@ void gpu_calculate_influence (const uint& nspots,
     float *dev_spot_weights = NULL;
     array_to_device<float>(dev_spot_weights, &spot_weights[0], spot_weights.size());
     // Create new energies array
-    double *dev_new_energies = NULL;
-    array_to_device<double>(dev_new_energies, &new_energies[0], new_energies.size());
+    float *dev_new_energies = NULL;
+    array_to_device<float>(dev_new_energies, &new_energies[0], new_energies.size());
     
     // Launch influence kernel
     std::cout << "Calculating influence matrix with " << nspots*nprobes << " elements ..." << std::endl;
@@ -246,7 +246,7 @@ void gpu_calculate_influence (const uint& nspots,
                                                                    dev_inf_volume,
                                                                    dev_new_energies);
     check_kernel_execution(__FILE__, __LINE__);
-    retrieve_scorer<double, double4>(&(influence[0].x), dev_influence, influence.size());
+    retrieve_scorer<float, float4>(&(influence[0].x), dev_influence, influence.size());
     retrieve_scorer<float, float>(&(inf_volume[0]), dev_inf_volume, inf_volume.size());
     retrieve_scorer<float, float>(&(spot_weights[0]), dev_spot_weights, spot_weights.size());
     // Free memory

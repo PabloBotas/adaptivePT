@@ -3,45 +3,45 @@
 
 #include "gpu_ray_class.cuh"
 
-__device__ void get_step(double& step,
-                         double& step_water,
-                         double& de,
-                         const double max_step,
-                         const double energy_in,
+__device__ void get_step(float& step,
+                         float& step_water,
+                         float& de,
+                         const float max_step,
+                         const float energy_in,
                          const int4& vox);
 
 // Q50 blur
-__device__ void get_q50_blur_step(double& step,
-                                  double& step_water,
-                                  double& de,
-                                  const double max_step,
+__device__ void get_q50_blur_step(float& step,
+                                  float& step_water,
+                                  float& de,
+                                  const float max_step,
                                   const Ray& ray,
                                   const int4& vox);
-__device__ void q50_density_blur(double& density, int4& q50_vox, const Ray& ray,
-                                 double const energy_in, const int4& vox, const double max_step);
+__device__ void q50_density_blur(float& density, int4& q50_vox, const Ray& ray,
+                                 float const energy_in, const int4& vox, const float max_step);
 
 // Average blur
-__device__ void get_average_blur_step(double& step,
-                                      double& step_water,
-                                      double& de,
-                                      const double max_step,
+__device__ void get_average_blur_step(float& step,
+                                      float& step_water,
+                                      float& de,
+                                      const float max_step,
                                       const Ray& ray,
                                       const int4& vox);
-__device__ void average_blur (double& density, double& mass_stp_ratio,
-                              const Ray& ray, const int4& vox, const double max_step);
+__device__ void average_blur (float& density, float& mass_stp_ratio,
+                              const Ray& ray, const int4& vox, const float max_step);
 
-__device__ void step_blur_get_voxels(int* voxels, const Ray& ray, const double& energy_in,
-                                     const int4& vox, const int& n, const double& scale,
-                                     const double max_step);
+__device__ void step_blur_get_voxels(int* voxels, const Ray& ray, const float& energy_in,
+                                     const int4& vox, const int& n, const float& scale,
+                                     const float max_step);
 
 
-__device__ double get_residual_range (double const energy);
+__device__ float get_residual_range (float const energy);
 
-__device__ double get_energy_loss (double const step_water, double const energy);
+__device__ float get_energy_loss (float const step_water, float const energy);
 
-__device__ double massStpRatio(const double energy, const int4& vox);
+__device__ float massStpRatio(const float energy, const int4& vox);
 
-__device__ double get_dose_at (double const energy, double const wepl_r,
-                               double const wepl_d);
+__device__ float get_dose_at (float const energy, float const wepl_r,
+                               float const wepl_d);
 
 #endif

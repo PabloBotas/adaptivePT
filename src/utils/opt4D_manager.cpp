@@ -42,8 +42,8 @@ void Opt4D_manager::launch_optimization()
 }
 
 
-void Opt4D_manager::populate_directory(const Array4<double>& influence_ct,
-                                       const Array4<double>& influence_cbct)
+void Opt4D_manager::populate_directory(const Array4<float>& influence_ct,
+                                       const Array4<float>& influence_cbct)
 {
     std::cout << "Writting Opt4D files:" << std::endl;
     mkdir(out_directory.c_str(), 0774);
@@ -171,10 +171,10 @@ void Opt4D_manager::write_vv()
 }
 
 //-o /opt/utils/adaptive/test/water_patient/adaptation_x10_y20_z30/opt4D_reoptimization --initial_fluence_noise 0.5 --lbfgs --lbfgs_m 20 --linesearch_steps 20 --dont_project_on_bounds --unit_initial_fluence --random_seed 0 --add_step_event "UPDATE_LAGRANGE_MULTIPLIERS,20,20" --add_step_event "UPDATE_PENALTY,20,20" --constraint_penalty_multiplier 2 --max_steps 2000 --min_steps 600 --max_time 1200 --write_dose --write_beam_dose opt4D_planfile.pln
-void Opt4D_manager::write_dij(const Array4<double>& influence_cbct)
+void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
 {
     // Get normalizing factor
-    double m = 0;
+    float m = 0;
     for (size_t i = 0; i < influence_cbct.size(); ++i)
         m = influence_cbct.at(i).w < m ? m : influence_cbct.at(i).w;
     float factor = m / std::numeric_limits<short>::max();
@@ -245,7 +245,7 @@ void Opt4D_manager::write_dij(const Array4<double>& influence_cbct)
 }
 
 
-void Opt4D_manager::set_write_reference_influence(const Array4<double>& influence)
+void Opt4D_manager::set_write_reference_influence(const Array4<float>& influence)
 {
     // Accumulate influence on voxel j by all spots i(0 -> n)
     std::vector<float> reference(n, 0);
@@ -293,7 +293,7 @@ void Opt4D_manager::read_bwf_file()
     {
         if (line.at(0) == '#')
             continue;
-        double w_;
+        float w_;
         float dummy;
         std::istringstream iss(line);
         iss >> dummy >> w_ >> dummy >> dummy >> dummy >> dummy >> dummy >> dummy >> dummy;
@@ -303,7 +303,7 @@ void Opt4D_manager::read_bwf_file()
 }
 
 
-std::vector<double> Opt4D_manager::get_weight_scaling()
+std::vector<float> Opt4D_manager::get_weight_scaling()
 {
     if(weight_scaling.empty())
         read_bwf_file();

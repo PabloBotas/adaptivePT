@@ -22,14 +22,14 @@ public:
     Vector4_t(const Vector3_t<T> &obj);
     void print(std::string sep = "\n") const;
     void print_as_3D(std::string sep = "\n") const;
-    double length() const;
-    double length2() const;
-    double dot(const Vector4_t<T>& a) const;
+    float length() const;
+    float length2() const;
+    float dot(const Vector4_t<T>& a) const;
     Vector4_t<T> cross(const Vector4_t<T>& v) const;
     void normalize();
     Vector4_t<T> get_normalized() const;
-    void rotate(const double& gantry, const double& couch);
-    Vector4_t<T> get_rotated(const double& gantry, const double& couch) const;
+    void rotate(const float& gantry, const float& couch);
+    Vector4_t<T> get_rotated(const float& gantry, const float& couch) const;
 
     T x;
     T y;

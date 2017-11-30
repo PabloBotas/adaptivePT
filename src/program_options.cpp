@@ -4,7 +4,7 @@
 #include <vector>
 
 void apply_energy_options(Warp_opts_t options,
-                          std::vector<double>& energy_shift,
+                          std::vector<float>& energy_shift,
                           const std::vector<short>& spots_per_field)
 {
     if (options == FREE_POS_RIGID_ENERGY ||
@@ -17,11 +17,11 @@ void apply_energy_options(Warp_opts_t options,
         apply_rigid_energy_per_beam(energy_shift, spots_per_field);
 }
 
-void apply_rigid_energy (std::vector<double>& energy)
+void apply_rigid_energy (std::vector<float>& energy)
 {
     std::cout << "Applying rigid energy shifts!!" << std::endl;
     // Calculate average
-    double avg = 0;
+    float avg = 0;
     for (size_t i = 0; i < energy.size(); i++)
         avg += energy.at(i);
     avg /= energy.size();
@@ -31,13 +31,13 @@ void apply_rigid_energy (std::vector<double>& energy)
         energy.at(i) = avg;
 }
 
-void apply_rigid_energy_per_beam (std::vector<double>& energy,
+void apply_rigid_energy_per_beam (std::vector<float>& energy,
                                   const std::vector<short>& spots_per_field)
 {
     std::cout << "Applying rigid energy shifts per field!!" << std::endl;
     // Calculate average per field
-    double accu_spots = 0;
-    std::vector<double> avgs(spots_per_field.size());
+    float accu_spots = 0;
+    std::vector<float> avgs(spots_per_field.size());
     for (size_t ibeam = 0; ibeam < avgs.size(); ibeam++)
     {
         // std::cout << "BEAM " << ibeam << std::endl;
@@ -81,7 +81,7 @@ void apply_rigid_energy_per_beam (std::vector<double>& energy,
 //     std::vector<Array3> avgs(spots_per_field.size());
 //     for (size_t ibeam = 0; ibeam < energy_layers.size(); ibeam++)
 //     {
-//         double layer_avg = 0;
+//         float layer_avg = 0;
 //         for (size_t ispot = 0; ispot < energy_layers.at(ibeam); ispot++)
 //         {
 //             size_t idx = 0;

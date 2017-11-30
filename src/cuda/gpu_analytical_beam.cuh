@@ -4,17 +4,17 @@
 
 class AnalyticalBeam
 {
-    double b;
-    double n;
-    double s;
-    double w;
+    float b;
+    float n;
+    float s;
+    float w;
 public:
     // CONSTRUCTORS ----------------------------------------------------------
-    __device__ AnalyticalBeam (double const energy, double const wepl_d);
+    __device__ AnalyticalBeam (float const energy, float const wepl_d);
     __device__ ~AnalyticalBeam ();
-    __device__ double get_dose_at (double const wepl_r);
-    __device__ void get_pars (double pars[]);
-    __device__ double get_sigma ();
+    __device__ float get_dose_at (float const wepl_r);
+    __device__ void get_pars (float pars[]);
+    __device__ float get_sigma ();
 };
 
 

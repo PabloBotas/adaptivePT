@@ -33,37 +33,37 @@
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,
                    Warper_t& warper,
-                   Array4<double>& endpoints,
-                   Array4<double>& initpos,
-                   Array4<double>& warped_endpoints,
-                   Array4<double>& warped_initpos,
-                   Array4<double>& influence_ct);
+                   Array4<float>& endpoints,
+                   Array4<float>& initpos,
+                   Array4<float>& warped_endpoints,
+                   Array4<float>& warped_initpos,
+                   Array4<float>& influence_ct);
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
-                     const Array4<double>& ct_warped_endpoints,
-                     const Array4<double>& ct_warped_initpos,
-                     std::vector<double>& energy_shift,
-                     Array4<double>& cbct_endpoints,
-                     Array4<double>& influence_cbct);
+                     const Array4<float>& ct_warped_endpoints,
+                     const Array4<float>& ct_warped_initpos,
+                     std::vector<float>& energy_shift,
+                     Array4<float>& cbct_endpoints,
+                     Array4<float>& influence_cbct);
 
-// void process_influences (Array4<double> influence_ct,
-//                          Array4<double> influence_cbct);
+// void process_influences (Array4<float> influence_ct,
+//                          Array4<float> influence_cbct);
 
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
-                    const std::vector<double>& energy_shift,
-                    const std::vector<double>& weight_scaling,
-                    Array4<double>& pat_pos,
-                    Array4<double>& pat_pos2,
+                    const std::vector<float>& energy_shift,
+                    const std::vector<float>& weight_scaling,
+                    Array4<float>& pat_pos,
+                    Array4<float>& pat_pos2,
                     const Warper_t& warper);
 
-void export_shifts(const std::vector<double>& e,
-                   const std::vector<double>& w,
-                   const Array4<double>& p,
+void export_shifts(const std::vector<float>& e,
+                   const std::vector<float>& w,
+                   const Array4<float>& p,
                    const std::string& file,
                    const short& beamid,
-                   const Vector3_t<double>& isocenter_shift);
+                   const Vector3_t<float>& isocenter_shift);
 
 void generate_report(const std::string& report,
                      const std::string& output_vf,
@@ -86,13 +86,13 @@ int main(int argc, char** argv)
     initialize_device(start);
 
     // Data containers and warper --------------------------------------------
-    Array4<double> endpoints(pat.total_spots);
-    Array4<double> initpos(pat.total_spots);
-    Array4<double> warped_endpoints(pat.total_spots);
-    Array4<double> warped_initpos(pat.total_spots);
-    Array4<double> cbct_endpoints(pat.total_spots);
-    std::vector<double> energy_shift(pat.total_spots);
-    std::vector<double> weight_scaling(pat.total_spots, 1.0);
+    Array4<float> endpoints(pat.total_spots);
+    Array4<float> initpos(pat.total_spots);
+    Array4<float> warped_endpoints(pat.total_spots);
+    Array4<float> warped_initpos(pat.total_spots);
+    Array4<float> cbct_endpoints(pat.total_spots);
+    std::vector<float> energy_shift(pat.total_spots);
+    std::vector<float> weight_scaling(pat.total_spots, 1.0);
 
     // Warper ----------------------------------------------------------------
     Warper_t warper(parser.vf_file, parser.output_vf);
@@ -100,8 +100,8 @@ int main(int argc, char** argv)
 
     // Adaptive steps --------------------------------------------------------
     // Sample target for influence calculation
-    Array4<double> influence_ct(pat.total_spots*pat.total_spots);
-    Array4<double> influence_cbct(pat.total_spots*pat.total_spots);
+    Array4<float> influence_ct(pat.total_spots*pat.total_spots);
+    Array4<float> influence_cbct(pat.total_spots*pat.total_spots);
     // uint nprobes = std::numeric_limits<uint>::max();
     // uint nprobes = pat.total_spots;
     float percentage = 25;
@@ -147,11 +147,11 @@ int main(int argc, char** argv)
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,
                    Warper_t& warper,
-                   Array4<double>& endpoints,
-                   Array4<double>& initpos,
-                   Array4<double>& warped_endpoints,
-                   Array4<double>& warped_initpos,
-                   Array4<double>& influence)
+                   Array4<float>& endpoints,
+                   Array4<float>& initpos,
+                   Array4<float>& warped_endpoints,
+                   Array4<float>& warped_initpos,
+                   Array4<float>& influence)
 {
     // Read CT and launch rays
     Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
@@ -161,7 +161,7 @@ void compute_in_ct(const Patient_Parameters_t& pat,
     // Get endpoints in CT ----------------------------
     endpoints.resize(pat.total_spots);
     initpos.resize(pat.total_spots);
-    Array4<double> initpos_xbuffer_dbg(pat.total_spots);
+    Array4<float> initpos_xbuffer_dbg(pat.total_spots);
     gpu_raytrace_original (pat, ct, endpoints, initpos_xbuffer_dbg, initpos,
                            parser, influence);
 
@@ -185,11 +185,11 @@ void compute_in_ct(const Patient_Parameters_t& pat,
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
-                     const Array4<double>& warped_endpoints,
-                     const Array4<double>& warped_initpos,
-                     std::vector<double>& energy_shift,
-                     Array4<double>& cbct_endpoints,
-                     Array4<double>& influence)
+                     const Array4<float>& warped_endpoints,
+                     const Array4<float>& warped_initpos,
+                     std::vector<float>& energy_shift,
+                     Array4<float>& cbct_endpoints,
+                     Array4<float>& influence)
 {
     // Get endpoints in CBCT --------------------
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
@@ -210,10 +210,10 @@ void compute_in_cbct(Patient_Parameters_t& pat,
 
 void export_adapted(Patient_Parameters_t& pat,
                     const Parser& pars,
-                    const std::vector<double>& energy_shift,
-                    const std::vector<double>& weight_scaling,
-                    Array4<double>& warped_initpos,
-                    Array4<double>& warped_endpoints,
+                    const std::vector<float>& energy_shift,
+                    const std::vector<float>& weight_scaling,
+                    Array4<float>& warped_initpos,
+                    Array4<float>& warped_endpoints,
                     const Warper_t& warper)
 {
     // Go to virtual source pos
@@ -227,13 +227,13 @@ void export_adapted(Patient_Parameters_t& pat,
     {
         size_t offset_a = (i != 0) ? pat.accu_spots_per_field.at(i-1) : 0;
         size_t offset_b = pat.accu_spots_per_field.at(i);
-        std::vector<double> subset_energies;
-        std::vector<double> subset_weights_scaling;
-        Array4<double> subset_pat_pos;
+        std::vector<float> subset_energies;
+        std::vector<float> subset_weights_scaling;
+        Array4<float> subset_pat_pos;
 
-        utils::subset_vector<double>(subset_energies, energy_shift, offset_a, offset_b);
-        utils::subset_vector<double>(subset_weights_scaling, weight_scaling, offset_a, offset_b);
-        utils::subset_vector< Vector4_t<double> >(subset_pat_pos, warped_initpos, offset_a, offset_b);
+        utils::subset_vector<float>(subset_energies, energy_shift, offset_a, offset_b);
+        utils::subset_vector<float>(subset_weights_scaling, weight_scaling, offset_a, offset_b);
+        utils::subset_vector< Vector4_t<float> >(subset_pat_pos, warped_initpos, offset_a, offset_b);
 
         if (!pars.output_shifts.empty())
             export_shifts(subset_energies, subset_weights_scaling,
@@ -248,12 +248,12 @@ void export_adapted(Patient_Parameters_t& pat,
 
 }
 
-void export_shifts(const std::vector<double>& e,
-                   const std::vector<double>& w,
-                   const Array4<double>& p,
+void export_shifts(const std::vector<float>& e,
+                   const std::vector<float>& w,
+                   const Array4<float>& p,
                    const std::string& file,
                    const short& beamid,
-                   const Vector3_t<double>& isocenter_shift)
+                   const Vector3_t<float>& isocenter_shift)
 {
     std::ofstream ofs;
     if (beamid != 0)
@@ -277,8 +277,8 @@ void export_shifts(const std::vector<double>& e,
 
     for (size_t spotid = 0; spotid < e.size(); spotid++)
     {
-        double vx = p.at(spotid).x;
-        double vy = p.at(spotid).y;
+        float vx = p.at(spotid).x;
+        float vy = p.at(spotid).y;
         ofs << w.at(spotid) << " " << e.at(spotid) << " ";
         ofs << p.at(spotid).x << " " << p.at(spotid).y << " ";
         ofs << p.at(spotid).z << " " << std::sqrt(vx*vx + vy*vy) << " ";

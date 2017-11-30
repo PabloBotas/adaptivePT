@@ -5,11 +5,11 @@
 
 __global__ void get_influence_kernel(const uint nspots,
                                      const uint nprobes,
-                                     double4* influence,
+                                     float4* influence,
                                      float* spot_weights,
                                      float* inf_volume,
-                                     double *new_energies = NULL);
+                                     float *new_energies = NULL);
 
-__device__ double wepl_to_point (Ray& ray, double3 stop_point, bool overwrite_energy = false);
+__device__ float wepl_to_point (Ray& ray, float3 stop_point, bool overwrite_energy = false);
 
 #endif

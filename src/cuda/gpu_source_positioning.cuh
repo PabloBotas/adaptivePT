@@ -7,57 +7,57 @@
 
 __host__ void virtual_src_to_treatment_plane(const unsigned int& num,
                                              const std::vector<BeamAngles_t>& angles,
-                                             const double3& ct_offsets);
+                                             const float3& ct_offsets);
 
 __global__ void virtual_src_to_treatment_plane_kernel(const int num,
-                                                      const double2 *angles,
-                                                      const double3 ct_offsets);
-__host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
-                                             Array4<double> pos2,
+                                                      const float2 *angles,
+                                                      const float3 ct_offsets);
+__host__ void treatment_plane_to_virtual_src(Array4<float>& pos,
+                                             Array4<float> pos2,
                                              const Patient_Parameters_t& pat,
-                                             const Vector3_t<double>& isocenter_shift);
+                                             const Vector3_t<float>& isocenter_shift);
 __global__ void treatment_plane_to_virtual_src_kernel(const int num,
                                                       const int nbeams,
-                                                      double4* pos_,
-                                                      const double4* dir_,
-                                                      const double2* angles,
-                                                      const double3* plane_dir,
-                                                      const double3* plane_pos,
-                                                      const double3 ct_offsets);
+                                                      float4* pos_,
+                                                      const float4* dir_,
+                                                      const float2* angles,
+                                                      const float3* plane_dir,
+                                                      const float3* plane_pos,
+                                                      const float3 ct_offsets);
 void correct_offsets(const unsigned int& num,
-                     const double3& offsets,
-                     const double3& original_offsets);
-Array4<double> offset_endpoints(const Array4<double>& orig_endpoints,
-                               const double3& offsets,
-                               const double3& original_offsets);
+                     const float3& offsets,
+                     const float3& original_offsets);
+Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
+                               const float3& offsets,
+                               const float3& original_offsets);
 __global__ void correct_offsets_kernel(const int num,
-                                       const double3 offsets,
-                                       const double3 original_offsets);
+                                       const float3 offsets,
+                                       const float3 original_offsets);
 __global__ void correct_offsets_kernel(const int num,
-                                       double4* dev_orig_endpoints,
-                                       const double3 offsets,
-                                       const double3 original_offsets);
+                                       float4* dev_orig_endpoints,
+                                       const float3 offsets,
+                                       const float3 original_offsets);
 
-__device__ double4 ray_trace_to_CT_volume(const double4& p,
-                                         const double4& v);
-__device__ __host__ double4 ray_trace_to_CT_volume(const double4& p,
-                                                  const double4& v,
+__device__ float4 ray_trace_to_CT_volume(const float4& p,
+                                         const float4& v);
+__device__ __host__ float4 ray_trace_to_CT_volume(const float4& p,
+                                                  const float4& v,
                                                   const int3 nvox,
-                                                  const double3 dvox);
-__device__ __host__ double3 ray_trace_to_CT_volume(const double3& p,
-                                                  const double3& v,
+                                                  const float3 dvox);
+__device__ __host__ float3 ray_trace_to_CT_volume(const float3& p,
+                                                  const float3& v,
                                                   const int3 nvox,
-                                                  const double3 dvox);
+                                                  const float3 dvox);
 
 // __host__ Planes_t
 // get_treatment_planes (const Patient_Parameters_t& pat,
 //                       const std::vector<BeamAngles_t>& angles);
 
-__device__ __host__ double3 pos_to_int_coordinates(double3 a);
-__device__ __host__ double4 pos_to_int_coordinates(double4 a);
-__device__ __host__ double3 pos_to_ext_coordinates(double3 a);
-__device__ __host__ double4 pos_to_ext_coordinates(double4 a);
-__device__ double4 rotate(const double4& p, const double& gantry, const double& couch);
-__device__ double3 rotate(const double3& p, const double& gantry, const double& couch);
+__device__ __host__ float3 pos_to_int_coordinates(float3 a);
+__device__ __host__ float4 pos_to_int_coordinates(float4 a);
+__device__ __host__ float3 pos_to_ext_coordinates(float3 a);
+__device__ __host__ float4 pos_to_ext_coordinates(float4 a);
+__device__ float4 rotate(const float4& p, const float& gantry, const float& couch);
+__device__ float3 rotate(const float3& p, const float& gantry, const float& couch);
 
 #endif

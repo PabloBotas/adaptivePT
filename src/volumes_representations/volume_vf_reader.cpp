@@ -38,10 +38,10 @@ void Vf_reader_t::read_header()
     std::getline(stream, dummy_line);
     std::getline(stream, dummy_line);
     std::getline(stream, dummy_line);
-    origin                      = getHeaderVector<double>(stream, "Offset", 3);
+    origin                      = getHeaderVector<float>(stream, "Offset", 3);
     std::getline(stream, dummy_line);
     std::getline(stream, dummy_line);
-    spacing                     = getHeaderVector<double>(stream, "ElementSpacing", 3);
+    spacing                     = getHeaderVector<float>(stream, "ElementSpacing", 3);
     dim                         = getHeaderVector<unsigned int>(stream, "DimSize", 3);
     std::getline(stream, dummy_line);
     std::string ElType          = getHeaderValue<std::string>(stream, "ElementType");

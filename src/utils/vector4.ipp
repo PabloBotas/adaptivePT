@@ -87,19 +87,19 @@ void Vector4_t<T>::print_as_3D(std::string sep) const
 }
 
 template<class T>
-double Vector4_t<T>::length() const
+float Vector4_t<T>::length() const
 {
     return std::sqrt(x*x + y*y + z*z);
 }
 
 template<class T>
-double Vector4_t<T>::length2() const
+float Vector4_t<T>::length2() const
 {
     return x*x + y*y + z*z;
 }
 
 template<class T>
-double Vector4_t<T>::dot(const Vector4_t<T>& a) const
+float Vector4_t<T>::dot(const Vector4_t<T>& a) const
 {
     return x*a.x + y*a.y + z*a.z;
 }
@@ -113,7 +113,7 @@ Vector4_t<T> Vector4_t<T>::cross (const Vector4_t<T>& v) const
 template<class T>
 void Vector4_t<T>::normalize()
 {
-    double d = this->length();
+    float d = this->length();
     x /= d;
     y /= d;
     z /= d;
@@ -122,17 +122,17 @@ void Vector4_t<T>::normalize()
 template<class T>
 Vector4_t<T> Vector4_t<T>::get_normalized() const
 {
-    double d = this->length();
+    float d = this->length();
     return Vector3_t<T>(x/d, y/d, z/d, w);
 }
 
 template<class T>
-void Vector4_t<T>::rotate(const double& gantry, const double& couch)
+void Vector4_t<T>::rotate(const float& gantry, const float& couch)
 {
-    double c_couch  = cos(couch);
-    double s_couch  = sin(couch);
-    double c_gantry = cos(gantry);
-    double s_gantry = sin(gantry);
+    float c_couch  = cos(couch);
+    float s_couch  = sin(couch);
+    float c_gantry = cos(gantry);
+    float s_gantry = sin(gantry);
 
     Vector4_t<T> temp(x, y, z);
     x = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
@@ -141,17 +141,17 @@ void Vector4_t<T>::rotate(const double& gantry, const double& couch)
 }
 
 template<class T>
-Vector4_t<T> Vector4_t<T>::get_rotated(const double& gantry, const double& couch) const
+Vector4_t<T> Vector4_t<T>::get_rotated(const float& gantry, const float& couch) const
 {
-    double c_couch  = cos(couch);
-    double s_couch  = sin(couch);
-    double c_gantry = cos(gantry);
-    double s_gantry = sin(gantry);
+    float c_couch  = cos(couch);
+    float s_couch  = sin(couch);
+    float c_gantry = cos(gantry);
+    float s_gantry = sin(gantry);
 
     Vector4_t<T> temp(x, y, z, w);
-    double a_ = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
-    double b_ = temp.y*c_gantry - temp.z*s_gantry;
-    double c_ = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    float a_ = temp.x*c_couch - s_couch*(temp.y*s_gantry + temp.z*c_gantry);
+    float b_ = temp.y*c_gantry - temp.z*s_gantry;
+    float c_ = temp.x*s_couch + c_couch*(temp.y*s_gantry + temp.z*c_gantry);
     return Vector3_t<T>(a_, b_, c_, temp.w);
 }
 

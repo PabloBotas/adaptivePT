@@ -23,11 +23,11 @@ void structure_sampler (const std::string& file, const float& percentage,
     vol.ext_to_int_coordinates();
 
     // Store active voxel positions in array
-    Array3<double> positions;
-    // Array3<double> boundary_positions;
+    Array3<float> positions;
+    // Array3<float> boundary_positions;
     for (uint index = 0; index < vol.nElements; ++index) {
         if (vol.data.at(index) > 0.5) {
-            Vector3_t<double> pos_temp;
+            Vector3_t<float> pos_temp;
             Vector3_t<uint> idx_temp;
             // Get index
             idx_temp.x = index/(vol.n.y*vol.n.z) % vol.n.x;
@@ -115,14 +115,14 @@ void structure_sampler (const std::string& file, const float& percentage,
 
     // CBCT:
     // Fill influence array for CBCT
-    Array4<double> temp(ct_pos.begin(), ct_pos.begin()+nprobes);
-    Array4<double> temp2 = warper.apply_to_points(temp, pat_ct);
+    Array4<float> temp(ct_pos.begin(), ct_pos.begin()+nprobes);
+    Array4<float> temp2 = warper.apply_to_points(temp, pat_ct);
     for (uint i = 0; i < nspots; ++i)
         std::copy (temp2.begin(), temp2.end(), cbct_pos.begin()+i*nprobes);
 }
 
 template
-void structure_sampler< Vector4_t<double> >(const std::string&, const float&,
+void structure_sampler< Vector4_t<float> >(const std::string&, const float&,
                                             const uint, Warper_t, const CT_Dims_t&,
-                                            std::vector< Vector4_t<double> >&,
-                                            std::vector< Vector4_t<double> >&);
+                                            std::vector< Vector4_t<float> >&,
+                                            std::vector< Vector4_t<float> >&);

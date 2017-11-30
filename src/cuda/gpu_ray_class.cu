@@ -5,7 +5,7 @@
 #include "helper_math.h"
 
 // CONSTRUCTORS --------------------------------------------------------------
-__device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
+__device__ Ray::Ray (float4 x_, float4 vx_, short2 ix_)
 {
     pos.x  = x_.x;
     pos.y  = x_.y;
@@ -23,27 +23,27 @@ __device__ Ray::Ray (double4 x_, double4 vx_, short2 ix_)
 
 // BASIC GETTERS -------------------------------------------------------------
 
-__device__ double3 Ray::get_position () const
+__device__ float3 Ray::get_position () const
 {
     return pos;
 }
 
-__device__ double3 Ray::get_direction () const
+__device__ float3 Ray::get_direction () const
 {
     return dir;
 }
 
-__device__ double Ray::get_wepl () const
+__device__ float Ray::get_wepl () const
 {
     return wepl;
 }
 
-__device__ double Ray::get_energy () const
+__device__ float Ray::get_energy () const
 {
     return energy;
 }
 
-__device__ double Ray::get_initial_energy () const
+__device__ float Ray::get_initial_energy () const
 {
     return initial_energy;
 }
@@ -68,56 +68,56 @@ __device__ bool Ray::is_alive()
 
 // BASIC SETTERS -------------------------------------------------------------
 
-__device__ void Ray::set_energy(double m)
+__device__ void Ray::set_energy(float m)
 {
     energy = m;
 }
 
-__device__ void Ray::set_wepl(double m)
+__device__ void Ray::set_wepl(float m)
 {
     wepl = m;
 }
 
-__device__ void Ray::set_position (double4 d)
+__device__ void Ray::set_position (float4 d)
 {
-    set_position(make_double3(d));
+    set_position(make_float3(d));
 }
 
-__device__ void Ray::set_position (double3 d)
+__device__ void Ray::set_position (float3 d)
 {
     pos = d;
 }
 
-__device__ void Ray::set_direction (double4 d)
+__device__ void Ray::set_direction (float4 d)
 {
-    set_direction(make_double3(d));
+    set_direction(make_float3(d));
 }
 
-__device__ void Ray::set_direction (double3 d)
+__device__ void Ray::set_direction (float3 d)
 {
     dir = normalize(d);
 }
 
 // SETTERS -------------------------------------------------------------------
 
-__device__ void Ray::set_direction_to_point (double4 p)
+__device__ void Ray::set_direction_to_point (float4 p)
 {
-    double3 p2 = make_double3(p);
+    float3 p2 = make_float3(p);
     set_direction_to_point(p2);
 }
 
-__device__ void Ray::set_direction_to_point (double3 p)
+__device__ void Ray::set_direction_to_point (float3 p)
 {
     dir = p - pos;
-    double norm = length(dir);
+    float norm = length(dir);
     dir /= norm;
 }
 
 // ACTIONS -------------------------------------------------------------------
 
-__device__ void Ray::move (const double& step,
-                           const double& step_water,
-                           const double& de)
+__device__ void Ray::move (const float& step,
+                           const float& step_water,
+                           const float& de)
 {
     pos += step*dir;
     energy -= de;

@@ -17,10 +17,10 @@ namespace utils
                               std::string const& what,
                               std::string const& to_replace);
     std::string run_command(const std::string cmd);
-    void cm_to_mm(Array4<double>& v);
-    Vector3_t<double> closest_point(const Vector3_t<double>& vec,
-                                    const Vector3_t<double>& vec_p,
-                                    const Vector3_t<double>& p);
+    void cm_to_mm(Array4<float>& v);
+    Vector3_t<float> closest_point(const Vector3_t<float>& vec,
+                                    const Vector3_t<float>& vec_p,
+                                    const Vector3_t<float>& p);
     void check_fs(const std::ofstream& ofs, std::string f, std::string msg);
     void check_fs(const std::ifstream& ofs, std::string f, std::string msg);
     template<class T>

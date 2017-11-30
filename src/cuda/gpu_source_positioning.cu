@@ -7,17 +7,17 @@
 
 void virtual_src_to_treatment_plane(const unsigned int& num,
                                     const std::vector<BeamAngles_t>& angles,
-                                    const double3& ct_offsets)
+                                    const float3& ct_offsets)
 {
-    std::vector<double2> temp(angles.size());
+    std::vector<float2> temp(angles.size());
     for (size_t i = 0; i < angles.size(); i++)
     {
         temp[i].x = angles.at(i).gantry;
         temp[i].y = angles.at(i).couch;
     }
 
-    double2* angles_gpu;
-    array_to_device<double2>(angles_gpu, temp.data(), angles.size());
+    float2* angles_gpu;
+    array_to_device<float2>(angles_gpu, temp.data(), angles.size());
 
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
     virtual_src_to_treatment_plane_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, angles_gpu, ct_offsets);
@@ -27,15 +27,15 @@ void virtual_src_to_treatment_plane(const unsigned int& num,
 }
 
 __global__ void virtual_src_to_treatment_plane_kernel(const int num,
-                                                      const double2* angles,
-                                                      const double3 ct_offsets)
+                                                      const float2* angles,
+                                                      const float3 ct_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
     if (tid < num)
     {
-        double4 pos  = xdata[tid];
-        double4 vel  = vxdata[tid];
+        float4 pos  = xdata[tid];
+        float4 vel  = vxdata[tid];
         short2 meta = ixdata[tid]; // x = beam_id, y = spot_id
         short beamid = meta.x;
 
@@ -44,8 +44,8 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
         vel = pos_to_int_coordinates(vel);
 
         //  rotate location and direction using gantry and couch angles
-        double gantry = angles[beamid].x;
-        double couch  = angles[beamid].y;
+        float gantry = angles[beamid].x;
+        float couch  = angles[beamid].y;
         pos = rotate(pos, gantry, couch);
         vel = rotate(vel, gantry, couch);
 
@@ -62,8 +62,8 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
 }
 
 void correct_offsets(const unsigned int& num,
-                     const double3& offsets,
-                     const double3& original_offsets)
+                     const float3& offsets,
+                     const float3& original_offsets)
 {
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
     correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, offsets, original_offsets);
@@ -71,15 +71,15 @@ void correct_offsets(const unsigned int& num,
 }
 
 __global__ void correct_offsets_kernel(const int num,
-                                       const double3 offsets,
-                                       const double3 original_offsets)
+                                       const float3 offsets,
+                                       const float3 original_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
     if (tid < num)
     {
-        double4 pos  = xdata[tid];
-        double4 vel  = vxdata[tid];
+        float4 pos  = xdata[tid];
+        float4 vel  = vxdata[tid];
 
         // Add offsets
         pos.x += original_offsets.x - offsets.x;
@@ -93,13 +93,13 @@ __global__ void correct_offsets_kernel(const int num,
     }
 }
 
-Array4<double> offset_endpoints(const Array4<double>& orig_endpoints,
-                                const double3& offsets,
-                                const double3& original_offsets)
+Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
+                                const float3& offsets,
+                                const float3& original_offsets)
 {
-    Array4<double> off_endpoints = orig_endpoints;
-    double4* dev_orig_endpoints = NULL;
-    array_to_device<double4, Vector4_t<double> >(dev_orig_endpoints, off_endpoints.data(), orig_endpoints.size());
+    Array4<float> off_endpoints = orig_endpoints;
+    float4* dev_orig_endpoints = NULL;
+    array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, off_endpoints.data(), orig_endpoints.size());
 
     size_t num = off_endpoints.size();
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
@@ -109,7 +109,7 @@ Array4<double> offset_endpoints(const Array4<double>& orig_endpoints,
                              original_offsets);
     check_kernel_execution(__FILE__, __LINE__);
 
-    retrieve_scorer<double, double4>(&off_endpoints[0].x, dev_orig_endpoints, num);
+    retrieve_scorer<float, float4>(&off_endpoints[0].x, dev_orig_endpoints, num);
 
     cudaFree(dev_orig_endpoints);
 
@@ -117,9 +117,9 @@ Array4<double> offset_endpoints(const Array4<double>& orig_endpoints,
 }
 
 __global__ void correct_offsets_kernel(const int num,
-                                       double4* dev_orig_endpoints,
-                                       const double3 offsets,
-                                       const double3 original_offsets)
+                                       float4* dev_orig_endpoints,
+                                       const float3 offsets,
+                                       const float3 original_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
@@ -134,19 +134,19 @@ __global__ void correct_offsets_kernel(const int num,
     }
 }
 
-__host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
-                                             Array4<double> dir,
+__host__ void treatment_plane_to_virtual_src(Array4<float>& pos,
+                                             Array4<float> dir,
                                              const Patient_Parameters_t& pat,
-                                             const Vector3_t<double>& isocenter_shift)
+                                             const Vector3_t<float>& isocenter_shift)
 {
-    std::vector<double2> temp(pat.angles.size());
+    std::vector<float2> temp(pat.angles.size());
     for (size_t i = 0; i < pat.nbeams; i++)
     {
         temp[i].x = pat.angles.at(i).gantry;
         temp[i].y = pat.angles.at(i).couch;
     }
-    double3 offset = make_double3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z);
-    offset -= make_double3(isocenter_shift.x, isocenter_shift.y, isocenter_shift.z);
+    float3 offset = make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z);
+    offset -= make_float3(isocenter_shift.x, isocenter_shift.y, isocenter_shift.z);
 
     for (size_t i = 0; i < dir.size(); i++)
     {
@@ -160,14 +160,14 @@ __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
         dir.at(i).w = meta.y; // spotid
     }
 
-    double2 *angles_gpu;
-    double4 *pos_gpu, *dir_gpu;
-    double3 *plane_pos_gpu, *plane_dir_gpu;
-    array_to_device<double2>(angles_gpu, temp.data(), pat.nbeams);
-    array_to_device<double4>(pos_gpu, pos.data(), pos.size());
-    array_to_device<double4>(dir_gpu, dir.data(), dir.size());
-    array_to_device<double3>(plane_pos_gpu, pat.treatment_planes.p.data(), pat.nbeams);
-    array_to_device<double3>(plane_dir_gpu, pat.treatment_planes.dir.data(), pat.nbeams);
+    float2 *angles_gpu;
+    float4 *pos_gpu, *dir_gpu;
+    float3 *plane_pos_gpu, *plane_dir_gpu;
+    array_to_device<float2>(angles_gpu, temp.data(), pat.nbeams);
+    array_to_device<float4>(pos_gpu, pos.data(), pos.size());
+    array_to_device<float4>(dir_gpu, dir.data(), dir.size());
+    array_to_device<float3>(plane_pos_gpu, pat.treatment_planes.p.data(), pat.nbeams);
+    array_to_device<float3>(plane_dir_gpu, pat.treatment_planes.dir.data(), pat.nbeams);
 
     int num = pos.size();
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
@@ -181,7 +181,7 @@ __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
                                             offset);
     check_kernel_execution(__FILE__, __LINE__);
 
-    retrieve_scorer<double, double4>(&pos[0].x, pos_gpu, pos.size());
+    retrieve_scorer<float, float4>(&pos[0].x, pos_gpu, pos.size());
 
     cudaFree(angles_gpu);
     cudaFree(pos_gpu);
@@ -192,25 +192,25 @@ __host__ void treatment_plane_to_virtual_src(Array4<double>& pos,
 
 __global__ void treatment_plane_to_virtual_src_kernel(const int num,
                                                       const int nbeams,
-                                                      double4* pos_,
-                                                      const double4* dir_,
-                                                      const double2* angles,
-                                                      const double3* plane_dir,
-                                                      const double3* plane_pos,
-                                                      const double3 ct_offsets)
+                                                      float4* pos_,
+                                                      const float4* dir_,
+                                                      const float2* angles,
+                                                      const float3* plane_dir,
+                                                      const float3* plane_pos,
+                                                      const float3 ct_offsets)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
     if (tid < num)
     {
-        double3 pos  = make_double3(pos_[tid]);
-        double3 vel  = make_double3(dir_[tid]);
+        float3 pos  = make_float3(pos_[tid]);
+        float3 vel  = make_float3(dir_[tid]);
         short beamid = pos_[tid].w;
-        double3 p_pos = plane_pos[beamid];
-        double3 p_dir = plane_dir[beamid];
+        float3 p_pos = plane_pos[beamid];
+        float3 p_dir = plane_dir[beamid];
 
         // Ray trace to virtual source plane if necessary
-        double d = dot((p_pos - pos), p_dir) / dot(vel, p_dir);
+        float d = dot((p_pos - pos), p_dir) / dot(vel, p_dir);
         if ( fabs(d) > 0.000001f )
         {
             pos.x += d*vel.x;
@@ -224,8 +224,8 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
         pos.z += ct_offsets.z;
 
         //  rotate location using gantry and couch
-        double gantry = angles[beamid].x;
-        double couch  = angles[beamid].y;
+        float gantry = angles[beamid].x;
+        float couch  = angles[beamid].y;
         pos = rotate(pos, -gantry, -couch);
         // vel = rotate(vel, -gantry, -couch);
 
@@ -234,25 +234,25 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
         // vel = int_to_ext_coordinates(vel);
 
         // Return to array
-        pos_[tid] = make_double4(pos, pos_[tid].w);
+        pos_[tid] = make_float4(pos, pos_[tid].w);
         // dir_[tid] = vel;
     }
 }
 
-__device__ double4 ray_trace_to_CT_volume(const double4& p,
-                                          const double4& v)
+__device__ float4 ray_trace_to_CT_volume(const float4& p,
+                                          const float4& v)
 {
     return ray_trace_to_CT_volume(p, v, ctVox, ctVoxSize);
 }
 
-__device__ __host__ double4 ray_trace_to_CT_volume(const double4& p,
-                                                   const double4& v,
+__device__ __host__ float4 ray_trace_to_CT_volume(const float4& p,
+                                                   const float4& v,
                                                    const int3 nvox,
-                                                   const double3 dvox)
+                                                   const float3 dvox)
 {
-    double4 out = p;
+    float4 out = p;
 
-    double3 CT_size = nvox*dvox;
+    float3 CT_size = nvox*dvox;
     if ((p.x > dvox.x && p.x < CT_size.x) &&
         (p.y > dvox.y && p.y < CT_size.y) &&
         (p.z > dvox.z && p.z < CT_size.z))
@@ -260,8 +260,8 @@ __device__ __host__ double4 ray_trace_to_CT_volume(const double4& p,
 
     // 0.001f is to start a fraction of a voxel inside the CT
     // Distances to faces of the CT
-    double3 d_1 = (0.0001f*dvox - p)/v;
-    double3 d_n = (CT_size - 0.0001f*dvox - p)/v;
+    float3 d_1 = (0.0001f*dvox - p)/v;
+    float3 d_n = (CT_size - 0.0001f*dvox - p)/v;
 
     if((d_1.x < 0.0f && d_n.x < 0.0f) ||
        (d_1.y < 0.0f && d_n.y < 0.0f) ||
@@ -277,8 +277,8 @@ __device__ __host__ double4 ray_trace_to_CT_volume(const double4& p,
     }
     else
     {
-        double temp = min(d_1.x, d_n.x);
-        double alphaMin = -1.0f;
+        float temp = min(d_1.x, d_n.x);
+        float alphaMin = -1.0f;
         alphaMin = max(alphaMin, temp);
 
         temp = min(d_1.y, d_n.y);
@@ -295,50 +295,50 @@ __device__ __host__ double4 ray_trace_to_CT_volume(const double4& p,
     return out;
 }
 
-__device__ __host__ double3 ray_trace_to_CT_volume(const double3& p,
-                                                   const double3& v,
+__device__ __host__ float3 ray_trace_to_CT_volume(const float3& p,
+                                                   const float3& v,
                                                    const int3 nvox,
-                                                   const double3 dvox)
+                                                   const float3 dvox)
 {
-    double4 p_4 = make_double4(p, 0);
-    double4 v_4 = make_double4(v, 0);
-    double4 out = ray_trace_to_CT_volume(p_4, v_4, nvox, dvox);
-    return make_double3(out);
+    float4 p_4 = make_float4(p, 0);
+    float4 v_4 = make_float4(v, 0);
+    float4 out = ray_trace_to_CT_volume(p_4, v_4, nvox, dvox);
+    return make_float3(out);
 }
 
-__device__ __host__ double3 pos_to_int_coordinates(double3 a)
+__device__ __host__ float3 pos_to_int_coordinates(float3 a)
 {
-    return make_double3(-a.y, -a.x, a.z);
+    return make_float3(-a.y, -a.x, a.z);
 }
 
-__device__ __host__ double4 pos_to_int_coordinates(double4 a)
+__device__ __host__ float4 pos_to_int_coordinates(float4 a)
 {
-    return make_double4(-a.y, -a.x, a.z, a.w);
+    return make_float4(-a.y, -a.x, a.z, a.w);
 }
 
-__device__ __host__ double3 pos_to_ext_coordinates(double3 a)
+__device__ __host__ float3 pos_to_ext_coordinates(float3 a)
 {
-    return make_double3(-a.y, -a.x, a.z);
+    return make_float3(-a.y, -a.x, a.z);
 }
 
-__device__ __host__ double4 pos_to_ext_coordinates(double4 a)
+__device__ __host__ float4 pos_to_ext_coordinates(float4 a)
 {
-    return make_double4(-a.y, -a.x, a.z, a.w);
+    return make_float4(-a.y, -a.x, a.z, a.w);
 }
 
-__device__ double3 rotate(const double3& p, const double& gantry, const double& couch)
+__device__ float3 rotate(const float3& p, const float& gantry, const float& couch)
 {
-    return make_double3(rotate(make_double4(p), gantry, couch));
+    return make_float3(rotate(make_float4(p), gantry, couch));
 }
 
-__device__ double4 rotate(const double4& p, const double& gantry, const double& couch)
+__device__ float4 rotate(const float4& p, const float& gantry, const float& couch)
 {
-    double c_couch = __cosf(couch);
-    double s_couch = __sinf(couch);
-    double c_gantry = __cosf(gantry);
-    double s_gantry = __sinf(gantry);
+    float c_couch = __cosf(couch);
+    float s_couch = __sinf(couch);
+    float c_gantry = __cosf(gantry);
+    float s_gantry = __sinf(gantry);
 
-    double4 res;
+    float4 res;
     res.x = p.x*c_couch - s_couch*(p.y*s_gantry + p.z*c_gantry);
     res.y = p.y*c_gantry - p.z*s_gantry;
     res.z = p.x*s_couch + c_couch*(p.y*s_gantry + p.z*c_gantry);

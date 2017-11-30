@@ -97,7 +97,7 @@ void Tramp_t::read_()
     beam_name                  = getHeaderValue<std::string>(stream);
     gantry                     = getHeaderValue<std::string>(stream);
     couch_rotation             = getHeaderValue<std::string>(stream);
-    double gigaprotons_header  = getHeaderValue<double>(stream);
+    float gigaprotons_header  = getHeaderValue<float>(stream);
     unsigned int nspots_header = getHeaderValue<unsigned int>(stream);
 
     std::string line;
@@ -144,7 +144,7 @@ void Tramp_t::read_file_header(std::string f)
     beam_name              = getHeaderValue<std::string>(stream);
     gantry                 = getHeaderValue<std::string>(stream);
     couch_rotation         = getHeaderValue<std::string>(stream);
-    gigaprotons            = getHeaderValue<double>(stream);
+    gigaprotons            = getHeaderValue<float>(stream);
     nspots                 = getHeaderValue<unsigned int>(stream);
 }
 
@@ -212,7 +212,7 @@ void Tramp_t::setEnergies()
 }
 
 
-void Tramp_t::shift_energies(const std::vector<double>& e_, bool units)
+void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
 {
     if (e_.size() != nspots)
     {
@@ -222,7 +222,7 @@ void Tramp_t::shift_energies(const std::vector<double>& e_, bool units)
         exit(EXIT_FAILURE);
     }
 
-    double conv = units ? 1/1e6 : 1;
+    float conv = units ? 1/1e6 : 1;
     for (size_t i = 0; i < nspots; i++)
     {
         energies.at(i) += e_.at(i)*conv;
@@ -230,7 +230,7 @@ void Tramp_t::shift_energies(const std::vector<double>& e_, bool units)
     }
 }
 
-void Tramp_t::set_pos(const std::vector< Vector4_t<double> > p)
+void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
 {
     if (p.size() != nspots)
     {
@@ -248,7 +248,7 @@ void Tramp_t::set_pos(const std::vector< Vector4_t<double> > p)
 
 void Tramp_t::setWEPLs()
 {
-    std::vector<double> temp;
+    std::vector<float> temp;
     if(internal_energy_set)
         temp = energies_internal;
     else
@@ -259,7 +259,7 @@ void Tramp_t::setWEPLs()
     std::transform(temp.begin(), temp.end(), wepls.begin(), calculator);
 }
 
-std::vector<double> Tramp_t::getWEPLs()
+std::vector<float> Tramp_t::getWEPLs()
 {
     if(wepls.empty())
         setWEPLs();
@@ -307,12 +307,12 @@ std::vector<float> Tramp_t::get_xpos()
 }
 
 
-double InterpTable(double *vector_X, double *vector_Y, double x, int const npoints)
+float InterpTable(float *vector_X, float *vector_Y, float x, int const npoints)
 {
-    double result;
+    float result;
     int order = 4; // order of the poly
     // Allocate enough space for any table we'd like to read.
-    std::vector<double> lambda(npoints);
+    std::vector<float> lambda(npoints);
     // check order of interpolation
     if (order > npoints)
         order = npoints;
@@ -352,7 +352,7 @@ void Tramp_t::energy_to_internal()
     if(machine.compare("topasmghr4") == 0 ||
        machine.compare("topasmghr5") == 0)
     {
-        double R80AstroidTopasb8[3][27] =
+        float R80AstroidTopasb8[3][27] =
         {
             // Energy [MeV]
             { 91.015, 95.489, 101.50, 109.36, 117.30, 122.69,
@@ -377,12 +377,12 @@ void Tramp_t::energy_to_internal()
         for (size_t i = 0; i < energies.size(); i++)
         {
             // converts energy from MGHR4 machine to the one used by the virtual machines
-            double range = InterpTable(&(R80AstroidTopasb8[0][0]),
-                                       &(R80AstroidTopasb8[1][0]),
-                                       energies.at(i), 27);
-            double ECorr = InterpTable(&(R80AstroidTopasb8[2][0]),
-                                       &(R80AstroidTopasb8[0][0]),
-                                       range, 27);
+            float range = InterpTable(&(R80AstroidTopasb8[0][0]),
+                                      &(R80AstroidTopasb8[1][0]),
+                                      energies.at(i), 27);
+            float ECorr = InterpTable(&(R80AstroidTopasb8[2][0]),
+                                      &(R80AstroidTopasb8[0][0]),
+                                      range, 27);
             energies_internal.push_back(ECorr);
         }
     }
@@ -400,7 +400,7 @@ std::string toLower(std::string s) {
     return s;
 }
 
-void Tramp_t::scale_weights(std::vector<double> ratio)
+void Tramp_t::scale_weights(std::vector<float> ratio)
 {
     gigaprotons = 0;
     for (size_t i = 0; i < nspots; i++)

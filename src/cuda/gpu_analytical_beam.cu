@@ -5,7 +5,7 @@
 
 
 // CONSTRUCTORS --------------------------------------------------------------
-__device__ AnalyticalBeam::AnalyticalBeam (double const energy, double const wepl_d)
+__device__ AnalyticalBeam::AnalyticalBeam (float const energy, float const wepl_d)
 {
     float energy_index = (energy - bp_energy_min)/bp_energy_delta + 0.5;
     float range_fraction = wepl_d/tex1D(bp_range_tex, energy_index);
@@ -39,21 +39,21 @@ __device__ AnalyticalBeam::~AnalyticalBeam ()
 }
 
 // BASIC GETTERS -------------------------------------------------------------
-__device__ double AnalyticalBeam::get_dose_at (double const R)
+__device__ float AnalyticalBeam::get_dose_at (float const R)
 {
     if (n == 0) {
         return 0;
     } else {
-        double norma = w/(sqrtf(2*PI)*s) + 2*(1-w)/(PI*sqrtf(b));
-        double gauss = 1/(sqrtf(2*PI)*s) * exp(-0.5 * R*R/(s*s));
-        double ruthe = 2*pow(b, 1.5)/(PI*pow(R*R + b, 2));
+        float norma = w/(sqrtf(2*PI)*s) + 2*(1-w)/(PI*sqrtf(b));
+        float gauss = 1/(sqrtf(2*PI)*s) * exp(-0.5 * R*R/(s*s));
+        float ruthe = 2*pow(b, 1.5)/(PI*pow(R*R + b, 2));
         return fabs(n/norma * (w*gauss + (1-w)*ruthe));
     }
     
 }
 
 
-__device__ void AnalyticalBeam::get_pars (double pars[])
+__device__ void AnalyticalBeam::get_pars (float pars[])
 {
     pars[0] = n;
     pars[1] = w;
@@ -62,7 +62,7 @@ __device__ void AnalyticalBeam::get_pars (double pars[])
 }
 
 
-__device__ double AnalyticalBeam::get_sigma ()
+__device__ float AnalyticalBeam::get_sigma ()
 {
     return s;
 }

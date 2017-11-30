@@ -31,7 +31,7 @@ Volume_t::Volume_t(const std::string& f,
                    const unsigned int& nx,
                    const unsigned int& ny,
                    const unsigned int& nz,
-                   const double& dx, const double& dy, const double& dz)
+                   const float& dx, const float& dy, const float& dz)
 {
     file = f;
     source_type = s;
@@ -192,7 +192,7 @@ void Volume_t::ext_to_int_coordinates()
     // imgCenter.x *= -1;
 }
 
-void Volume_t::normalize(double ref)
+void Volume_t::normalize(float ref)
 {
     if (high_precision)
         for (size_t i = 0; i < nElements; i++)
@@ -280,7 +280,7 @@ void Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)
     n.z = z;
 }
 
-void Volume_t::setSpacing(double x, double y, double z)
+void Volume_t::setSpacing(float x, float y, float z)
 {
     d.x = x;
     d.y = y;

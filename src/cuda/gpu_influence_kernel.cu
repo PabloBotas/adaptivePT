@@ -9,32 +9,32 @@
 
 __global__ void get_influence_kernel(const uint nspots,
                                      const uint nprobes,
-                                     double4* influence,
+                                     float4* influence,
                                      float* spot_weights,
                                      float* inf_volume,
-                                     double *new_energies)
+                                     float *new_energies)
 {
     const uint thread = blockIdx.x*blockDim.x + threadIdx.x;
     const uint spot_i = thread / nprobes;
     const uint probe_j = thread % nprobes;
     // Influence of spot i on probe j
     if(spot_i < nspots && probe_j < nprobes) {
-        double wepl_r = -1.0, wepl_d = -1.0;
+        float wepl_r = -1.0, wepl_d = -1.0;
 
         // Initialize probe ray
-        double4 tempvxdata = vxdata[spot_i];
+        float4 tempvxdata = vxdata[spot_i];
         if (new_energies)
             tempvxdata.w = new_energies[spot_i];
         Ray ray(xdata[spot_i], tempvxdata, ixdata[spot_i]);
-        const double initial_energy = ray.get_initial_energy();
+        const float initial_energy = ray.get_initial_energy();
         // Stop condition: projection of endpoint on ray trajectory
-        double3 point0, point1;
-        point1 = make_double3(influence[probe_j]);
+        float3 point0, point1;
+        point1 = make_float3(influence[probe_j]);
         point0 = ray.get_position() +
                  dot((point1 - ray.get_position()), ray.get_direction()) *
                  ray.get_direction();
 
-        double dose = 0;
+        float dose = 0;
         if (point0.x >= 0 && point0.x < ctVoxSize.x*ctVox.x &&
             point0.y >= 0 && point0.y < ctVoxSize.y*ctVox.y &&
             point0.z >= 0 && point0.z < ctVoxSize.z*ctVox.z) {
@@ -58,9 +58,9 @@ __global__ void get_influence_kernel(const uint nspots,
 }
 
 
-__device__ double wepl_to_point (Ray& ray, double3 stop_point, bool lateral_wepl)
+__device__ float wepl_to_point (Ray& ray, float3 stop_point, bool lateral_wepl)
 {
-    double wepl = -1;
+    float wepl = -1;
     ray.set_wepl(0);
     if (lateral_wepl)
         ray.set_energy(160000000);
@@ -72,8 +72,8 @@ __device__ double wepl_to_point (Ray& ray, double3 stop_point, bool lateral_wepl
 
     // Raytrace to stop_point
     while (vox.w != -1) {
-        double step_water = 0, step = 0, de = 0;
-        double max_step = to_boundary(ray.get_position(), ray.get_direction(),
+        float step_water = 0, step = 0, de = 0;
+        float max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                       vox, voxUpdater, voxStepper, stop_point);
         if (lateral_wepl)
             get_step(step, step_water, de, max_step, ray.get_energy(), vox);

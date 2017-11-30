@@ -27,10 +27,10 @@ void gpu_ct_to_device::sendDimensions(const Volume_t& ct)
 {
     std::cout << "Setting CT dimensions in device..." << std::endl;
     int3    ct_n = make_int3(ct.n.x, ct.n.y, ct.n.z);
-    double3 ct_d = make_double3(ct.d.x, ct.d.y, ct.d.z);
+    float3 ct_d = make_float3(ct.d.x, ct.d.y, ct.d.z);
 
     gpuErrchk( cudaMemcpyToSymbol(ctTotalVoxN, &ct.nElements, sizeof(unsigned int), 0, cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpyToSymbol(ctVoxSize, &ct_d, sizeof(double3), 0, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpyToSymbol(ctVoxSize, &ct_d, sizeof(float3), 0, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpyToSymbol(ctVox, &ct_n, sizeof(int3), 0, cudaMemcpyHostToDevice) );
 }
 
@@ -42,20 +42,20 @@ void gpu_ct_to_device::sendDensities(const Volume_t &ct)
 
     std::cout << "setDensities: Converting HU to densities ..." << std::endl;
 
-//    double* gpu_densities = NULL;
-//    gpuErrchk( cudaMalloc((void**) &gpu_densities, ct.nElements*sizeof(double)) );
-//    double* gpu_hu = NULL;
-//    gpuErrchk( cudaMalloc((void**) &gpu_hu, ct.nElements*sizeof(double)) );
-//    gpuErrchk( cudaMemcpy(gpu_hu, ct.data.data(), ct.nElements*sizeof(double), cudaMemcpyHostToDevice) );
-//    double* gpu_correction = NULL;
-//    gpuErrchk( cudaMalloc((void**) &gpu_correction, ct.nElements*sizeof(double)) );
-//    gpuErrchk( cudaMemcpy(gpu_correction, density_correction::factor.data(), ct.nElements*sizeof(double), cudaMemcpyHostToDevice) );
+//    float* gpu_densities = NULL;
+//    gpuErrchk( cudaMalloc((void**) &gpu_densities, ct.nElements*sizeof(float)) );
+//    float* gpu_hu = NULL;
+//    gpuErrchk( cudaMalloc((void**) &gpu_hu, ct.nElements*sizeof(float)) );
+//    gpuErrchk( cudaMemcpy(gpu_hu, ct.data.data(), ct.nElements*sizeof(float), cudaMemcpyHostToDevice) );
+//    float* gpu_correction = NULL;
+//    gpuErrchk( cudaMalloc((void**) &gpu_correction, ct.nElements*sizeof(float)) );
+//    gpuErrchk( cudaMemcpy(gpu_correction, density_correction::factor.data(), ct.nElements*sizeof(float), cudaMemcpyHostToDevice) );
 //
 //    int nblocks = 1 + (ct.nElements-1)/1024;
 //    ct_to_densities<<<nblocks, 1024>>>(ct.nElements, density_correction::factor.size(), gpu_hu, gpu_densities, gpu_correction);
 //    gpuErrchk( cudaPeekAtLastError() );
 //    gpuErrchk( cudaThreadSynchronize() );
-//    gpuErrchk( cudaMemcpy(&densities[0], gpu_densities, ct.nElements*sizeof(double), cudaMemcpyDeviceToHost) );
+//    gpuErrchk( cudaMemcpy(&densities[0], gpu_densities, ct.nElements*sizeof(float), cudaMemcpyDeviceToHost) );
 
     for(size_t i = 0; i < ct.nElements; i++)
     {

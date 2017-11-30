@@ -101,7 +101,7 @@ std::string utils::run_command(const std::string cmd)
 }
 
 
-void utils::cm_to_mm(Array4<double>& vec)
+void utils::cm_to_mm(Array4<float>& vec)
 {
     const int CM2MM = 10;
     for (size_t i = 0; i < vec.size(); i++)
@@ -112,9 +112,9 @@ void utils::cm_to_mm(Array4<double>& vec)
     }
 }
 
-Vector3_t<double> utils::closest_point(const Vector3_t<double>& vec,
-                                       const Vector3_t<double>& vec_p,
-                                       const Vector3_t<double>& p)
+Vector3_t<float> utils::closest_point(const Vector3_t<float>& vec,
+                                      const Vector3_t<float>& vec_p,
+                                      const Vector3_t<float>& p)
 {
     // Closest point along line defined by vec_p and vec from point p
     return vec_p + (vec.dot(p-vec_p)/vec.length2())*vec;
@@ -130,9 +130,9 @@ void utils::subset_vector(std::vector<T>& vout, const std::vector<T>& v,
     vout.assign(a, b);
 }
 template void
-utils::subset_vector<double>(std::vector<double>&, const std::vector<double>&,
+utils::subset_vector<float>(std::vector<float>&, const std::vector<float>&,
                              const size_t, const size_t);
 template void
-utils::subset_vector< Vector4_t<double> >(std::vector< Vector4_t<double> >&,
-                                          const std::vector< Vector4_t<double> >&,
+utils::subset_vector< Vector4_t<float> >(std::vector< Vector4_t<float> >&,
+                                          const std::vector< Vector4_t<float> >&,
                                           const size_t, const size_t);

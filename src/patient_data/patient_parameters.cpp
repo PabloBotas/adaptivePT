@@ -84,13 +84,13 @@ void Patient_Parameters_t::getTopasGlobalParameters()
 
     // Machine
     machine = pars.readString("Rt/beam/TreatmentMachineName");
-    virtualSAD.a = pars.readReal<double>("Rt/beam/VirtualSourceAxisDistances0");
-    virtualSAD.b = pars.readReal<double>("Rt/beam/VirtualSourceAxisDistances1");
+    virtualSAD.a = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances0");
+    virtualSAD.b = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances1");
 
     // CT grid resolution
-    ct.d.x = pars.readReal<double>("Rt/CT/PixelSpacing0");
-    ct.d.y = pars.readReal<double>("Rt/CT/PixelSpacing1");
-    ct.d.z = pars.readLastRealInVector<double>("Rt/CT/SliceThicknessSpacing", true);
+    ct.d.x = pars.readReal<float>("Rt/CT/PixelSpacing0");
+    ct.d.y = pars.readReal<float>("Rt/CT/PixelSpacing1");
+    ct.d.z = pars.readLastRealInVector<float>("Rt/CT/SliceThicknessSpacing", true);
 
     // CT grid number of voxels
     ct.n.x = pars.readInteger<unsigned int>("Rt/CT/Columns");
@@ -100,12 +100,12 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     ct.total = ct.n.x*ct.n.y*ct.n.z;
 
     // CT grid shift
-    double ImgCenterX = pars.readReal<double>("Rt/CT/ImgCenterX");
-    double ImgCenterY = pars.readReal<double>("Rt/CT/ImgCenterY");
-    double ImgCenterZ = pars.readReal<double>("Rt/CT/ImgCenterZ");
-    ct.isocenter.x = pars.readReal<double>("Rt/beam/IsoCenter0");
-    ct.isocenter.y = pars.readReal<double>("Rt/beam/IsoCenter1");
-    ct.isocenter.z = pars.readReal<double>("Rt/beam/IsoCenter2");
+    float ImgCenterX = pars.readReal<float>("Rt/CT/ImgCenterX");
+    float ImgCenterY = pars.readReal<float>("Rt/CT/ImgCenterY");
+    float ImgCenterZ = pars.readReal<float>("Rt/CT/ImgCenterZ");
+    ct.isocenter.x = pars.readReal<float>("Rt/beam/IsoCenter0");
+    ct.isocenter.y = pars.readReal<float>("Rt/beam/IsoCenter1");
+    ct.isocenter.z = pars.readReal<float>("Rt/beam/IsoCenter2");
 
     // Offset of first voxel corner to isocenter
     ct.offset.x = ImgCenterX - ct.isocenter.x;
@@ -137,34 +137,34 @@ void Patient_Parameters_t::getTopasBeamParameters()
         Aperture_Dims_t& ap = apertures.at(i);
         RangeShifter_Dims_t& rs = range_shifters.at(i);
         BeamAngles_t& angle = angles.at(i);
-        double& isoToBeam = isocenter_to_beam_distance.at(i);
+        float& isoToBeam = isocenter_to_beam_distance.at(i);
 
         // Aperture
         ap.exists = pars.readBool("Rt/beam/IncludeAperture", false);
         if(ap.exists)
         {
-            ap.thick =  pars.readReal<double>("Rt/beam/BlockThickness", 0);
-            ap.zdown = -pars.readReal<double>("Rt/beam/IsocenterToBlockTrayDistance", 0);
+            ap.thick =  pars.readReal<float>("Rt/beam/BlockThickness", 0);
+            ap.zdown = -pars.readReal<float>("Rt/beam/IsocenterToBlockTrayDistance", 0);
         }
 
         // Range shifter
         rs.exists = pars.readBool("Rt/beam/IncludeRangeShifter", false);
         if(rs.exists)
         {
-            rs.thick = pars.readReal<double>("Rt/beam/RangeShifterThickness", 0);
-            rs.zdown = pars.readReal<double>("Rt/beam/IsocenterToRangeShifterTrayDistance", 0);
+            rs.thick = pars.readReal<float>("Rt/beam/RangeShifterThickness", 0);
+            rs.zdown = pars.readReal<float>("Rt/beam/IsocenterToRangeShifterTrayDistance", 0);
         }
 
         // Angles
-        angle.gantry = pars.readReal<double>("Rt/beam/Gantry");
-        angle.couch  = pars.readReal<double>("Rt/beam/PatientSupportAngle");
+        angle.gantry = pars.readReal<float>("Rt/beam/Gantry");
+        angle.couch  = pars.readReal<float>("Rt/beam/PatientSupportAngle");
 
         // Distance from isocenter to phase space plane
         // Downstream edge of range shifter - gets moved upstream later
         if (rs.thick != 0)
             isoToBeam = rs.zdown;
         else
-            isoToBeam = pars.readReal<double>("Rt/beam/IsocenterToBeamDistance");
+            isoToBeam = pars.readReal<float>("Rt/beam/IsocenterToBeamDistance");
     }
 }
 
@@ -272,7 +272,7 @@ void Patient_Parameters_t::set_spots_data()
         acc += tramp.nspots;
         accu_spots_per_field.push_back(acc);
 
-        double temp = tramp.energies.front();
+        float temp = tramp.energies.front();
         std::vector<short> idxs;
         for (size_t j=1; j < tramp.nspots; j++)
         {
@@ -292,10 +292,10 @@ void Patient_Parameters_t::set_treatment_planes()
     for (size_t i = 0; i < nbeams; i++)
     {
         // Set default
-        treatment_planes.p.at(i) = Vector3_t<double>(0, 0, -isocenter_to_beam_distance.at(i));
-        treatment_planes.dir.at(i) = Vector3_t<double>(0, 0, 1);
-        treatment_planes.source_a.at(i) = Vector3_t<double>(0, 0, -std::abs(virtualSAD.a));
-        treatment_planes.source_b.at(i) = Vector3_t<double>(0, 0, -std::abs(virtualSAD.b));
+        treatment_planes.p.at(i) = Vector3_t<float>(0, 0, -isocenter_to_beam_distance.at(i));
+        treatment_planes.dir.at(i) = Vector3_t<float>(0, 0, 1);
+        treatment_planes.source_a.at(i) = Vector3_t<float>(0, 0, -std::abs(virtualSAD.a));
+        treatment_planes.source_b.at(i) = Vector3_t<float>(0, 0, -std::abs(virtualSAD.b));
         // Rotate
         treatment_planes.p.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);
         treatment_planes.dir.at(i).rotate(angles.at(i).gantry, angles.at(i).couch);

@@ -20,13 +20,13 @@ DataTable_t::~DataTable_t()
 {
 }
 
-DataTable_t::DataTable_t(std::string colname, std::vector<double> vec)
+DataTable_t::DataTable_t(std::string colname, std::vector<float> vec)
 {
     append(colname, vec);
 }
 
-DataTable_t::DataTable_t(std::string colname1, std::vector<double> x,
-                         std::string colname2, std::vector<double> y)
+DataTable_t::DataTable_t(std::string colname1, std::vector<float> x,
+                         std::string colname2, std::vector<float> y)
 {
     append(colname1, x);
     append(colname2, y);
@@ -41,7 +41,7 @@ DataTable_t::DataTable_t(size_t n, size_t m)
 //----------------------------------------------------
 // Constructors --------------------------------------
 //----------------------------------------------------
-void DataTable_t::append(std::string colname, std::vector<double> vec)
+void DataTable_t::append(std::string colname, std::vector<float> vec)
 {
     cols.push_back(colname);
     data.push_back(vec);
@@ -70,17 +70,17 @@ void DataTable_t::resize(Dim_t dim, size_t sz)
 //----------------------------------------------------
 // Acess ---------------------------------------------
 //----------------------------------------------------
-std::vector<double>& DataTable_t::at(size_t i)
+std::vector<float>& DataTable_t::at(size_t i)
 {
     return data.at(i);
 }
 
-double DataTable_t::at(size_t i, size_t j)
+float DataTable_t::at(size_t i, size_t j)
 {
     return data.at(i).at(j);
 }
 
-double DataTable_t::at(std::string colname, size_t j)
+float DataTable_t::at(std::string colname, size_t j)
 {
     size_t colnum = getColNumber(colname);
 
@@ -114,17 +114,17 @@ size_t DataTable_t::getNumberCols()
     return data.size() > 0 ? data.front().size() : 0;
 }
 
-double DataTable_t::getVal(std::string col_out_name, std::string col_in_name, double x)
+float DataTable_t::getVal(std::string col_out_name, std::string col_in_name, float x)
 {
     size_t col_out = getColNumber(col_out_name);
     size_t col_in  = getColNumber(col_in_name);
-    std::vector<double>::iterator begin = data.at(col_in).begin();
-    std::vector<double>::iterator end   = data.at(col_in).end();
-    std::vector<double>::iterator it = std::upper_bound(begin, end, x);
+    std::vector<float>::iterator begin = data.at(col_in).begin();
+    std::vector<float>::iterator end   = data.at(col_in).end();
+    std::vector<float>::iterator it = std::upper_bound(begin, end, x);
     size_t idx = std::distance(begin, it);
-    double val = *it;
+    float val = *it;
     
-    double out;
+    float out;
     if( round(100.*val) != round(100.*x) )
     {
         // Value not exact in x, call spline

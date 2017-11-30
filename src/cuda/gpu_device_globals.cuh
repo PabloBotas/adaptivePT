@@ -35,12 +35,12 @@
 //==========================================================
 #define NRAYS 32768 // max number of rays calculated simultaneously
 
-extern __device__ double4 xdata[NRAYS];  // x y z wepl (in cm)
-extern __device__ double4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
+extern __device__ float4 xdata[NRAYS];  // x y z wepl (in cm)
+extern __device__ float4 vxdata[NRAYS]; // vx vy vz (normalized) energy (eV)
 extern __device__ short2 ixdata[NRAYS]; // particle metadata (beam and spot ID)
 
 // CT variables
-extern __device__ __constant__ double3 ctVoxSize;
+extern __device__ __constant__ float3 ctVoxSize;
 extern __device__ __constant__ int3 ctVox;
 extern __device__ __constant__ size_t ctTotalVoxN;
 

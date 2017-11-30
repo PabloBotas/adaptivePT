@@ -10,7 +10,7 @@ void allocate_scorer(T*& s, size_t n)
     gpuErrchk( cudaMalloc( (void **) &s, sizeof(T)*n) );
     gpuErrchk( cudaMemset( (void *) s, 0, sizeof(T)*n) );
 }
-template void allocate_scorer<double4>(double4*&, size_t);
+template void allocate_scorer<float4>(float4*&, size_t);
 template void allocate_scorer<short2>(short2*&, size_t);
 template void allocate_scorer<float>(float*&, size_t);
 template void allocate_scorer<unsigned long long int>(unsigned long long int*&, size_t);
@@ -23,7 +23,7 @@ void retrieve_scorer(S* h, T* d, size_t n)
 }
 template void retrieve_scorer<short, short2>(short*, short2*, size_t);
 template void retrieve_scorer<float, float>(float*, float*, size_t);
-template void retrieve_scorer<double, double4>(double*, double4*, size_t);
+template void retrieve_scorer<float, float4>(float*, float4*, size_t);
 template void retrieve_scorer<unsigned long long int, unsigned long long int>(unsigned long long int*, unsigned long long int*, size_t);
 
 ///////////////////////////////////////
@@ -35,12 +35,11 @@ void array_to_device(T*& dest, const S* src, size_t n)
 }
 template void array_to_device<short>(short*&, const short*, size_t);
 template void array_to_device<float>(float*&, const float*, size_t);
-template void array_to_device<double>(double*&, const double*, size_t);
-template void array_to_device<double2>(double2*&, const double2*, size_t);
-template void array_to_device<double3>(double3*&, const double3*, size_t);
-template void array_to_device<double4>(double4*&, const double4*, size_t);
-template void array_to_device<double4, Vector4_t<double> >(double4*&, const Vector4_t<double>*, size_t);
-template void array_to_device<double3, Vector3_t<double> >(double3*&, const Vector3_t<double>*, size_t);
+template void array_to_device<float2>(float2*&, const float2*, size_t);
+template void array_to_device<float3>(float3*&, const float3*, size_t);
+template void array_to_device<float4>(float4*&, const float4*, size_t);
+template void array_to_device<float4, Vector4_t<float> >(float4*&, const Vector4_t<float>*, size_t);
+template void array_to_device<float3, Vector3_t<float> >(float3*&, const Vector3_t<float>*, size_t);
 
 ///////////////////////////////////////
 
@@ -50,7 +49,7 @@ template void array_to_device<double3, Vector3_t<double> >(double3*&, const Vect
 //     gpuErrchk( cudaMalloc((void **) &dest, sizeof(T)*n) );
 //     gpuErrchk( cudaMemcpyToSymbol(dest,  src, sizeof(T)*n, 0, cudaMemcpyHostToDevice) );
 // }
-// template void symbol_to_device<double4>(double4*& dest, const double4*, size_t);
+// template void symbol_to_device<float4>(float4*& dest, const float4*, size_t);
 // template void symbol_to_device<short2>(short2*& dest, const short2*, size_t);
 
 ///////////////////////////////////////
@@ -96,7 +95,7 @@ __device__ __host__ void bubble_sort(T arr[], int n, int indx[])
                     swap<int>(&indx[j], &indx[j+1]);
             }
 }
-template void bubble_sort(double arr[], int n, int indx[]);
+template void bubble_sort(float arr[], int n, int indx[]);
 
 template <class T>
 __device__ __host__ void swap(T* a, T* b)
@@ -106,6 +105,6 @@ __device__ __host__ void swap(T* a, T* b)
     *b = t;
 }
 template void swap(int*, int*);
-template void swap(double*, double*);
+template void swap(float*, float*);
 
 

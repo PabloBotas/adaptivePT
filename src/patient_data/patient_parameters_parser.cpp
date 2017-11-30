@@ -55,10 +55,10 @@ T Patient_Parameters_Parser_t::readReal(std::string quantity, T defaultValue)
 template<class T>
 T Patient_Parameters_Parser_t::readInteger(std::string quantity, T defaultValue)
 {
-    double defaultReal = defaultValue;
+    float defaultReal = defaultValue;
     if (defaultValue == std::numeric_limits<T>::max())
         defaultReal = NAN;
-    std::vector<double> returnValues = readVector<double>(quantity, defaultReal, false);
+    std::vector<float> returnValues = readVector<float>(quantity, defaultReal, false);
     return static_cast<T>(returnValues[0]);
 }
 
@@ -257,10 +257,10 @@ bool Patient_Parameters_Parser_t::readBool(std::string quantity, bool defaultVal
 template<class T>
 std::vector<T> Patient_Parameters_Parser_t::readVectorInts(std::string quantity, T defaultValue, bool firstIsSize)
 {
-    double defaultReal = defaultValue;
+    float defaultReal = defaultValue;
     if (defaultValue == std::numeric_limits<T>::max())
         defaultReal = NAN;
-    std::vector<double> returnValues = readVector<double>(quantity, defaultReal, firstIsSize);
+    std::vector<float> returnValues = readVector<float>(quantity, defaultReal, firstIsSize);
 
     std::vector<T> returnIntegers;
     for (size_t i = 0; i < returnValues.size(); i++) {
@@ -311,7 +311,7 @@ template unsigned int Patient_Parameters_Parser_t::readReal<unsigned int>(std::s
 template std::vector<float> Patient_Parameters_Parser_t::readVector(std::string, float, bool);
 template std::vector<double> Patient_Parameters_Parser_t::readVector(std::string, double, bool);
 template std::vector<unsigned int> Patient_Parameters_Parser_t::readVectorInts(std::string, unsigned int, bool);
-template double Patient_Parameters_Parser_t::readLastRealInVector<double>(std::string, double, bool);
+template float Patient_Parameters_Parser_t::readLastRealInVector<float>(std::string, float, bool);
 template unsigned int Patient_Parameters_Parser_t::readInteger<unsigned int>(std::string, unsigned int);
 template unsigned int Patient_Parameters_Parser_t::readLastIntInVector<unsigned int>(std::string, unsigned int, bool);
 

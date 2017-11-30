@@ -14,8 +14,8 @@
 #define MeV2eV 1e6
 
 void create_virtual_source_buffers(const Patient_Parameters_t& pat,
-                              std::vector<double4>& xbuffer,
-                              std::vector<double4>& vxbuffer,
+                              std::vector<float4>& xbuffer,
+                              std::vector<float4>& vxbuffer,
                               std::vector<short2>& ixbuffer)
 //  initialize particle buffer
 {
@@ -40,7 +40,7 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
         }
         std::cout << "    Source Z plane: " << src.z << " cm" << std::endl;
 
-        double2 SAD = make_double2(pat.virtualSAD.a, pat.virtualSAD.b); // cm
+        float2 SAD = make_float2(pat.virtualSAD.a, pat.virtualSAD.b); // cm
 
         xbuffer.reserve(src.nspots);
         vxbuffer.reserve(src.nspots);
@@ -48,23 +48,23 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
         for(unsigned int i=0; i < src.nspots; i++)
         { // LOOP OVER SPOTS
             Spot_t& spot = src.spots[i];
-            double3 pos  = iso_to_virtual_src_pos(src.z, SAD, make_double2(spot.x, spot.y)); // cm
-            double3 dCos = getDirection(pos, make_double2(spot.x, spot.y));
-            double energy = src.energies_internal.at(i)*MeV2eV; // eV
-            double wepl   = src.wepls.at(i);                    // cm
+            float3 pos  = iso_to_virtual_src_pos(src.z, SAD, make_float2(spot.x, spot.y)); // cm
+            float3 dCos = getDirection(pos, make_float2(spot.x, spot.y));
+            float energy = src.energies_internal.at(i)*MeV2eV; // eV
+            float wepl   = src.wepls.at(i);                    // cm
 
-            xbuffer.push_back( make_double4(pos.x, pos.y, pos.z, wepl) );
-            vxbuffer.push_back( make_double4(dCos.x, dCos.y, dCos.z, energy) );
+            xbuffer.push_back( make_float4(pos.x, pos.y, pos.z, wepl) );
+            vxbuffer.push_back( make_float4(dCos.x, dCos.y, dCos.z, energy) );
             ixbuffer.push_back( make_short2(ibeam, i) );
         }
     }
 }
 
 void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
-                                     const Array4<double>& endpoints,
-                                     const Array4<double>& init_pos,
-                                     std::vector<double4>& xbuffer,
-                                     std::vector<double4>& vxbuffer,
+                                     const Array4<float>& endpoints,
+                                     const Array4<float>& init_pos,
+                                     std::vector<float4>& xbuffer,
+                                     std::vector<float4>& vxbuffer,
                                      std::vector<short2>& ixbuffer)
 {
     size_t s = endpoints.size();
@@ -73,20 +73,20 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
     ixbuffer.resize(s);
     for (size_t i = 0; i < s; i++)
     {
-        double3 start = make_double3(init_pos.at(i).x, init_pos.at(i).y, init_pos.at(i).z);
-        double3 end   = make_double3(endpoints.at(i).x, endpoints.at(i).y, endpoints.at(i).z);
-        double3 dir   = end - start;
-        double3 dCos  = dir/length(dir);
-        double wepl   = init_pos.at(i).w;
-        double energy = endpoints.at(i).w;
+        float3 start = make_float3(init_pos.at(i).x, init_pos.at(i).y, init_pos.at(i).z);
+        float3 end   = make_float3(endpoints.at(i).x, endpoints.at(i).y, endpoints.at(i).z);
+        float3 dir   = end - start;
+        float3 dCos  = dir/length(dir);
+        float wepl   = init_pos.at(i).w;
+        float energy = endpoints.at(i).w;
         short2 meta  = get_beam_spot_id(i, pat.spots_per_field);
 
         int3 nvox   = make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z);
-        double3 dvox = make_double3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
-        double3 start2 = ray_trace_to_CT_volume(start, dCos, nvox, dvox);
+        float3 dvox = make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
+        float3 start2 = ray_trace_to_CT_volume(start, dCos, nvox, dvox);
 
-        xbuffer.at(i)  = make_double4(start2, wepl);
-        vxbuffer.at(i) = make_double4(dCos, energy);
+        xbuffer.at(i)  = make_float4(start2, wepl);
+        vxbuffer.at(i) = make_float4(dCos, energy);
         ixbuffer.at(i) = meta;
 
         // printf("%d - 0 - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
@@ -98,24 +98,24 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
     }
 }
 
-double3 iso_to_virtual_src_pos(double z, double2 SAD, double2 spot)
+float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot)
 {
-    double3 p;
+    float3 p;
     p.x = ((SAD.x - std::abs(z)) / SAD.x) * spot.x;
     p.y = ((SAD.y - std::abs(z)) / SAD.y) * spot.y;
     p.z = z;
     return p;
 }
 
-double2 virtual_src_to_iso_pos(double3 pos, double2 SAD)
+float2 virtual_src_to_iso_pos(float3 pos, float2 SAD)
 {
-    double2 spot;
+    float2 spot;
     spot.x = pos.x * SAD.x / (SAD.x - std::abs(pos.z));
     spot.y = pos.y * SAD.y / (SAD.y - std::abs(pos.z));
     return spot;
 }
 
-void virtual_src_to_iso_pos(Array4<double>& pos, SAD_t SAD)
+void virtual_src_to_iso_pos(Array4<float>& pos, SAD_t SAD)
 {
     for (size_t i = 0; i < pos.size(); i++)
     {
@@ -124,19 +124,19 @@ void virtual_src_to_iso_pos(Array4<double>& pos, SAD_t SAD)
     }
 }
 
-double2 virtual_src_to_iso_pos(double3 pos, double3 cos)
+float2 virtual_src_to_iso_pos(float3 pos, float3 cos)
 {
-    double2 spot;
+    float2 spot;
     spot.x = pos.x + std::abs(pos.z)*cos.x / std::sqrt(1-cos.x*cos.x);
     spot.y = pos.y + std::abs(pos.z)*cos.y / std::sqrt(1-cos.y*cos.y);
     return spot;
 }
 
-double3 getDirection(double3 pos, double2 spot)
+float3 getDirection(float3 pos, float2 spot)
 {
-    double dx = spot.x-pos.x;
-    double dy = spot.y-pos.y;
-    double3 dCos;
+    float dx = spot.x-pos.x;
+    float dy = spot.y-pos.y;
+    float3 dCos;
     dCos.x = dx/std::sqrt(dx*dx+pos.z*pos.z);
     dCos.y = dy/std::sqrt(dy*dy+pos.z*pos.z);
     dCos.z = std::sqrt(1.0f - dCos.x*dCos.x - dCos.y*dCos.y);

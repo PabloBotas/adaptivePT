@@ -24,10 +24,10 @@ enum Warp_opts_t
 };
 
 void apply_energy_options (Warp_opts_t opts,
-                           std::vector<double>& energy_shift,
+                           std::vector<float>& energy_shift,
                            const std::vector<short>& spots_per_field);
-void apply_rigid_energy (std::vector<double>& energy_shift);
-void apply_rigid_energy_per_beam (std::vector<double>& energy,
+void apply_rigid_energy (std::vector<float>& energy_shift);
+void apply_rigid_energy_per_beam (std::vector<float>& energy,
                                   const std::vector<short>& spots_per_field);
 
 #endif

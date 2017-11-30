@@ -36,11 +36,11 @@ void Mha_reader_t::read_header()
     BinaryData              = getHeaderValue<bool>(stream, "BinaryData");
     BinaryDataByteOrderMSB  = getHeaderValue<bool>(stream, "BinaryDataByteOrderMSB");
     CompressedData          = getHeaderValue<bool>(stream, "CompressedData");
-    transform_matrix        = getHeaderVector<double>(stream, "TransformMatrix", 9);
-    origin                  = getHeaderVector<double>(stream, "Offset", 3);
+    transform_matrix        = getHeaderVector<float>(stream, "TransformMatrix", 9);
+    origin                  = getHeaderVector<float>(stream, "Offset", 3);
     CenterOfRotation        = getHeaderVector<int>(stream, "CenterOfRotation", 9);
     AnatomicalOrientation   = getHeaderValue<std::string>(stream, "AnatomicalOrientation");
-    spacing                 = getHeaderVector<double>(stream, "ElementSpacing", 3);
+    spacing                 = getHeaderVector<float>(stream, "ElementSpacing", 3);
     dim                     = getHeaderVector<unsigned int>(stream, "DimSize", 3);
     ElementNumberOfChannels = getHeaderValue<unsigned int>(stream, "ElementNumberOfChannels",
                                                            default_ElementNumberOfChannels);
