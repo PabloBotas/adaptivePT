@@ -4,8 +4,10 @@
 #include <limits>
 
 #include "command_line_parser.hpp"
+#include "influence_manager.hpp"
 #include "initialize_rays.cuh"
 #include "enviroment.hpp"
+#include "gpu_ct_to_device.cuh"
 #include "gpu_main.cuh"
 #include "gpu_source_positioning.cuh"
 #include "opt4D_manager.hpp"
@@ -32,20 +34,20 @@
 
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,
+                   const Volume_t& ct,
                    Warper_t& warper,
                    Array4<float>& endpoints,
                    Array4<float>& initpos,
                    Array4<float>& warped_endpoints,
-                   Array4<float>& warped_initpos,
-                   Array4<float>& influence_ct);
+                   Array4<float>& warped_initpos);
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
+                     const Volume_t& cbct,
                      const Array4<float>& ct_warped_endpoints,
                      const Array4<float>& ct_warped_initpos,
-                     std::vector<float>& energy_shift,
-                     Array4<float>& cbct_endpoints,
-                     Array4<float>& influence_cbct);
+                     std::vector<float>& new_energies,
+                     Array4<float>& cbct_endpoints);
 
 // void process_influences (Array4<float> influence_ct,
 //                          Array4<float> influence_cbct);
@@ -58,7 +60,7 @@ void export_adapted(Patient_Parameters_t& pat,
                     Array4<float>& pat_pos2,
                     const Warper_t& warper);
 
-void export_shifts(const std::vector<float>& e,
+void export_shifts(const std::vector<float> e,
                    const std::vector<float>& w,
                    const Array4<float>& p,
                    const std::string& file,
@@ -85,13 +87,13 @@ int main(int argc, char** argv)
     cudaEvent_t start;
     initialize_device(start);
 
-    // Data containers and warper --------------------------------------------
+    // Data containers -------------------------------------------------------
     Array4<float> endpoints(pat.total_spots);
     Array4<float> initpos(pat.total_spots);
     Array4<float> warped_endpoints(pat.total_spots);
     Array4<float> warped_initpos(pat.total_spots);
     Array4<float> cbct_endpoints(pat.total_spots);
-    std::vector<float> energy_shift(pat.total_spots);
+    std::vector<float> new_energies(pat.total_spots);
     std::vector<float> weight_scaling(pat.total_spots, 1.0);
 
     // Warper ----------------------------------------------------------------
@@ -99,41 +101,63 @@ int main(int argc, char** argv)
     warper.print_vf();
 
     // Adaptive steps --------------------------------------------------------
-    // Sample target for influence calculation
-    Array4<float> influence_ct(pat.total_spots*pat.total_spots);
-    Array4<float> influence_cbct(pat.total_spots*pat.total_spots);
+    // Initialize influence manager
+
+
+    // Array4<float> influence_ct(pat.total_spots*pat.total_spots);
+    // Array4<float> influence_cbct(pat.total_spots*pat.total_spots);
     // uint nprobes = std::numeric_limits<uint>::max();
     // uint nprobes = pat.total_spots;
-    float percentage = 25;
-    structure_sampler (parser.ct_target_file, percentage, pat.total_spots, warper, pat.ct,
-                       influence_ct, influence_cbct);
+    // structure_sampler (parser.ct_mask_file, percentage, pat.total_spots, warper, pat.ct,
+                       // influence_ct, influence_cbct);
 
-    // 1: Get endpoints in CT
-    compute_in_ct (pat, parser,                       // inputs
+    // 1: Load CT
+    Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
+    ct.setDims(pat.ct); // The CT volume lacks dimensions information
+    Influence_manager influences(parser, pat, warper, ct.getMetadata());
+    // 2: Get endpoints and warped endpoints in CT
+    compute_in_ct (pat, parser, ct,                   // inputs
                    warper,                            // outputs
                    endpoints, initpos,                // outputs
-                   warped_endpoints, warped_initpos,  // outputs
-                   influence_ct);                     // outputs
+                   warped_endpoints, warped_initpos); // outputs
+    // 3: Get influence in CT
+    influences.calculate_at_plan ();
+    // 4: Unload CT (I could destroy the object, but that could raise problems)
+    ct.freeMemory();
 
-    if (!parser.skip_cbct) {
-        // 2: Get endpoints in CBCT and compare with CT to correct energy
-        compute_in_cbct (pat, parser,                      // inputs
-                         warped_endpoints, warped_initpos, // inputs
-                         energy_shift, cbct_endpoints,     // outputs
-                         influence_cbct);                  // outputs
-    }
-    // 3: Correct weights
+    // Stop process for debug purposes
+    if (parser.skip_cbct)
+        exit(EXIT_SUCCESS);
+
+    // 5: Load CBCT
+    Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
+    cbct.ext_to_int_coordinates();
+    pat.update_geometry_with_external(cbct);
+    // 6: Get endpoints and corrections in CBCT
+    compute_in_cbct (pat, parser, cbct,                // inputs
+                     warped_endpoints, warped_initpos, // inputs
+                     new_energies, cbct_endpoints);    // outputs
+    apply_energy_options(parser.warp_opts, new_energies, pat.spots_per_field);
+    // 7: Get influence in CBCT
+    influences.calculate_at_fraction (new_energies);
+    // 8: Unload CBCT (I could destroy the object, but that could raise problems)
+    cbct.freeMemory();
+
+    // 9: Free memory in device
+    freeCTMemory();
+
+    // 10: Correct weights
     if (!parser.output_opt4D_files.empty()) {
         Opt4D_manager opt4d(parser.output_opt4D_files);
-        opt4d.populate_directory(influence_ct, influence_cbct);
+        opt4d.populate_directory(influences.matrix_at_plan, influences.matrix_at_fraction);
         if (parser.launch_opt4D) {
             opt4d.launch_optimization();
             weight_scaling = opt4d.get_weight_scaling();
         }
     }
 
-    // Export results and report
-    export_adapted (pat, parser, energy_shift, weight_scaling,
+    // 11: Export results and report
+    export_adapted (pat, parser, new_energies, weight_scaling,
                     warped_initpos, warped_endpoints, warper);
     if (!parser.report.empty())
         generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
@@ -146,24 +170,18 @@ int main(int argc, char** argv)
 
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,
+                   const Volume_t& ct,
                    Warper_t& warper,
                    Array4<float>& endpoints,
                    Array4<float>& initpos,
                    Array4<float>& warped_endpoints,
-                   Array4<float>& warped_initpos,
-                   Array4<float>& influence)
+                   Array4<float>& warped_initpos)
 {
-    // Read CT and launch rays
-    Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
-    // The CT volume lacks dimensions information
-    ct.setDims(pat.ct);
-
     // Get endpoints in CT ----------------------------
     endpoints.resize(pat.total_spots);
     initpos.resize(pat.total_spots);
     Array4<float> initpos_xbuffer_dbg(pat.total_spots);
-    gpu_raytrace_original (pat, ct, endpoints, initpos_xbuffer_dbg, initpos,
-                           parser, influence);
+    gpu_raytrace_original (pat, parser, ct, endpoints, initpos_xbuffer_dbg, initpos);
 
     // Warp endpoints in CT ---------------------------
     warped_endpoints.resize(pat.total_spots);
@@ -185,27 +203,20 @@ void compute_in_ct(const Patient_Parameters_t& pat,
 
 void compute_in_cbct(Patient_Parameters_t& pat,
                      const Parser& parser,
+                     const Volume_t& cbct,
                      const Array4<float>& warped_endpoints,
                      const Array4<float>& warped_initpos,
-                     std::vector<float>& energy_shift,
-                     Array4<float>& cbct_endpoints,
-                     Array4<float>& influence)
+                     std::vector<float>& new_energy,
+                     Array4<float>& cbct_endpoints)
 {
     // Get endpoints in CBCT --------------------
-    Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
-    cbct.ext_to_int_coordinates();
-    pat.update_geometry_with_external(cbct);
-
     cbct_endpoints.resize(pat.total_spots);
-    gpu_raytrace_warped (pat, cbct, warped_endpoints,
-                         warped_initpos, cbct_endpoints,
-                         parser, influence);
+    gpu_raytrace_warped (pat, parser, cbct, warped_endpoints,
+                         warped_initpos, cbct_endpoints, new_energy);
 
     // Copy to output vector
     for (size_t i = 0; i < cbct_endpoints.size(); i++)
-        energy_shift.at(i) = cbct_endpoints.at(i).w;
-    // Apply energy options to output vector
-    apply_energy_options(parser.warp_opts, energy_shift, pat.spots_per_field);
+        new_energy.at(i) = cbct_endpoints.at(i).w;
 }
 
 void export_adapted(Patient_Parameters_t& pat,
@@ -234,20 +245,20 @@ void export_adapted(Patient_Parameters_t& pat,
         utils::subset_vector<float>(subset_weights_scaling, weight_scaling, offset_a, offset_b);
         utils::subset_vector< Vector4_t<float> >(subset_pat_pos, warped_initpos, offset_a, offset_b);
 
-        if (!pars.output_shifts.empty())
-            export_shifts(subset_energies, subset_weights_scaling,
-                          subset_pat_pos, pars.output_shifts, i, warper.vf_ave);
-
         Tramp_t tramp(pat.tramp_files.at(i));
-        tramp.shift_energies(subset_energies);
+        tramp.set_new_energies(subset_energies);
         tramp.scale_weights(subset_weights_scaling);
         tramp.set_pos(subset_pat_pos);
         tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
+
+        if (!pars.output_shifts.empty())
+            export_shifts(tramp.get_last_energy_shift_eV(), subset_weights_scaling,
+                          subset_pat_pos, pars.output_shifts, i, warper.vf_ave);
     }
 
 }
 
-void export_shifts(const std::vector<float>& e,
+void export_shifts(const std::vector<float> e,
                    const std::vector<float>& w,
                    const Array4<float>& p,
                    const std::string& file,

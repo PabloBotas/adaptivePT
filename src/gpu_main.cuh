@@ -21,27 +21,25 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
                    std::string output_file,
                    const Array4<float>& orig_endpoints = Array4<float>());
 
-void gpu_raytrace_original (const Patient_Parameters_t &pat,
-                            const Volume_t &ct,
-                            Array4<float>& endpoints,
-                            Array4<float>& init_pos,
-                            Array4<float>& init_pat_pos,
+void gpu_raytrace_original (const Patient_Parameters_t& pat,
                             const Parser& parser,
-                            Array4<float>& influence);
+                            const Volume_t& ct,
+                            Array4<float>& endpoints,
+                            Array4<float>& initpos_xbuffer_dbg,
+                            Array4<float>& initpos);
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
+                          const Parser& parser,
                           const Volume_t &ct,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
-                          const Parser& parser,
-                          Array4<float>& influence);
+                          std::vector<float>& new_energies);
 
-void gpu_calculate_influence (const uint& nspots,
-                              const uint& nprobes,
+void gpu_calculate_influence (const Patient_Parameters_t& pat,
+                              const Parser& parser,
+                              const Volume_metadata_t& ct_metadata,
                               Array4<float>& influence,
-                              std::vector<float>& spot_weights,
-                              std::vector<float>& inf_volume,
                               const std::vector<float>& new_energies = std::vector<float>());
 
 void printDevProp (const int device, bool verbose);

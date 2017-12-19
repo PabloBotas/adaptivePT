@@ -23,7 +23,7 @@ public:
                         const std::vector<short>& spots_per_field,
                         const Warp_opts_t opts);
     Array4<float> apply_to_points (const Array4<float>& pos,
-                                    const CT_Dims_t& ct);
+                                   const CT_Dims_t& ct);
     void print_vf (unsigned int n = 10);
     Vector3_t<float> vf_ave;
     Array3<float> vf_ave_planes;

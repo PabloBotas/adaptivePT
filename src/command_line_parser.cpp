@@ -37,9 +37,9 @@ void Parser::process_command_line(int argc, char** argv)
         ("vf",          po::value<std::string>(&vf_file)->
                             default_value(default_vf_file),
                             "Vector field file from CT to CBCT. B-Spline format is not supported.")
-        ("ct_target",   po::value<std::string>(&ct_target_file)->
+        ("ct_mask",   po::value<std::string>(&ct_mask_file)->
                             required(),
-                            "Binary image of target in CT.")
+                            "Binary image of a mask in CT.")
         // Output files
         ("outdir",      po::value<std::string>(&out_dir)->
                             required(),
@@ -71,6 +71,16 @@ void Parser::process_command_line(int argc, char** argv)
                             implicit_value(implicit_output_opt4D_files),
                             "If Opt4D files should be created. The passed directory will be created"
                             " and populated with files for optimization.")
+        // Influence methods
+        ("beam_model",  po::bool_switch(&influence_engine_beam_model)->
+                             default_value(default_influence_engine_beam_model),
+                             "If the Dij should be calculated with the native beam model.")
+        ("gpmc_dij",    po::bool_switch(&influence_engine_gpmc_dij)->
+                             default_value(default_influence_engine_gpmc_dij),
+                             "If the Dij should be calculated with gPMC.")
+        ("gpmc_dose",   po::bool_switch(&influence_engine_gpmc_dose)->
+                             default_value(default_influence_engine_gpmc_dose),
+                             "If the influence should be restricted to operate in cold/hot areas.")
         // Launchers
         ("opt4D",       po::bool_switch(&launch_opt4D)->
                             default_value(default_launch_opt4D),
@@ -138,7 +148,15 @@ void Parser::process_command_line(int argc, char** argv)
         if (launch_opt4D && output_opt4D_files.empty()) {
             output_opt4D_files = implicit_output_opt4D_files;
         }
-    
+
+        // INFLUENCE OPTIONS
+        if(influence_engine_gpmc_dij)
+            influence_opts = Influence_engines_t::GPMC_DIJ;
+        else if(influence_engine_gpmc_dose)
+            influence_opts = Influence_engines_t::GPMC_DOSE;
+        else
+            influence_opts = Influence_engines_t::BEAM_MODEL;
+        
         // WARPING OPTIONS
         if (FREE_POS_RIGID_ENERGY)
             warp_opts = Warp_opts_t::FREE_POS_RIGID_ENERGY;

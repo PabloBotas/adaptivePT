@@ -7,6 +7,16 @@
 #include <vector>
 #include <fstream>
 
+
+struct Volume_metadata_t
+{
+    Vector3_t<unsigned int> n;
+    Vector3_t<float> d;
+    Vector3_t<float> origin;
+    Vector3_t<float> imgCenter;
+    unsigned int nElements;
+};
+
 class Volume_t
 {
 public:
@@ -24,6 +34,7 @@ public:
     Volume_t(const float* src, const CT_Dims_t& dims);
     Volume_t(const CT_Dims_t& dims, const bool long_data_ = false);
 
+    void freeMemory();
     void setDims(const CT_Dims_t& pat_ct, const bool interpolate = false);
     void setVoxels(unsigned int x, unsigned int y, unsigned int z);
     void setSpacing(float x, float y, float z);
@@ -31,6 +42,7 @@ public:
     void output(std::string outfile);
     void output(std::string outfile, const CT_Dims_t& dims);
     void ext_to_int_coordinates();
+    Volume_metadata_t getMetadata() const;
 
     Volume_t::Source_type source_type;
     std::string file;

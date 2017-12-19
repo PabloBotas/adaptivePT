@@ -2,6 +2,8 @@
 #define __GPU_ERRORCHECK_CUH__
 
 #include <string>
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #define gpuErrchk(ans) {gpuAssert((ans), __FILE__, __LINE__); }
 

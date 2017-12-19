@@ -56,12 +56,12 @@ __device__ float to_boundary(const float3& pos,
                              const float3& endpoint)
 {
     float boundary = to_boundary(pos, dir, vox, voxUpdater, voxStepper);
-    float const min_dist = 0.00003;
 
     float3 r = endpoint-pos;
     float dist = length(r);
     float cos_to_point = dot(r, dir)/(dist*length(dir));
 
+    float const min_dist = 0.005;
     if (dist > min_dist &&
        !(cos_to_point >  0.9995 && cos_to_point < 1.0005) &&
        !(cos_to_point > -0.0005 && cos_to_point < 0.0005)) {

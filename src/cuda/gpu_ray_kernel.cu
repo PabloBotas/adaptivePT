@@ -93,15 +93,15 @@ __global__ void raytrace_plan_kernel(const ushort num,
             const float p2 = 0.669078092;
             const float p3 = 1.80100517;
             const float E = pow(total_wepl/alpha1, 1/p1) + pow(total_wepl/alpha2, 1/p2) + pow(total_wepl/alpha3, 1/p3);
-            float dev = 100*(E - initial_energy)/initial_energy;
-            // Coerce change to 0.25% steps
-            const float energy_grid_step = 0.0f;
-            float delta = E - initial_energy;
-            if (energy_grid_step > 0.0f) {
-                dev = floor(dev/energy_grid_step + 0.5)*energy_grid_step;
-                delta = dev*initial_energy/100;
-            }
-            pos_scorer[ind].w = delta;
+            // float dev = 100*(E - initial_energy)/initial_energy;
+            // // Coerce change to 0.25% steps
+            // const float energy_grid_step = 0.0f;
+            // float delta = E - initial_energy;
+            // if (energy_grid_step > 0.0f) {
+            //     dev = floor(dev/energy_grid_step + 0.5)*energy_grid_step;
+            //     delta = dev*initial_energy/100;
+            // }
+            pos_scorer[ind].w = E;
         }
     }
 }

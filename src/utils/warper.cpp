@@ -55,7 +55,7 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
 }
 
 Array4<float> Warper_t::apply_to_points (const Array4<float>& pos,
-                                          const CT_Dims_t& ct)
+                                         const CT_Dims_t& ct)
 {
     probe (pos, ct);
     Array4<float> newpos(pos.size());

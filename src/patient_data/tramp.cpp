@@ -206,6 +206,7 @@ void Tramp_t::setEnergies()
     for (size_t i = 0; i < nspots; i++) {
         energies.push_back(spots[i].e);
     }
+    last_energy_shift.resize(nspots);
 }
 
 
@@ -222,6 +223,37 @@ void Tramp_t::shift_energies(const std::vector<float>& e_, bool units)
     for (size_t i = 0; i < nspots; i++) {
         energies.at(i) += e_.at(i)*conv;
         spots.at(i).e += e_.at(i)*conv;
+    }
+}
+
+std::vector<float> Tramp_t::get_last_energy_shift_eV()
+{
+    std::vector<float> out(nspots);
+    for (uint i = 0; i < nspots; ++i)
+        out[i] = last_energy_shift[i]*1E6;
+
+    return out;
+}
+
+std::vector<float> Tramp_t::get_last_energy_shift()
+{
+    return last_energy_shift;
+}
+
+void Tramp_t::set_new_energies(const std::vector<float>& e_, bool units)
+{
+    if (e_.size() != nspots) {
+        std::cerr << "Number of energies to shift " << e_.size();
+        std::cerr << " is bigger than the number of spots " << nspots;
+        std::cerr << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    float conv = units ? 1/1e6 : 1;
+    for (size_t i = 0; i < nspots; i++) {
+        last_energy_shift.at(i) = e_.at(i)*conv-energies.at(i);
+        energies.at(i) = e_.at(i)*conv;
+        spots.at(i).e = e_.at(i)*conv;
     }
 }
 

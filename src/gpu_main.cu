@@ -20,12 +20,11 @@
 #include <vector>
 
 void gpu_raytrace_original (const Patient_Parameters_t& pat,
+                            const Parser& parser,
                             const Volume_t& ct,
                             Array4<float>& endpoints,
                             Array4<float>& initpos_xbuffer_dbg,
-                            Array4<float>& initpos,
-                            const Parser& parser,
-                            Array4<float>& influence)
+                            Array4<float>& initpos)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -49,63 +48,15 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     }
 
     gpu_raytrace (pat, endpoints, parser.output_ct_traces);
-
-    // INFLUENCE
-    std::vector<float> inf_cube(ct.nElements);
-    std::vector<float> spot_weights;
-    for (size_t i = 0; i < pat.tramp_files.size(); ++i) {
-        Tramp_t tramp(pat.tramp_files.at(i), pat.machine);
-        std::vector<float> w = tramp.get_weights();
-        spot_weights.reserve(spot_weights.size() + tramp.nspots);
-        spot_weights.insert(spot_weights.end(), w.begin(), w.end());
-    }
-    uint nprobes = uint(influence.size()/pat.total_spots + 0.5);
-    gpu_calculate_influence (pat.total_spots, nprobes, influence, spot_weights, inf_cube);
-
-#ifdef __INFLUENCE_MATRICES__
-    std::cout << "Writting influence_matrix_CT.dat ..." << std::endl;
-    std::string outputdir = parser.output_opt4D_files.empty() ? parser.out_dir :
-                                                                parser.output_opt4D_files;
-    std::ofstream fout(outputdir+"/influence_matrix_CT.dat", std::ios::out | std::ios::binary);
-    for (size_t i = 0; i < influence.size(); ++i)
-        fout.write((char*)&influence[i].w, sizeof(float));
-
-    std::cout << "Writting influence_cube_CT.dat ..." << std::endl;
-    std::ofstream fout2(outputdir+"/influence_cube_CT.dat", std::ios::out | std::ios::binary);
-    fout2.write((char*)inf_cube.data(), inf_cube.size()*sizeof(float));
-
-    std::cout << "Writting vox_endpoints_CT.dat ..." << std::endl;
-    std::ofstream fout3(outputdir+"/vox_endpoints_CT.dat", std::ios::out | std::ios::binary);
-    for (size_t i = 0; i < pat.total_spots; ++i) {
-        unsigned int vox_x = floor(influence.at(i).x/ct.d.x);
-        unsigned int vox_y = floor(influence.at(i).y/ct.d.y);
-        unsigned int vox_z = floor(influence.at(i).z/ct.d.z);
-        int vox_w;
-        // Check if in CT grid
-        if (vox_x >= ct.n.x ||
-            vox_y >= ct.n.y ||
-            vox_z >= ct.n.z)
-            vox_w = -1;
-        else
-            vox_w = vox_z + vox_y*ct.n.z + vox_x*ct.n.z*ct.n.y;
-
-        fout3.write((char*)&vox_w, sizeof(int));
-    }
-#endif
-    // for (size_t i = 0; i < 10; i++)
-    // {
-    //     std::cerr << influence[i].x << " " << influence[i].y << " " << influence[i].z << " " << influence[i].w << "\n";
-    // }
-    freeCTMemory();
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
+                          const Parser& parser,
                           const Volume_t &ct,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
-                          const Parser& parser,
-                          Array4<float>& influence)
+                          std::vector<float>& new_energies)
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
@@ -121,62 +72,15 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                      make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
                      make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
     Array4<float> off_endpoints = offset_endpoints (orig_endpoints, 
-                                                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                                                     make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+                                                    make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
+                                                    make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
     gpu_raytrace (pat, endpoints, parser.output_cbct_traces, off_endpoints);
 
-    std::vector<float> inf_cube(ct.nElements);
-    std::vector<float> spot_weights;
-    for (size_t i = 0; i < pat.tramp_files.size(); ++i) {
-        Tramp_t tramp(pat.tramp_files.at(i), pat.machine);
-        std::vector<float> w = tramp.get_weights();
-        spot_weights.reserve(spot_weights.size() + tramp.nspots);
-        spot_weights.insert(spot_weights.end(), w.begin(), w.end());
-    }
-    std::vector<float> new_energies(endpoints.size());
+    new_energies.resize(endpoints.size());
     for (size_t i = 0; i < new_energies.size(); ++i) {
-        new_energies.at(i) = vxbuffer.at(i).w + endpoints.at(i).w;
+        new_energies.at(i) = endpoints.at(i).w;
     }
-
-    uint nprobes = uint(influence.size()/pat.total_spots + 0.5);
-    gpu_calculate_influence (pat.total_spots, nprobes, influence,
-                             spot_weights, inf_cube, new_energies);
-#ifdef __INFLUENCE_MATRICES__
-    std::cout << "Writting influence_CBCT.dat ..." << std::endl;
-    std::string outputdir = parser.output_opt4D_files.empty() ? parser.out_dir :
-                                                            parser.output_opt4D_files;
-    std::ofstream fout(outputdir+"/influence_matrix_CBCT.dat", std::ios::out | std::ios::binary);
-    for (size_t i = 0; i < influence.size(); ++i)
-        fout.write((char*)&influence[i].w, sizeof(float));
-    
-    std::cout << "Writting influence_cube_CBCT.dat ..." << std::endl;
-    std::ofstream fout2(outputdir+"/influence_cube_CBCT.dat", std::ios::out | std::ios::binary);
-    fout2.write((char*)inf_cube.data(), inf_cube.size()*sizeof(float));
-
-    std::cout << "Writting vox_endpoints_CBCT.dat ..." << std::endl;
-    std::ofstream fout3(outputdir+"/vox_endpoints_CBCT.dat", std::ios::out | std::ios::binary);
-    for (size_t i = 0; i < pat.total_spots; ++i) {
-        unsigned int vox_x = floor(influence.at(i).x/ct.d.x);
-        unsigned int vox_y = floor(influence.at(i).y/ct.d.y);
-        unsigned int vox_z = floor(influence.at(i).z/ct.d.z);
-        int vox_w;
-        // Check if in CT grid
-        if (vox_x >= ct.n.x ||
-            vox_y >= ct.n.y ||
-            vox_z >= ct.n.z)
-            vox_w = -1;
-        else
-            vox_w = vox_z + vox_y*ct.n.z + vox_x*ct.n.z*ct.n.y;
-
-        fout3.write((char*)&vox_w, sizeof(int));
-    }
-    // for (size_t i = 0; i < influence.size(); i+=6421)
-    // {
-    //     std::cout << influence[i].x << " " << influence[i].y << " " << influence[i].z << " " << influence[i].w << "\n";
-    // }
-#endif
-    freeCTMemory();
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
@@ -208,46 +112,6 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
     gpuErrchk( cudaFree(pos_scorer) );
 }
 
-void gpu_calculate_influence (const uint& nspots,
-                              const uint& nprobes,
-                              Array4<float>& influence,
-                              std::vector<float>& spot_weights,
-                              std::vector<float>& inf_volume,
-                              const std::vector<float>& new_energies)
-{
-    // Create scorer array
-    float4 *dev_influence = NULL;
-    array_to_device<float4, Vector4_t<float> >(dev_influence, influence.data(), influence.size());
-    // Create scorer array
-    float *dev_inf_volume = NULL;
-    allocate_scorer<float>(dev_inf_volume, inf_volume.size());
-    // Create weights array
-    float *dev_spot_weights = NULL;
-    array_to_device<float>(dev_spot_weights, &spot_weights[0], spot_weights.size());
-    // Create new energies array
-    float *dev_new_energies = NULL;
-    array_to_device<float>(dev_new_energies, &new_energies[0], new_energies.size());
-    
-    // Launch influence kernel
-    std::cout << "Calculating influence matrix with " << nspots*nprobes << " elements ..." << std::endl;
-
-    uint nblocks = 1 + (nspots*nprobes-1)/NTHREAD_PER_BLOCK_INFLUENCE;
-    get_influence_kernel<<<nblocks, NTHREAD_PER_BLOCK_INFLUENCE>>>(nspots, nprobes,
-                                                                   dev_influence,
-                                                                   dev_spot_weights,
-                                                                   dev_inf_volume,
-                                                                   dev_new_energies);
-    check_kernel_execution(__FILE__, __LINE__);
-    retrieve_scorer<float, float4>(&(influence[0].x), dev_influence, influence.size());
-    retrieve_scorer<float, float>(&(inf_volume[0]), dev_inf_volume, inf_volume.size());
-    retrieve_scorer<float, float>(&(spot_weights[0]), dev_spot_weights, spot_weights.size());
-    // Free memory
-    gpuErrchk( cudaFree(dev_influence) );
-    gpuErrchk( cudaFree(dev_inf_volume) );
-    gpuErrchk( cudaFree(dev_spot_weights) );
-    gpuErrchk( cudaFree(dev_new_energies) );
-    freeCTMemory();
-}
 
 void initialize_device(cudaEvent_t& start)
 {

@@ -29,13 +29,16 @@ public:
     std::string output_cbct_traces;
     std::string output_opt4D_files;
     bool launch_opt4D;
-    std::string ct_target_file;
+    std::string ct_mask_file;
+    // Influence engines
+    Influence_engines_t influence_opts;
     // Adaptation methods
     Warp_opts_t warp_opts;
 
     void print_parameters();
 
 private:
+    // Shift contraint variables
     bool FREE_POS_FREE_ENERGY;
     bool FREE_POS_RIGID_ENERGY;
     bool FREE_POS_RIGID_BEAMS_ENERGY;
@@ -47,6 +50,11 @@ private:
     bool RIGID_BEAMS_POS_FREE_ENERGY;
     bool RIGID_BEAMS_POS_RIGID_ENERGY;
     bool RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY;
+
+    // Influence engines variables
+    bool influence_engine_beam_model;
+    bool influence_engine_gpmc_dij;
+    bool influence_engine_gpmc_dose;
 
     // Default and implicit values (implicit values act as default when a non-
     // required parameter is passed with no arguments)
@@ -75,6 +83,9 @@ private:
     bool default_RIGID_BEAMS_POS_FREE_ENERGY        = false;
     bool default_RIGID_BEAMS_POS_RIGID_ENERGY       = false;
     bool default_RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY = false;
+    bool default_influence_engine_beam_model = false;
+    bool default_influence_engine_gpmc_dij   = false;
+    bool default_influence_engine_gpmc_dose  = false;
 
 
     void process_command_line(int argc, char** argv);

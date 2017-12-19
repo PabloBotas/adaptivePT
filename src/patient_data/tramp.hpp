@@ -9,12 +9,14 @@
 
 class Tramp_t
 {
+private:
 public:
     Tramp_t();
     Tramp_t(std::string file);
     Tramp_t(std::string file, std::string machine);
     ~Tramp_t();
     void setEnergies();
+    void set_new_energies(const std::vector<float>& e_, bool units=true);
     void to_file(std::string file, std::string dir = std::string());
     void scale_weights(std::vector<float> ratio);
     void setWEPLs();
@@ -28,12 +30,15 @@ public:
     void read_file_header(std::string f);
     std::vector<float> get_weights();
     std::vector<float> get_energies();
+    std::vector<float> get_last_energy_shift();
+    std::vector<float> get_last_energy_shift_eV();
     std::vector<float> get_xpos();
     std::vector<float> get_ypos();
 
     std::vector<Spot_t> spots;
     std::vector<float> energies;
     std::vector<float> energies_internal;
+    std::vector<float> last_energy_shift;
     std::vector<float> wepls;
 
     std::string machine;

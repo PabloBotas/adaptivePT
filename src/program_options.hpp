@@ -23,6 +23,13 @@ enum Warp_opts_t
     // RIGID_ENERGY_LAYERS_RIGID_POS_LAYERS,
 };
 
+enum Influence_engines_t
+{
+    BEAM_MODEL,
+    GPMC_DIJ,
+    GPMC_DOSE
+};
+
 void apply_energy_options (Warp_opts_t opts,
                            std::vector<float>& energy_shift,
                            const std::vector<short>& spots_per_field);
