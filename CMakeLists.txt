@@ -95,4 +95,4 @@ add_subdirectory(src)
 # add_subdirectory(src/extra)
 
 # Opt4D ------------------------------------------------------
-find_program (OPT4D_PATH_BINARY opt4D "/opt/opt4D/src/")
+find_program (OPT4D_PATH_BINARY opt4D "/opt/opt4D-build")
