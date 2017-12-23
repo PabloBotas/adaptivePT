@@ -5,6 +5,7 @@
 #include "vector4.hpp"
 
 #include <fstream>
+#include <map>
 #include <limits>
 #include <string>
 #include <sstream>
@@ -42,12 +43,15 @@ void Opt4D_manager::launch_optimization()
 }
 
 
-void Opt4D_manager::populate_directory(const Array4<float>& influence_ct,
+void Opt4D_manager::populate_directory(const uint& n_spots_, const uint& n_voxels_,
+                                       const Array4<float>& influence_ct,
                                        const Array4<float>& influence_cbct)
 {
+    n_spots = n_spots_;
+    n_voxels = n_voxels_;
+
     std::cout << "Writting Opt4D files:" << std::endl;
     mkdir(out_directory.c_str(), 0774);
-    n = (unsigned int)(sqrt(influence_ct.size() + 0.5));
     std::cout << "\t- " << dif_file_base << std::endl;
     write_dif();
     std::cout << "\t- " << vv_file_base << std::endl;
@@ -63,40 +67,16 @@ void Opt4D_manager::populate_directory(const Array4<float>& influence_ct,
 
 void Opt4D_manager::write_templates()
 {
-    std::ifstream src1(template_plan_file);
-    if (!src1) {
-        std::cerr << "Can't open " + template_plan_file + " file" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    std::ofstream dst1(plan_file);
     if (min_average_constrain > 0) {
-        std::string planfile_contents;
-        for (char ch; src1.get(ch); planfile_contents.push_back(ch)) {
-        }
-        std::string to_replace = "MINAVERAGECONS";
-
-        size_t pos = planfile_contents.find(to_replace);
-        while (pos != std::string::npos) {
-            planfile_contents.replace(pos, to_replace.length(),
-                                  std::to_string(min_average_constrain));
-            pos = planfile_contents.find(to_replace, pos);
-        }
-        
-        dst1 << planfile_contents;
+        std::map<std::string, std::string> replace_map {
+            {"MINAVERAGECONS", std::to_string(min_average_constrain)},
+        };
+        utils::copy_file(template_plan_file, plan_file, replace_map);
     } else {
-        dst1 << src1.rdbuf();
+        utils::copy_file(template_plan_file, plan_file);
     }
-
-
     // Bash script
-    std::ifstream src2(template_launcher_file);
-    if (!src2) {
-        std::cerr << "Can't open " + template_launcher_file +
-                     " file" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    std::ofstream dst2(launcher_file);
-    dst2 << src2.rdbuf();
+    utils::copy_file(template_launcher_file, launcher_file);
 }
 
 
@@ -109,7 +89,7 @@ void Opt4D_manager::write_dif() {
         stream << "Dimension-CT-X 1" << std::endl;
         stream << "Dimension-CT-Y 1" << std::endl;
         stream << "Dimension-CT-Z 1" << std::endl;
-        stream << "Dimension-Dose-X " << n << std::endl;;
+        stream << "Dimension-Dose-X " << n_voxels << std::endl;;
         stream << "Dimension-Dose-Y 1" << std::endl;;
         stream << "Dimension-Dose-Z 1" << std::endl;
         stream << "ISO-Index-CT-X 0" << std::endl;
@@ -157,8 +137,8 @@ void Opt4D_manager::write_vv()
     std::ofstream stream2 (strvv, std::ios::binary | std::ios::app);
     if (stream2.is_open()) {
         unsigned char dummy = 0;
-        stream2.write((char*) &n, sizeof(unsigned int));
-        for (unsigned int i = 0; i < n; ++i) {
+        stream2.write((char*) &n_voxels, sizeof(unsigned int));
+        for (unsigned int i = 0; i < n_voxels; ++i) {
             stream2.write((char*) &i, sizeof(unsigned int));
             stream2.write((char*) &dummy, sizeof(unsigned char));
         }
@@ -169,23 +149,47 @@ void Opt4D_manager::write_vv()
     }
 }
 
-//-o /opt/utils/adaptive/test/water_patient/adaptation_x10_y20_z30/opt4D_reoptimization --initial_fluence_noise 0.5 --lbfgs --lbfgs_m 20 --linesearch_steps 20 --dont_project_on_bounds --unit_initial_fluence --random_seed 0 --add_step_event "UPDATE_LAGRANGE_MULTIPLIERS,20,20" --add_step_event "UPDATE_PENALTY,20,20" --constraint_penalty_multiplier 2 --max_steps 2000 --min_steps 600 --max_time 1200 --write_dose --write_beam_dose opt4D_planfile.pln
+
+void Opt4D_manager::write_dij(const std::string& dij_file)
+{
+    std::vector<float> data(n_spots*n_voxels);
+    std::ifstream stream (dij_file, std::ios::binary);
+    if (stream.is_open()) {
+        stream.read(reinterpret_cast<char*>(&data[0]), n_spots*n_voxels*sizeof(float));
+        write_dij(data);
+    } else {
+        std::cerr << "Can't open " + dij_file + " file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
+{
+    std::vector<float> data(influence_cbct.size());
+    for (size_t i = 0; i < influence_cbct.size(); ++i) {
+        data.at(i) = influence_cbct.at(i).w;
+    }
+    write_dij(data);
+}
+
+
+void Opt4D_manager::write_dij(const std::vector<float>& data)
 {
     // Get normalizing factor
     float m = 0;
-    for (size_t i = 0; i < influence_cbct.size(); ++i)
-        m = influence_cbct.at(i).w < m ? m : influence_cbct.at(i).w;
+    for (size_t i = 0; i < data.size(); ++i)
+        m = data.at(i) < m ? m : data.at(i);
     float factor = m / std::numeric_limits<short>::max();
 
     // Get non-zero values and indexes
-    std::vector<int> non_zeros(n, 0);
-    std::vector< std::vector<int> > indexes(n);
-    std::vector< std::vector<short> > values(n);
-    for (size_t i = 0; i<n; i++) {
-        for (size_t j = 0; j<n; j++) {
-            int index = n*i+j;
-            short value = (short)( influence_cbct.at(index).w/factor + 0.5 );
+    std::vector<int> non_zeros(n_spots, 0);
+    std::vector< std::vector<int> > indexes(n_spots);
+    std::vector< std::vector<short> > values(n_spots);
+    for (size_t i = 0; i<n_spots; i++) {
+        for (size_t j = 0; j<n_voxels; j++) {
+            int index = n_voxels*i+j;
+            short value = (short)( data.at(index)/factor + 0.5 );
             if (value > 0) {
                 indexes.at(i).push_back( (int)j );
                 values.at(i).push_back( value );
@@ -197,7 +201,7 @@ void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
     // Write data
     float dummy_float_0 = 0;
     float dummy_float_1 = 1;
-    int n_int = n;
+    int n_int = n_voxels;
     int dummy_int_1 = 1;
     std::ofstream stream (dij_file, std::ios::binary);
     if (stream.is_open()) {
@@ -222,7 +226,7 @@ void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
         stream.write((char*) &factor, sizeof(float));
 
         int totalNonZero=0;
-        for (size_t i=0; i < n; i++) {
+        for (size_t i=0; i < n_spots; i++) {
             float i_float = i;
             stream.write((char*) &i_float, sizeof(float));
             stream.write((char*) &i_float, sizeof(float));
@@ -242,22 +246,25 @@ void Opt4D_manager::write_dij(const Array4<float>& influence_cbct)
 }
 
 
-void Opt4D_manager::set_write_reference_influence(const Array4<float>& influence)
+void Opt4D_manager::set_write_reference_influence(const std::vector<float>& dose)
 {
-    // Accumulate influence on voxel j by all spots i(0 -> n)
-    std::vector<float> reference(n, 0);
+    // Accumulate influence on voxel spots i(0 -> n_spots)
     float min_ref = 1000000000;
     float max_ref = 0;
+    uint nbatches = 100;
+    std::vector<float> ave_ref_batches(nbatches, 0);
     float ave_ref = 0;
-    for (size_t j = 0; j<n; j++) {
-        for(size_t i = 0; i<n; i++)
-            reference.at(j) += influence.at(n*i+j).w;
-        if (min_ref > reference.at(j))
-            min_ref = reference.at(j);
-        if (max_ref < reference.at(j))
-            max_ref = reference.at(j);
-        ave_ref += reference.at(j)/n;
+    for(size_t i = 0; i<n_voxels; i++) {
+        if (min_ref > dose.at(i))
+            min_ref = dose.at(i);
+        if (max_ref < dose.at(i))
+            max_ref = dose.at(i);
+        ave_ref_batches.at(int(i%nbatches)) += dose.at(i)/n_spots;
     }
+    for (uint i = 0; i < nbatches; ++i) {
+        ave_ref += ave_ref_batches.at(i);
+    }
+
     std::cout << "Reference influence for optimization (min, max, ave): ";
     std::cout << min_ref << ", " << max_ref << ", " << ave_ref << std::endl;
     min_average_constrain = ave_ref;
@@ -265,11 +272,22 @@ void Opt4D_manager::set_write_reference_influence(const Array4<float>& influence
     // Write data
     std::ofstream stream (reference_file, std::ios::binary);
     if (stream.is_open()) {
-        stream.write((char*) reference.data(), n*sizeof(float));
+        stream.write((char*) dose.data(), n_voxels*sizeof(float));
     } else {
         std::cerr << "Can't open " + reference_file + " file" << std::endl;
         exit(EXIT_FAILURE);
     }
+}
+
+
+void Opt4D_manager::set_write_reference_influence(const Array4<float>& influence)
+{
+    std::vector<float> dose(n_voxels, 0);
+    // Accumulate influence on voxel j by all spots i(0 -> n_spots)
+    for (size_t j = 0; j<n_voxels; j++)
+        for(size_t i = 0; i<n_spots; i++)
+            dose.at(j) += influence.at(n_voxels*i+j).w;
+    set_write_reference_influence(dose);
 }
 
 
@@ -281,7 +299,7 @@ void Opt4D_manager::read_bwf_file()
         exit(EXIT_FAILURE);
     }
 
-    weight_scaling.resize(n);
+    weight_scaling.resize(n_spots);
 
     std::string line;
     size_t i = 0;

@@ -47,7 +47,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         initpos_xbuffer_dbg.at(i).w = xbuffer[i].w; // wepl
     }
 
-    gpu_raytrace (pat, endpoints, parser.output_ct_traces);
+    gpu_raytrace (pat, endpoints, parser.ct_traces_file);
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
@@ -75,7 +75,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                                                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
                                                     make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
 
-    gpu_raytrace (pat, endpoints, parser.output_cbct_traces, off_endpoints);
+    gpu_raytrace (pat, endpoints, parser.cbct_traces_file, off_endpoints);
 
     new_energies.resize(endpoints.size());
     for (size_t i = 0; i < new_energies.size(); ++i) {

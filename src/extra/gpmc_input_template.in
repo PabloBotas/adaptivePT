@@ -1,0 +1,26 @@
+# First not commented and non empty line must be GPUID
+
+GPUID 0
+RandomSeed 0 # (integer, use 0 if use current time)
+
+gpmcroot /opt/gpromptmc
+
+PatientDir PATIENT_DIRECTORY
+
+## Quantity to score
+Scorer SCORER
+
+SourceType FluenceMap
+SimulationType perBeam
+
+MCAUTOAstroid 1
+SpotFactor SPOT_FACTOR
+Machine MACHINE_TO_USE
+CTvolume CT_VOLUME_FILE
+ScoreToCTGrid IF_TO_CT_GRID
+
+## Output path
+ResultName RESULT_NAME
+OutputFilePrefix OUTPUT_DIR
+
+TrampDir TRAMP_DIR

@@ -53,7 +53,8 @@ void compute_in_cbct(Patient_Parameters_t& pat,
 //                          Array4<float> influence_cbct);
 
 void export_adapted(Patient_Parameters_t& pat,
-                    const Parser& pars,
+                    const std::string& out_dir,
+                    const std::string& shifts_file,
                     const std::vector<float>& energy_shift,
                     const std::vector<float>& weight_scaling,
                     Array4<float>& pat_pos,
@@ -67,9 +68,10 @@ void export_shifts(const std::vector<float> e,
                    const short& beamid,
                    const Vector3_t<float>& isocenter_shift);
 
-void generate_report(const std::string& report,
-                     const std::string& output_vf,
-                     const std::string& output_shifts,
+void generate_report(const std::string& report_file,
+                     const std::string& data_vf_file,
+                     const std::string& data_shifts_file,
+                     const std::string& out_dir,
                      const std::vector<std::string>& tramp_files);
 
 int main(int argc, char** argv)
@@ -97,7 +99,7 @@ int main(int argc, char** argv)
     std::vector<float> weight_scaling(pat.total_spots, 1.0);
 
     // Warper ----------------------------------------------------------------
-    Warper_t warper(parser.vf_file, parser.output_vf);
+    Warper_t warper(parser.vf_file, parser.data_vf_file);
     warper.print_vf();
 
     // Adaptive steps --------------------------------------------------------
@@ -121,7 +123,7 @@ int main(int argc, char** argv)
                    endpoints, initpos,                // outputs
                    warped_endpoints, warped_initpos); // outputs
     // 3: Get influence in CT
-    influences.calculate_at_plan ();
+    influences.get_dose_at_plan();
     // 4: Unload CT (I could destroy the object, but that could raise problems)
     ct.freeMemory();
 
@@ -137,9 +139,13 @@ int main(int argc, char** argv)
     compute_in_cbct (pat, parser, cbct,                // inputs
                      warped_endpoints, warped_initpos, // inputs
                      new_energies, cbct_endpoints);    // outputs
+    // 7: constrain energy shifts and export physical adaptation (weight_scaling = [1 .. 1])
     apply_energy_options(parser.warp_opts, new_energies, pat.spots_per_field);
+    export_adapted (pat, parser.out_dir, parser.data_shifts_file,
+                    new_energies, weight_scaling,
+                    warped_initpos, warped_endpoints, warper);
     // 7: Get influence in CBCT
-    influences.calculate_at_fraction (new_energies);
+    influences.get_dij_at_frac (new_energies);
     // 8: Unload CBCT (I could destroy the object, but that could raise problems)
     cbct.freeMemory();
 
@@ -147,20 +153,21 @@ int main(int argc, char** argv)
     freeCTMemory();
 
     // 10: Correct weights
-    if (!parser.output_opt4D_files.empty()) {
-        Opt4D_manager opt4d(parser.output_opt4D_files);
-        opt4d.populate_directory(influences.matrix_at_plan, influences.matrix_at_fraction);
-        if (parser.launch_opt4D) {
-            opt4d.launch_optimization();
-            weight_scaling = opt4d.get_weight_scaling();
-        }
+    if (parser.launch_opt4D) {
+        Opt4D_manager opt4d(parser.out_dir);
+        opt4d.populate_directory(influences.n_spots, influences.n_voxels,
+                                 influences.matrix_at_plan, influences.matrix_at_frac);
+        opt4d.launch_optimization();
+        weight_scaling = opt4d.get_weight_scaling();
     }
 
     // 11: Export results and report
-    export_adapted (pat, parser, new_energies, weight_scaling,
+    export_adapted (pat, parser.out_plan, parser.data_shifts_file,
+                    new_energies, weight_scaling,
                     warped_initpos, warped_endpoints, warper);
-    if (!parser.report.empty())
-        generate_report(parser.report, parser.output_vf, parser.output_shifts, pat.tramp_files);
+    if (!parser.report_file.empty())
+        generate_report(parser.report_file, parser.data_vf_file, parser.data_shifts_file,
+                        parser.out_plan, pat.tramp_files);
 
     // Stop device
     stop_device(start);
@@ -220,7 +227,8 @@ void compute_in_cbct(Patient_Parameters_t& pat,
 }
 
 void export_adapted(Patient_Parameters_t& pat,
-                    const Parser& pars,
+                    const std::string& out_dir,
+                    const std::string& shifts_file,
                     const std::vector<float>& energy_shift,
                     const std::vector<float>& weight_scaling,
                     Array4<float>& warped_initpos,
@@ -249,11 +257,11 @@ void export_adapted(Patient_Parameters_t& pat,
         tramp.set_new_energies(subset_energies);
         tramp.scale_weights(subset_weights_scaling);
         tramp.set_pos(subset_pat_pos);
-        tramp.to_file(pat.tramp_files.at(i), pars.out_dir);
+        tramp.to_file(pat.tramp_files.at(i), out_dir);
 
-        if (!pars.output_shifts.empty())
+        if (!shifts_file.empty())
             export_shifts(tramp.get_last_energy_shift_eV(), subset_weights_scaling,
-                          subset_pat_pos, pars.output_shifts, i, warper.vf_ave);
+                          subset_pat_pos, shifts_file, i, warper.vf_ave);
     }
 
 }
@@ -294,21 +302,22 @@ void export_shifts(const std::vector<float> e,
     }
 }
 
-void generate_report(const std::string& report,
-                     const std::string& output_vf,
-                     const std::string& output_shifts,
+void generate_report(const std::string& report_file,
+                     const std::string& data_vf_file,
+                     const std::string& data_shifts_file,
+                     const std::string& out_dir,
                      const std::vector<std::string>& tramp_files)
 {
     std::cout << "Generating report ..." << std::endl;
     std::string interp = "python3 ";
     std::string code   = std::string(INSTALLATION_PATH) + "/src/extra/create_adapt_report.py ";
-    std::string vf     = "--vf " + output_vf + " ";
-    std::string shifts = "--shifts " + output_shifts + " ";
+    std::string vf     = "--vf " + data_vf_file + " ";
+    std::string shifts = "--shifts " + data_shifts_file + " ";
     std::string tramps = "--tramps ";
     for (size_t i = 0; i < tramp_files.size(); i++)
         tramps += tramp_files.at(i) + " ";
-    std::string outdir = "--outdir " + output_vf.substr(0, output_vf.find_last_of('/')) + " ";
-    std::string outfile = "--outfile " + report;
+    std::string outdir = "--outdir " + out_dir + " ";
+    std::string outfile = "--outfile " + report_file;
     std::string command = interp + code + vf + shifts + tramps + outdir + outfile;
     std::cout << "Running: " << command << std::endl;
     int res = system(command.c_str());

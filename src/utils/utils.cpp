@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <fstream>
@@ -35,11 +36,23 @@ std::string utils::toLower(std::string s)
     return s;
 }
 
+bool utils::starts_with_string(std::string const& str,
+                               std::string const& what)
+{
+    return str.size() >= what.size() &&
+        equal(what.begin(), what.end(), str.begin());
+}
+
 bool utils::ends_with_string(std::string const& str,
-                      std::string const& what)
+                             std::string const& what)
 {
     return what.size() <= str.size() &&
            str.find(what, str.size() - what.size()) != str.npos;
+}
+
+std::string utils::get_parent_directory(const std::string& str)
+{
+    return str.substr(0, str.rfind('/'));
 }
 
 std::string utils::get_file_extension(std::string const& str)
@@ -47,21 +60,58 @@ std::string utils::get_file_extension(std::string const& str)
     return str.substr(str.rfind('.') + 1);
 }
 
-std::string utils::replace_substring(std::string const& str,
-                                     std::string const& what,
-                                     std::string const& to_replace)
+std::string utils::remove_file_extension(std::string const& str)
+{
+    return str.substr(0, str.rfind('.'));
+}
+
+std::string utils::replace_string(std::string const& str,
+                                  std::string const& substr,
+                                  std::string const& to_replace)
 {
     std::string out = str;
-    for (size_t pos = 0; ; pos += to_replace.length()) {
-        // Locate the substring to replace
-        pos = str.find(what, pos );
-        if ( pos == std::string::npos ) break;
-        // Replace by erasing and inserting
-        out.erase(pos, what.length());
-        out.insert( pos, to_replace );
-    }
+    replace_string(out, substr, to_replace);
     return out;
 }
+
+void utils::replace_string_inplace(std::string& str,
+                                   const std::string& substr,
+                                   const std::string& to_replace)
+{
+    size_t pos = str.find(substr);
+    while (pos != std::string::npos) {
+        str.replace(pos, substr.length(), to_replace);
+        pos = str.find(substr, pos);
+    }
+}
+
+void utils::copy_file(const std::string& in,
+                      const std::string& out,
+                      std::map<std::string, std::string> mymap)
+{
+    std::ifstream src(in);
+    if (!src) {
+        std::cerr << "Can't open " + in + " file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::ofstream dst(out);
+    if (!dst) {
+        std::cerr << "Can't open " + out + " file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if (!mymap.empty()) {
+        std::string text;
+        for (char ch; src.get(ch); text.push_back(ch)) {
+        }
+        for(std::map<std::string, std::string>::iterator it = mymap.begin(); it != mymap.end(); ++it) {
+            replace_string(text, it->first, it->second);
+        }
+        dst << text;
+    } else {
+        dst << src.rdbuf();
+    }
+}
+
 
 std::string utils::run_command(const std::string cmd)
 {

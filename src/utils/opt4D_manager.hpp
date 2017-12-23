@@ -12,20 +12,25 @@ class Opt4D_manager
 public:
     Opt4D_manager(std::string outdir);
     ~Opt4D_manager();
-    void populate_directory(const Array4<float>& influence1,
+    void populate_directory(const uint& n_spots_, const uint& n_voxels_,
+                            const Array4<float>& influence1,
                             const Array4<float>& influence2);
     void launch_optimization();
     std::vector<float> get_weight_scaling();
 private:
     Opt4D_manager();
     void read_bwf_file();
+    void set_write_reference_influence(const std::vector<float>& dose);
     void set_write_reference_influence(const Array4<float>& influence);
     void write_templates();
     void write_dif();
     void write_vv();
     void write_dij(const Array4<float>& influence);
-    
-    unsigned int n;
+    void write_dij(const std::vector<float>& data);
+    void write_dij(const std::string& raw_dij_file);
+
+    uint n_spots;
+    uint n_voxels;
     std::string out_directory;
     float min_average_constrain;
     std::vector<float> weight_scaling;

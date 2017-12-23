@@ -13,8 +13,8 @@ class Warper_t
 public:
     Warper_t();
     Warper_t(const std::string vf_file,
-             const std::string output_vf);
-    void set(const std::string vf_file, const std::string output_vf);
+             const std::string data_vf_file);
+    void set(const std::string vf_file, const std::string data_vf_file);
     void apply_to_plan (Array4<float>& endpoints,
                         Array4<float>& init_pos,
                         const CT_Dims_t& ct,

@@ -15,12 +15,13 @@
 #include <string>
 #include <vector>
 
-void influence_from_beam_model_launcher(Array4<float>& influence,
-    const std::vector<float>& new_energies,
-    const Volume_metadata_t& ct_metadata,
-    const Patient_Parameters_t& patient_parameters,
-    const uint nspots, const uint n_probing_positions,
-    const std::string outputdir)
+void influence_from_beam_model_launcher(std::string outfile,
+                                        Array4<float>& influence,
+                                        const std::vector<float>& new_energies,
+                                        const Volume_metadata_t& ct_metadata,
+                                        const Patient_Parameters_t& patient_parameters,
+                                        const uint nspots, const uint n_probing_positions,
+                                        const std::string outputdir)
 {
     std::vector<float> inf_cube(ct_metadata.nElements);
     std::vector<float> spot_weights;
@@ -65,18 +66,17 @@ void influence_from_beam_model_launcher(Array4<float>& influence,
     gpuErrchk( cudaFree(dev_spot_weights) );
     gpuErrchk( cudaFree(dev_new_energies) );
 
-#ifdef __INFLUENCE_MATRICES__
-    bool ct_case = new_energies.size() == 0;
-    std::string out_case = ct_case ? "CT" : "CBCT";
-    std::cout << "Writting influence_matrix_"+out_case+".dat ..." << std::endl;
-
-    std::string file = outputdir+"/influence_matrix_"+out_case+".dat";
-    std::ofstream fout(file, std::ios::out | std::ios::binary);
+    std::cout << "Writting Dij from beam model to: ";
+    std::cout << outfile << std::endl;
+    std::ofstream fout(outfile, std::ios::out | std::ios::binary);
     for (uint i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(float));
 
+#ifdef __INFLUENCE_MATRICES__
+    bool ct_case = new_energies.size() == 0;
+    std::string out_case = ct_case ? "CT" : "CBCT";
     std::cout << "Writting influence_cube_"+out_case+".dat ..." << std::endl;
-    file = outputdir+"/influence_cube_"+out_case+".dat";
+    std::string file = outputdir+"/influence_cube_"+out_case+".dat";
     std::ofstream fout2(file, std::ios::out | std::ios::binary);
     fout2.write((char*)inf_cube.data(), inf_cube.size()*sizeof(float));
 

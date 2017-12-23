@@ -1,8 +1,11 @@
 #include "influence_manager.hpp"
 
+#include "gpmc_manager.hpp"
 #include "gpu_influence_launchers.cuh"
+#include "utils.hpp"
 
 #include <algorithm>
+#include <fstream>
 
 
 Influence_manager::Influence_manager() : ct_metadata(Volume_metadata_t())
@@ -16,50 +19,108 @@ Influence_manager::~Influence_manager()
 
 
 Influence_manager::Influence_manager(const Parser& parser_, const Patient_Parameters_t& pat,
-                                     Warper_t warper_, const Volume_metadata_t ct_metadata_)
-                                    : patient_parameters(&pat), ctdims(&pat.ct),
-                                      ct_metadata(ct_metadata_)
-{
-    engine = parser_.influence_opts;
-    outputdir = parser_.output_opt4D_files.empty() ? parser_.out_dir :
-                parser_.output_opt4D_files;
-    nspots = patient_parameters->total_spots;
-
+                                     Warper_t warper_, const Volume_metadata_t ct_metadata_) :
+    engine(parser_.influence_opts),
+    n_spots(patient_parameters->total_spots),
+    dose_plan_file(parser_.dose_plan_file),
+    dose_frac_file(parser_.dose_frac_file),
+    // gpmc_dij_plan_file(parser_.gpmc_dij_plan_file),
+    gpmc_dij_frac_file(parser_.gpmc_dij_frac_file),
+    beam_model_dij_plan_file(parser_.beam_model_dij_plan_file),
+    beam_model_dij_frac_file(parser_.beam_model_dij_frac_file),
+    patient_parameters(&pat),
+    ctdims(&pat.ct),
+    ct_metadata(ct_metadata_),
+    outputdir(parser_.out_dir),
+    ct_mask_file(parser_.ct_mask_file),
     // Needed for structure sampling
-    ct_mask_file = parser_.ct_mask_file;
-    warper = warper_;
-}
-
-
-void Influence_manager::calculate_at_plan()
+    warper(warper_)
 {
-    calculate(matrix_at_plan, pos_at_plan);
+    // engine = parser_.influence_opts;
+    // outputdir = parser_.out_dir;
+    // dose_plan_file = parser_.dose_plan_file;
+    // dose_frac_file = parser_.dose_frac_file;
+    // // gpmc_dij_plan_file = parser_.gpmc_dij_plan_file;
+    // gpmc_dij_frac_file = parser_.gpmc_dij_frac_file;
+    // beam_model_dij_plan_file = parser_.beam_model_dij_plan_file;
+    // beam_model_dij_frac_file = parser_.beam_model_dij_frac_file;
+    // gpmc_dij_file = parser_.out_dir
+    // n_spots = patient_parameters->total_spots;
+
+    // // Needed for structure sampling
+    // ct_mask_file = parser_.ct_mask_file;
+    // warper = warper_;
 }
 
 
-void Influence_manager::calculate_at_fraction(std::vector<float> new_energies)
+void Influence_manager::get_dose_at_plan()
 {
-    calculate(matrix_at_fraction, pos_at_fraction, new_energies);
+    get_dose(dose_plan_file, matrix_at_plan, dose_at_plan);
 }
 
 
-void Influence_manager::calculate(Array4<float>& influence, Array3<float>& positions,
-                                  std::vector<float> new_energies)
+void Influence_manager::get_dose_at_frac(const std::vector<float>& new_energies)
+{
+    get_dose(dose_frac_file, matrix_at_frac, dose_at_frac, new_energies);
+}
+
+
+void Influence_manager::get_dose(std::string dose_file,
+                                 Array4<float>& matrix, std::vector<float>& dose,
+                                 const std::vector<float>& new_energies)
+{
+    if (engine == Influence_engines_t::BEAM_MODEL) {
+        if (!matrix.size())
+            get_dij_at_frac(new_energies);
+        // Accumulate influence on position j by all spots i(0 -> n)
+        dose.resize(n_voxels);
+        for (size_t j = 0; j<n_voxels; j++)
+            for(size_t i = 0; i<n_spots; i++)
+                dose.at(j) += matrix.at(n_voxels*i+j).w;
+    } else if (engine == Influence_engines_t::GPMC_DIJ) {
+        read_dose_file(dose_file, dose);
+    } else if (engine == Influence_engines_t::GPMC_DOSE) {
+        read_dose_file(dose_file, dose);
+    }
+}
+
+
+void Influence_manager::get_dij_at_plan()
+{
+    if (engine == Influence_engines_t::BEAM_MODEL) {
+        get_dij(beam_model_dij_plan_file, matrix_at_plan, pos_at_plan);
+    } else {
+        std::cerr << "Dij at plan is only needed in \"beam model\" mode." << std::endl;
+        std::cerr << "Why are you even requesting this anyway?" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void Influence_manager::get_dij_at_frac(const std::vector<float>& new_energies)
+{
+    get_dij(beam_model_dij_frac_file, matrix_at_frac, pos_at_frac, new_energies);
+}
+
+
+void Influence_manager::get_dij(std::string outfile,
+                                Array4<float>& influence, Array3<float>& positions,
+                                const std::vector<float>& new_energies)
 {
     if (engine == Influence_engines_t::BEAM_MODEL) {
         // Fill matrix plan with starting positions
-        if (matrix_elements == 0)
+        if (n_spots*n_voxels == 0)
             structure_sampler();
 
-        influence.resize(matrix_elements);
+        influence.resize(n_spots*n_voxels);
 
-        Array4<float> temp(n_probing_positions);
-        for (uint i = 0; i < n_probing_positions; ++i)
+        Array4<float> temp(n_voxels);
+        for (uint i = 0; i < n_voxels; ++i)
             temp[i] = positions[i];
 
-        for (uint i = 0; i < nspots; ++i) {
+        for (uint i = 0; i < n_spots; ++i) {
             std::copy(temp.begin(), temp.end(),
-                      influence.begin()+i*n_probing_positions);
+                      influence.begin()+i*n_voxels);
         }
 
         if (save_memory) {
@@ -67,20 +128,34 @@ void Influence_manager::calculate(Array4<float>& influence, Array3<float>& posit
             boundary_at_plan.clear();
         }
         
-        influence_from_beam_model (influence, new_energies);
-    } else {
+        influence_from_beam_model (outfile, influence, new_energies);
+    } else if (engine == Influence_engines_t::GPMC_DIJ) {
+        Gpmc_manager gpmc(*patient_parameters, outfile, "dosedij", outputdir);
+        gpmc.calculate_dij(1000, false, ct_mask_file);
+    } else if (engine == Influence_engines_t::GPMC_DOSE) {
         // NOT IMPLEMENTED YET!!
     }
 }
 
 
-void Influence_manager::influence_from_beam_model (Array4<float>& influence,
+void Influence_manager::influence_from_beam_model (std::string outfile, Array4<float>& influence,
                                                    const std::vector<float>& new_energies)
 {
-    influence_from_beam_model_launcher(influence, new_energies, ct_metadata,
-        *patient_parameters, nspots, n_probing_positions, outputdir);
+    influence_from_beam_model_launcher(outfile, influence, new_energies, ct_metadata,
+        *patient_parameters, n_spots, n_voxels, outputdir);
 }
 
+
+void Influence_manager::read_dose_file (std::string file, std::vector<float>& dose)
+{
+    std::ifstream stream(file, std::ios::binary | std::ios::ate);
+    utils::check_fs(stream, file, "to read plan dose.");
+    n_voxels = stream.tellg()/sizeof(float);
+    size_t bytes_to_read = n_voxels*sizeof(float);
+    stream.seekg(0, std::ios::beg);
+    dose.resize(n_voxels);
+    stream.read(reinterpret_cast<char*>(&dose[0]), bytes_to_read);
+}
 
 void Influence_manager::structure_sampler ()
 {
@@ -144,40 +219,40 @@ void Influence_manager::structure_sampler ()
     }
 
     // Calculate number of probes
-    n_probing_positions = uint(std::ceil(positions.size()*std::min(1.0f, mask_sampling_percentage/100)));
-    matrix_elements = nspots*n_probing_positions;
+    n_voxels = uint(std::ceil(positions.size()*std::min(1.0f, mask_sampling_percentage/100)));
+    matrix_elements = n_spots*n_voxels;
 
     // Adjust arrays size
-    if (pos_at_plan.size() < (size_t)n_probing_positions &&
-        pos_at_fraction.size() < (size_t)n_probing_positions) {
-        // std::cout << "Allocating " << n_probing_positions << " elements" << std::endl;
-        pos_at_plan.resize(n_probing_positions);
-        pos_at_fraction.resize(n_probing_positions);
-    } else if (pos_at_plan.size() > (size_t)n_probing_positions &&
-        pos_at_fraction.size() > (size_t)n_probing_positions) {
-        // std::cout << "Allocating " << n_probing_positions << " elements" << std::endl;
-        pos_at_plan.resize(n_probing_positions);
+    if (pos_at_plan.size() < (size_t)n_voxels &&
+        pos_at_frac.size() < (size_t)n_voxels) {
+        // std::cout << "Allocating " << n_voxels << " elements" << std::endl;
+        pos_at_plan.resize(n_voxels);
+        pos_at_frac.resize(n_voxels);
+    } else if (pos_at_plan.size() > (size_t)n_voxels &&
+        pos_at_frac.size() > (size_t)n_voxels) {
+        // std::cout << "Allocating " << n_voxels << " elements" << std::endl;
+        pos_at_plan.resize(n_voxels);
         pos_at_plan.shrink_to_fit();
-        pos_at_fraction.resize(n_probing_positions);
-        pos_at_fraction.shrink_to_fit();
+        pos_at_frac.resize(n_voxels);
+        pos_at_frac.shrink_to_fit();
     }
 
-    // Sample n_probing_positions voxels from array
-    std::cout << "Sampling " << n_probing_positions;
+    // Sample n_voxels voxels from array
+    std::cout << "Sampling " << n_voxels;
     std::vector<uint> rand_indexes(positions.size());
     std::iota (rand_indexes.begin(), rand_indexes.end(), 0);
-    if (n_probing_positions != positions.size()) {
+    if (n_voxels != positions.size()) {
         std::cout << " random";
         // std::srand(std::time(0));
         std::srand(0);
         std::random_shuffle (rand_indexes.begin(), rand_indexes.end());
-        rand_indexes.resize(n_probing_positions);
+        rand_indexes.resize(n_voxels);
         std::sort(rand_indexes.begin(), rand_indexes.end());
     }
-    std::cout << " points (" << 100*float(n_probing_positions)/positions.size();
+    std::cout << " points (" << 100*float(n_voxels)/positions.size();
     std::cout << " %) of structure in " << ct_mask_file << std::endl;
 
-    for (uint i=0; i < n_probing_positions; ++i) {
+    for (uint i=0; i < n_voxels; ++i) {
         pos_at_plan.at(i).x = positions.at(rand_indexes.at(i)).x;
         pos_at_plan.at(i).y = positions.at(rand_indexes.at(i)).y;
         pos_at_plan.at(i).z = positions.at(rand_indexes.at(i)).z;
@@ -187,5 +262,5 @@ void Influence_manager::structure_sampler ()
     // Fill positions at fraction
     Array4<float> temp(pos_at_plan.begin(), pos_at_plan.end());
     temp = warper.apply_to_points(temp, *ctdims);
-    std::copy(temp.begin(), temp.end(), pos_at_fraction.begin());    
+    std::copy(temp.begin(), temp.end(), pos_at_frac.begin());    
 }

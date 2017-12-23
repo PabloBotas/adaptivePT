@@ -14,79 +14,62 @@ public:
     Parser(int argc, char** argv);
     ~Parser();
 
-    // General control
-    bool skip_cbct;
+    // General control and debugging tools
+    bool skip_cbct = false;
     // Common parameters
     std::string patient;
     std::string cbct_file;
     std::string vf_file;
+    std::string machine = "topasmediumspots";
     // Output files
+    std::string out_plan;
     std::string out_dir;
-    std::string output_shifts;
-    std::string output_vf;
-    std::string output_ct_traces;
-    std::string report;
-    std::string output_cbct_traces;
-    std::string output_opt4D_files;
-    bool launch_opt4D;
+    std::string data_shifts_file;
+    std::string data_vf_file;
+    std::string ct_traces_file;
+    std::string cbct_traces_file;
+    std::string report_file;
+    bool launch_opt4D = false;
     std::string ct_mask_file;
     // Influence engines
     Influence_engines_t influence_opts;
+    std::string dose_plan_file;
+    std::string dose_frac_file;
+    // std::string gpmc_dij_plan_file;
+    std::string gpmc_dij_frac_file;
+    std::string beam_model_dij_plan_file;
+    std::string beam_model_dij_frac_file;
     // Adaptation methods
     Warp_opts_t warp_opts;
 
     void print_parameters();
+    void auto_print_map(po::variables_map vm);
 
 private:
-    // Shift contraint variables
-    bool FREE_POS_FREE_ENERGY;
-    bool FREE_POS_RIGID_ENERGY;
-    bool FREE_POS_RIGID_BEAMS_ENERGY;
-
-    bool RIGID_POS_FREE_ENERGY;
-    bool RIGID_POS_RIGID_ENERGY;
-    bool RIGID_POS_RIGID_BEAMS_ENERGY;
-
-    bool RIGID_BEAMS_POS_FREE_ENERGY;
-    bool RIGID_BEAMS_POS_RIGID_ENERGY;
-    bool RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY;
+    // SHIFTS CONSTRAINS VARIABLES
+    bool FREE_POS_FREE_ENERGY               = false;
+    bool FREE_POS_RIGID_ENERGY              = false;
+    bool FREE_POS_RIGID_BEAMS_ENERGY        = false;
+    bool RIGID_POS_FREE_ENERGY              = false;
+    bool RIGID_POS_RIGID_ENERGY             = false;
+    bool RIGID_POS_RIGID_BEAMS_ENERGY       = false;
+    bool RIGID_BEAMS_POS_FREE_ENERGY        = false;
+    bool RIGID_BEAMS_POS_RIGID_ENERGY       = false;
+    bool RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY = false;
 
     // Influence engines variables
-    bool influence_engine_beam_model;
-    bool influence_engine_gpmc_dij;
-    bool influence_engine_gpmc_dose;
+    bool influence_engine_beam_model = false;
+    bool influence_engine_gpmc_dij   = false;
+    bool influence_engine_gpmc_dose  = false;
 
     // Default and implicit values (implicit values act as default when a non-
     // required parameter is passed with no arguments)
-    bool default_skip_cbct                  = false;
-    std::string default_cbct_file           = std::string();
-    std::string default_vf_file             = std::string();
-    std::string default_output_vf           = std::string();
-    std::string implicit_output_vf          = std::string("vf.dat");
-    std::string default_output_shifts       = std::string();
-    std::string implicit_output_shifts      = std::string("shifts.dat");
-    std::string default_output_ct_traces    = std::string();
-    std::string implicit_output_ct_traces   = std::string("ct_traces.mhd");
-    std::string default_output_cbct_traces  = std::string();
-    std::string implicit_output_cbct_traces = std::string("cbct_traces.pdf");
-    std::string default_report              = std::string();
-    std::string implicit_report             = std::string("adapt_report.pdf");
-    std::string default_output_opt4D_files  = std::string();
-    std::string implicit_output_opt4D_files = std::string("opt4D_files");
-    bool default_launch_opt4D                       = false;
-    bool default_FREE_POS_FREE_ENERGY               = false;
-    bool default_FREE_POS_RIGID_ENERGY              = false;
-    bool default_FREE_POS_RIGID_BEAMS_ENERGY        = false;
-    bool default_RIGID_POS_FREE_ENERGY              = false;
-    bool default_RIGID_POS_RIGID_ENERGY             = false;
-    bool default_RIGID_POS_RIGID_BEAMS_ENERGY       = false;
-    bool default_RIGID_BEAMS_POS_FREE_ENERGY        = false;
-    bool default_RIGID_BEAMS_POS_RIGID_ENERGY       = false;
-    bool default_RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY = false;
-    bool default_influence_engine_beam_model = false;
-    bool default_influence_engine_gpmc_dij   = false;
-    bool default_influence_engine_gpmc_dose  = false;
-
+    std::string implicit_data_vf_file     = std::string("vf.dat");
+    std::string implicit_data_shifts_file = std::string("shifts.dat");
+    std::string implicit_ct_traces_file   = std::string("ct_traces.mhd");
+    std::string implicit_cbct_traces_file = std::string("cbct_traces.pdf");
+    std::string implicit_report_file      = std::string("adapt_report.pdf");
+    
 
     void process_command_line(int argc, char** argv);
     // bool check_both_or_none(po::variables_map vm, std::string arg1, std::string arg2);

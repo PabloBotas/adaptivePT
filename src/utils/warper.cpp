@@ -17,17 +17,17 @@ Warper_t::Warper_t ()
 }
 
 Warper_t::Warper_t (const std::string vf_file,
-                    const std::string output_vf)
+                    const std::string data_vf_file)
 {
-    set(vf_file, output_vf);
+    set(vf_file, data_vf_file);
 }
 
 void Warper_t::set (const std::string vf_file,
-                    const std::string output_vf)
+                    const std::string data_vf_file)
 {
     file = vf_file;
-    output = output_vf;
-    if (output_vf.empty())
+    output = data_vf_file;
+    if (data_vf_file.empty())
         exp_file = false;
     else
         exp_file = true;
@@ -321,7 +321,7 @@ void Warper_t::probe (const Array4<float>& p, const CT_Dims_t& ct)
         std::string ext = utils::get_file_extension(file);
         std::string trans_cmd;
         trans_cmd = "plastimatch xf-convert --input " + file;
-        file = utils::replace_substring(file, ext, "mha");
+        file = utils::replace_string(file, ext, "mha");
         trans_cmd += " --output " + file +
                      " --output-type vf";
 

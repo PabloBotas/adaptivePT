@@ -9,11 +9,12 @@
 #include <string>
 #include <vector>
 
-void influence_from_beam_model_launcher(Array4<float>& influence,
-    const std::vector<float>& new_energies,
-    const Volume_metadata_t& ct_metadata,
-    const Patient_Parameters_t& patient_parameters,
-    const uint nspots, const uint n_probing_positions,
-    const std::string outputdir);
+void influence_from_beam_model_launcher(std::string outfile,
+                                        Array4<float>& influence,
+                                        const std::vector<float>& new_energies,
+                                        const Volume_metadata_t& ct_metadata,
+                                        const Patient_Parameters_t& patient_parameters,
+                                        const uint nspots, const uint n_probing_positions,
+                                        const std::string outputdir);
 
 #endif
