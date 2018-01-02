@@ -15,8 +15,7 @@ mpl.rcParams['axes.formatter.useoffset'] = False
 mpl.rcParams['font.size'] = 6
 mpl.rcParams['figure.titlesize'] = 14
 mpl.rcParams['figure.dpi'] = 250
-mpl.rcParams['figure.figsize'] = 10, 8
-
+mpl.rc('text', usetex=True)
 
 def find_range(a, margin=5., va=None):
     if va is not None:
@@ -99,7 +98,7 @@ def analize_vf(vf_file, pp):
     nbins = 25
     nangles = 360
 
-    fig = plt.figure()
+    fig = plt.figure(figsize = (10, 6))
     fig.suptitle('Vector field analysis at endpoints')
 
     ax = fig.add_subplot(2, 4, 1)
@@ -110,17 +109,22 @@ def analize_vf(vf_file, pp):
     ax.set_xlabel('Vector size (cm)', fontsize=8)
 
     ax = fig.add_subplot(2, 4, 2, projection='polar')
-    b, _, _ = ax.hist(ang_x, nangles, histtype='step', alpha=1, color='r', fill=True, facecolor='r')
+    b, _, _ = ax.hist(ang_x, nangles, weights=d, histtype='step',
+                      alpha=1, color='r', fill=True, facecolor='r')
     ax.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b)))
     ax.set_rmax(np.round(1.05*max(b)))
     ax.set_title('Angle x', fontsize=11)
     ax = fig.add_subplot(2, 4, 3, projection='polar')
-    b, _, _ = ax.hist(ang_y, nangles, histtype='step', alpha=1, color='r', fill=True, facecolor='r')
+    b, _, _ = ax.hist(ang_y, nangles, weights=d, histtype='step',
+                      alpha=1, color='r', fill=True, facecolor='r')
     ax.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b)))
     ax.set_rmax(np.round(1.05*max(b)))
     ax.set_title('Angle y', fontsize=11)
+    txt="Angular histogram. Each probe of the vector field has a weight equal to its length."
+    ax.set_xlabel(r"\begin{center}\textit{\small{" + txt + r"}}\end{center}")
     ax = fig.add_subplot(2, 4, 4, projection='polar')
-    b, _, _ = ax.hist(ang_z, nangles, histtype='step', alpha=1, color='r', fill=True, facecolor='r')
+    b, _, _ = ax.hist(ang_z, nangles, weights=d, histtype='step',
+                      alpha=1, color='r', fill=True, facecolor='r')
     ax.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b)))
     ax.set_rmax(np.round(1.05*max(b)))
     ax.set_title('Angle z', fontsize=11)
@@ -233,7 +237,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         number_layers = len(unique_energies)
         layer_id = np.array([int(np.squeeze(np.where(unique_energies == i))) for i in tramp_e])
 
-        fig = plt.figure()
+        fig = plt.figure(figsize = (10, 8))
         fig.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
 
         # FIGURE 1, PLOT 1 --------------------------------
