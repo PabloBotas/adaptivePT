@@ -12,10 +12,12 @@ class Gpmc_manager
 {
 public:
     Gpmc_manager(Patient_Parameters_t pat_, std::string dosefile_,
-                 std::string scorer_, std::string trampdir_);
+                 std::string scorer_, std::string trampdir_,
+                 std::vector<std::string> tramp_files_);
     ~Gpmc_manager();
     void write_templates();
-    void calculate_dij(float spotfactor, bool toctgrid, std::string maskfile);
+    void rescale_tramp_weigths(float min_p_spot, float max_p_spot);
+    void calculate_dij(float min, float max, bool toctgrid, std::string maskfile);
     void launch();
 private:
     Gpmc_manager();
@@ -26,11 +28,14 @@ private:
     std::string out_directory;
     std::string machine;
     std::string ct_volume;
+    std::vector<std::string> tramp_files;
 
     std::string result_name;
     std::string dose_file;
     std::string scorer;
     float spot_factor;
+    float min_p_per_spot_dij;
+    float max_p_per_spot_dij;
     bool to_ct_grid;
     std::string mask;
     std::string trampdir;

@@ -18,7 +18,8 @@ public:
     void setEnergies();
     void set_new_energies(const std::vector<float>& e_, bool units=true);
     void to_file(std::string file, std::string dir = std::string());
-    void scale_weights(std::vector<float> ratio);
+    void set_weights(const std::vector<float>& w);
+    void scale_weights(const std::vector<float>& ratio);
     void setWEPLs();
     std::vector<float> getWEPLs();
     void energy_to_internal();

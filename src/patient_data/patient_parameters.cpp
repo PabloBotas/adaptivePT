@@ -1,4 +1,5 @@
 #include "patient_parameters.hpp"
+
 #include "patient_parameters_parser.hpp"
 #include "tramp.hpp"
 #include "special_types.hpp"
@@ -51,13 +52,34 @@ void Patient_Parameters_t::exploreBeamDirectories()
     // Set run directories
     run_dir.resize(nbeams);
     for (unsigned int i = 0; i < nbeams; i++) {
-        run_dir[i] = beam_dirs[i];
-        run_dir[i].append("/run");
+        run_dir.at(i) = beam_dirs.at(i);
+        run_dir.at(i).append("/run");
     }
 
     // Get tramp files
     tramp_files.resize(nbeams);
-    tramp_files = getFilesWithSuffix(tramp_dir, ".tramp");
+    geometric_tramp_names.resize(nbeams);
+    adapted_tramp_names.resize(nbeams);
+    std::vector<std::string> temp = getFilesWithSuffix(tramp_dir, ".tramp_modified");
+    if (temp.size() == 0)
+        temp = getFilesWithSuffix(tramp_dir, ".tramp");
+    if (temp.size() != nbeams) {
+        std::cerr << "ERROR! The number of tramp files found != number of beams!" << std::endl;
+        std::cerr << "Found beams:" << std::endl;
+        for (uint i = 0; i < nbeams; ++i)
+            std::cerr << beam_dirs.at(i) << " -> " << temp.at(i) << std::endl;
+        std::cerr << "Found tramps:" << std::endl;
+        for (uint i = 0; i < temp.size(); ++i)
+            std::cerr << temp.at(i) << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::copy(temp.begin(), temp.end(), tramp_files.begin());
+    for (uint i = 0; i < nbeams; ++i) {
+        adapted_tramp_names.at(i) = std::string("adapted_beam_" + std::to_string(i) +
+                                                ".tramp_modified");
+        geometric_tramp_names.at(i) = std::string("geometric_beam_" + std::to_string(i) +
+                                                  ".tramp_modified");
+    }
 
     // Get topas parameter files
     topas_files.resize(nbeams);
@@ -77,7 +99,7 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     Patient_Parameters_Parser_t pars(topas_files.front());
 
     // Machine
-    machine = pars.readString("Rt/beam/TreatmentMachineName");
+    machine = utils::toLower(pars.readString("Rt/beam/TreatmentMachineName"));
     virtualSAD.a = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances0");
     virtualSAD.b = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances1");
 
@@ -165,14 +187,18 @@ void Patient_Parameters_t::print()
     std::cout << "Files:" << std::endl;
     std::cout << "    - Patient: " << patient_dir << std::endl;
     std::cout << "    - Beams:" << std::endl;
-    for (size_t i = 0; i < nbeams; i++)
+    for (size_t i = 0; i < nbeams; i++) {
         std::cout << "        " << beam_dirs.at(i) << std::endl;
+    }
     std::cout << "    - Topas files:" << std::endl;
-    for (size_t i = 0; i < nbeams; i++)
+    for (size_t i = 0; i < nbeams; i++) {
         std::cout << "        " << topas_files.at(i) << std::endl;
-    std::cout << "    - Tramp files:" << std::endl;
-    for (size_t i = 0; i < nbeams; i++)
-        std::cout << "        " << tramp_files.at(i) << std::endl;
+    }
+    std::cout << "    - Source files (" << total_spots << " spots):" << std::endl;
+    for (size_t i = 0; i < nbeams; i++) {
+        std::cout << "        " << tramp_files.at(i) << ": ";
+        std::cout << spots_per_field.at(i) << " spots" << std::endl;
+    }
 
     std::cout << "Beam angles:" << std::endl;
     for (size_t i = 0; i < nbeams; i++) {
@@ -257,6 +283,8 @@ void Patient_Parameters_t::set_spots_data()
         spots_per_field.push_back(tramp.nspots);
         acc += tramp.nspots;
         accu_spots_per_field.push_back(acc);
+        source_energies.reserve(source_energies.size() + tramp.energies.size());
+        source_energies.insert(source_energies.end(), tramp.energies.begin(), tramp.energies.end());
 
         float temp = tramp.energies.front();
         std::vector<short> idxs;

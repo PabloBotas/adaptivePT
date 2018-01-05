@@ -174,7 +174,9 @@ void Tramp_t::to_file(std::string f, std::string dir)
     }
     if (!dir.empty()) {
         mkdir(dir.c_str(), 0774);
-        f = f.substr(f.find_last_of("/"));
+        size_t pos = f.find_last_of("/");
+        if (pos != std::string::npos)
+            f = f.substr(pos);
         f = dir + "/" + f;
     }
 
@@ -410,12 +412,16 @@ void Tramp_t::energy_to_internal()
     }
 }
 
-std::string toLower(std::string s) {
-    transform(s.begin(), s.end(), s.begin(), ::tolower);
-    return s;
+void Tramp_t::set_weights(const std::vector<float>& w)
+{
+    gigaprotons = 0;
+    for (size_t i = 0; i < nspots; i++) {
+        spots.at(i).w = w.at(i);
+        gigaprotons += spots.at(i).w;
+    }
 }
 
-void Tramp_t::scale_weights(std::vector<float> ratio)
+void Tramp_t::scale_weights(const std::vector<float>& ratio)
 {
     gigaprotons = 0;
     for (size_t i = 0; i < nspots; i++) {

@@ -21,7 +21,7 @@ public:
                         Planes_t treatment_plane,
                         const std::vector<BeamAngles_t>& angles,
                         const std::vector<short>& spots_per_field,
-                        const Warp_opts_t opts);
+                        const Adapt_constraints_t opts);
     Array4<float> apply_to_points (const Array4<float>& pos,
                                    const CT_Dims_t& ct);
     void print_vf (unsigned int n = 10);
@@ -32,7 +32,7 @@ private:
     // Constructor helpers
     void set_vf_origins ();
     // Main functions
-    void apply_position_options (Warp_opts_t options, const std::vector<short>& spots_per_field);
+    void apply_position_options (Adapt_constraints_t options, const std::vector<short>& spots_per_field);
     void apply_rigid_positions ();
     void apply_rigid_positions_per_beam (const std::vector<short>& spots_per_field);
     void probe (const Array4<float>& p, const CT_Dims_t& ct);

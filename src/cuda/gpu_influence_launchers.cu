@@ -20,8 +20,7 @@ void influence_from_beam_model_launcher(std::string outfile,
                                         const std::vector<float>& new_energies,
                                         const Volume_metadata_t& ct_metadata,
                                         const Patient_Parameters_t& patient_parameters,
-                                        const uint nspots, const uint n_probing_positions,
-                                        const std::string outputdir)
+                                        const uint nspots, const uint n_probing_positions)
 {
     std::vector<float> inf_cube(ct_metadata.nElements);
     std::vector<float> spot_weights;
@@ -72,16 +71,17 @@ void influence_from_beam_model_launcher(std::string outfile,
     for (uint i = 0; i < influence.size(); ++i)
         fout.write((char*)&influence[i].w, sizeof(float));
 
-#ifdef __INFLUENCE_MATRICES__
+#ifdef __DEBUG_INFLUENCE_MATRICES__
     bool ct_case = new_energies.size() == 0;
     std::string out_case = ct_case ? "CT" : "CBCT";
     std::cout << "Writting influence_cube_"+out_case+".dat ..." << std::endl;
-    std::string file = outputdir+"/influence_cube_"+out_case+".dat";
+    std::outdir = utils::get_full_parent_path(outfile);
+    std::string file = outdir+"/influence_cube_"+out_case+".dat";
     std::ofstream fout2(file, std::ios::out | std::ios::binary);
     fout2.write((char*)inf_cube.data(), inf_cube.size()*sizeof(float));
 
     std::cout << "Writting vox_endpoints_"+out_case+".dat ..." << std::endl;
-    file = outputdir+"/vox_endpoints_"+out_case+".dat";
+    file = outdir+"/vox_endpoints_"+out_case+".dat";
     std::ofstream fout3(file, std::ios::out | std::ios::binary);
     for (uint i = 0; i < nspots; ++i) {
         unsigned int vox_x = floor(influence.at(i).x/ct_metadata.d.x);

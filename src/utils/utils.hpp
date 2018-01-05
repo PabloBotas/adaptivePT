@@ -14,7 +14,10 @@ namespace utils
     std::string toLower(std::string s);
     bool starts_with_string(std::string const& str, std::string const& what);
     bool ends_with_string(std::string const& str, std::string const& what);
-    std::string get_parent_directory(const std::string& str);
+    std::string get_full_path(const std::string& str);
+    std::string get_full_parent_path(const std::string& str);
+    std::string get_parent_path(const std::string& str);
+    std::string get_file_name(std::string const& path);
     std::string get_file_extension(std::string const& str);
     std::string remove_file_extension(std::string const& str);
     std::string replace_string(std::string const& str,

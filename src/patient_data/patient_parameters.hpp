@@ -26,12 +26,15 @@ public:
     std::vector<std::string> run_dir;
     std::vector<std::string> beam_names;
     std::vector<std::string> tramp_files;
+    std::vector<std::string> adapted_tramp_names;
+    std::vector<std::string> geometric_tramp_names;
     std::vector<std::string> topas_files;
 
     ushort total_spots;
     std::vector<short> spots_per_field;
     std::vector<short> accu_spots_per_field;
     std::vector< std::vector<short> > energy_layers;
+    std::vector<float> source_energies;
 
     CT_Dims_t ct;
     CT_Dims_t original_ct;
@@ -40,7 +43,7 @@ public:
     std::vector<RangeShifter_Dims_t> range_shifters;
 
     std::vector<BeamAngles_t> angles;
-    std::vector<float>       isocenter_to_beam_distance;
+    std::vector<float>        isocenter_to_beam_distance;
     Planes_t                  treatment_planes;
 
     void ct_to_int_coordinates();

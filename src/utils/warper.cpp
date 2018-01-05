@@ -41,7 +41,7 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
                               Planes_t treatment_plane,
                               const std::vector<BeamAngles_t>& angles,
                               const std::vector<short>& spots_per_field,
-                              const Warp_opts_t options)
+                              const Adapt_constraints_t options)
 {
     probe (endpoints, ct);
     set_average();
@@ -64,16 +64,16 @@ Array4<float> Warper_t::apply_to_points (const Array4<float>& pos,
     return newpos;
 }
 
-void Warper_t::apply_position_options (Warp_opts_t options,
+void Warper_t::apply_position_options (Adapt_constraints_t options,
                                        const std::vector<short>& spots_per_field)
 {
-    if (options == RIGID_POS_FREE_ENERGY ||
-        options == RIGID_POS_RIGID_ENERGY ||
-        options == RIGID_POS_RIGID_BEAMS_ENERGY)
+    if (options == Adapt_constraints_t::ISOCENTER_SHIFT ||
+        options == Adapt_constraints_t::ISOCENTER_SHIFT_RANGE_SHIFTER ||
+        options == Adapt_constraints_t::ISOCENTER_SHIFT_V_RANGE_SHIFTER)
         apply_rigid_positions();
-    else if (options == RIGID_BEAMS_POS_FREE_ENERGY ||
-             options == RIGID_BEAMS_POS_RIGID_ENERGY ||
-             options == RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY)
+    else if (options == Adapt_constraints_t::FIELD_ISOCENTER_SHIFT ||
+             options == Adapt_constraints_t::FIELD_ISOCENTER_SHIFT_RANGE_SHIFTER ||
+             options == Adapt_constraints_t::FIELD_ISOCENTER_SHIFT_V_RANGE_SHIFTER)
         apply_rigid_positions_per_beam(spots_per_field);
     
 }

@@ -53,6 +53,10 @@ private:
     float density;
 public:
     float wepl;
+    void add (float w);
+    void set_wepl(float w);
+    void substract (float w);
+    void create (float pos, float w);
 };
 
 // SAD_t ---------------------------------------

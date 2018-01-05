@@ -63,8 +63,8 @@ __device__ float to_boundary(const float3& pos,
 
     float const min_dist = 0.005;
     if (dist > min_dist &&
-       !(cos_to_point >  0.9995 && cos_to_point < 1.0005) &&
-       !(cos_to_point > -0.0005 && cos_to_point < 0.0005)) {
+       !(cos_to_point >  0.99 && cos_to_point < 1.01) &&
+       !(cos_to_point > -0.01 && cos_to_point < 0.01)) {
         int i = blockIdx.x*blockDim.x + threadIdx.x;
         printf("WARNING! %d - %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 
                i, cos_to_point, dist,

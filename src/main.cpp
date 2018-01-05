@@ -57,9 +57,10 @@ void export_adapted(Patient_Parameters_t& pat,
                     const std::string& shifts_file,
                     const std::vector<float>& energy_shift,
                     const std::vector<float>& weight_scaling,
-                    Array4<float>& pat_pos,
-                    Array4<float>& pat_pos2,
-                    const Warper_t& warper);
+                    Array4<float> pat_pos,
+                    Array4<float> pat_pos2,
+                    const Warper_t& warper,
+                    std::vector<std::string> tramp_names = std::vector<std::string>());
 
 void export_shifts(const std::vector<float> e,
                    const std::vector<float>& w,
@@ -77,7 +78,7 @@ void generate_report(const std::string& report_file,
 int main(int argc, char** argv)
 {
     Parser parser(argc, argv);
-    parser.print_parameters();
+    parser.print_inputs();
 
     // Read input patient ----------------------------------------------------
     Patient_Parameters_t pat(parser.patient);
@@ -139,11 +140,14 @@ int main(int argc, char** argv)
     compute_in_cbct (pat, parser, cbct,                // inputs
                      warped_endpoints, warped_initpos, // inputs
                      new_energies, cbct_endpoints);    // outputs
-    // 7: constrain energy shifts and export physical adaptation (weight_scaling = [1 .. 1])
-    apply_energy_options(parser.warp_opts, new_energies, pat.spots_per_field);
+    // 7: constrain energy shifts and export geometric adaptation (weight_scaling = [1 .. 1])
+    calculate_range_shifter(parser.rshifter_steps, parser.adapt_constraints, new_energies,
+                            pat.range_shifters, pat.machine, pat.isocenter_to_beam_distance,
+                            pat.source_energies, pat.spots_per_field);
     export_adapted (pat, parser.out_dir, parser.data_shifts_file,
                     new_energies, weight_scaling,
-                    warped_initpos, warped_endpoints, warper);
+                    warped_initpos, warped_endpoints, warper,
+                    pat.geometric_tramp_names);
     // 7: Get influence in CBCT
     influences.get_dij_at_frac (new_energies);
     // 8: Unload CBCT (I could destroy the object, but that could raise problems)
@@ -164,7 +168,8 @@ int main(int argc, char** argv)
     // 11: Export results and report
     export_adapted (pat, parser.out_plan, parser.data_shifts_file,
                     new_energies, weight_scaling,
-                    warped_initpos, warped_endpoints, warper);
+                    warped_initpos, warped_endpoints, warper,
+                    pat.adapted_tramp_names);
     if (!parser.report_file.empty())
         generate_report(parser.report_file, parser.data_vf_file, parser.data_shifts_file,
                         parser.out_plan, pat.tramp_files);
@@ -196,7 +201,7 @@ void compute_in_ct(const Patient_Parameters_t& pat,
     std::copy (endpoints.begin(), endpoints.end(), warped_endpoints.begin());
     std::copy (initpos.begin(), initpos.end(), warped_initpos.begin());
     warper.apply_to_plan(warped_endpoints, warped_initpos, pat.ct, pat.treatment_planes,
-                         pat.angles, pat.spots_per_field, parser.warp_opts);
+                         pat.angles, pat.spots_per_field, parser.adapt_constraints);
 
     // Print results
     std::cout << "Warped patient positions and wepl (example):" << std::endl;
@@ -220,10 +225,6 @@ void compute_in_cbct(Patient_Parameters_t& pat,
     cbct_endpoints.resize(pat.total_spots);
     gpu_raytrace_warped (pat, parser, cbct, warped_endpoints,
                          warped_initpos, cbct_endpoints, new_energy);
-
-    // Copy to output vector
-    for (size_t i = 0; i < cbct_endpoints.size(); i++)
-        new_energy.at(i) = cbct_endpoints.at(i).w;
 }
 
 void export_adapted(Patient_Parameters_t& pat,
@@ -231,9 +232,10 @@ void export_adapted(Patient_Parameters_t& pat,
                     const std::string& shifts_file,
                     const std::vector<float>& energy_shift,
                     const std::vector<float>& weight_scaling,
-                    Array4<float>& warped_initpos,
-                    Array4<float>& warped_endpoints,
-                    const Warper_t& warper)
+                    Array4<float> warped_initpos,
+                    Array4<float> warped_endpoints,
+                    const Warper_t& warper,
+                    std::vector<std::string> tramp_names)
 {
     // Go to virtual source pos
     treatment_plane_to_virtual_src (warped_initpos, warped_endpoints, pat, warper.vf_ave);
@@ -257,7 +259,10 @@ void export_adapted(Patient_Parameters_t& pat,
         tramp.set_new_energies(subset_energies);
         tramp.scale_weights(subset_weights_scaling);
         tramp.set_pos(subset_pat_pos);
-        tramp.to_file(pat.tramp_files.at(i), out_dir);
+        std::string tramp_name = pat.tramp_files.at(i);
+        if (tramp_names.size() != 0)
+            tramp_name = tramp_names.at(i);
+        tramp.to_file(tramp_name, out_dir);
 
         if (!shifts_file.empty())
             export_shifts(tramp.get_last_energy_shift_eV(), subset_weights_scaling,

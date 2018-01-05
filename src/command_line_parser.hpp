@@ -31,31 +31,42 @@ public:
     std::string report_file;
     bool launch_opt4D = false;
     std::string ct_mask_file;
-    // Influence engines
-    Influence_engines_t influence_opts;
+    // Adaptation method
+    Adapt_methods_t adapt_method;
+    Adapt_constraints_t adapt_constraints;
+    RShifter_steps_t rshifter_steps;
+    // Adaptation data files
     std::string dose_plan_file;
     std::string dose_frac_file;
-    // std::string gpmc_dij_plan_file;
-    std::string gpmc_dij_frac_file;
-    std::string beam_model_dij_plan_file;
-    std::string beam_model_dij_frac_file;
-    // Adaptation methods
-    Warp_opts_t warp_opts;
+    std::string dij_plan_file;
+    std::string dij_frac_file;
 
-    void print_parameters();
-    void auto_print_map(po::variables_map vm);
+    void print_inputs();
 
 private:
+    std::string adapt_method_str;
+    std::string adapt_method_geometric_str  = "geometric";
+    std::string adapt_method_beam_model_str = "beam_model";
+    std::string adapt_method_gpmc_dij_str   = "gpmc_dij";
+    std::string adapt_method_cold_spots_str = "cold_spots";
+    std::string constraint_vec;
+    std::string adapt_constraint_free_str      = "free";
+    std::string adapt_constraint_v_rs_str      = "virt_range_shifter";
+    std::string adapt_constraint_rs_str        = "range_shifter";
+    std::string adapt_constraint_iso_str       = "iso_shift";
+    std::string adapt_constraint_iso_field_str = "iso_shift_field";
+    std::string rshifter_steps_vec;
+    std::string rshifter_steps_free    = "free";
+    std::string rshifter_steps_half_cm = "half_cm";
+    std::string rshifter_steps_cm      = "cm";
+    std::string rshifter_steps_mgh     = "mgh";
+
     // SHIFTS CONSTRAINS VARIABLES
-    bool FREE_POS_FREE_ENERGY               = false;
-    bool FREE_POS_RIGID_ENERGY              = false;
-    bool FREE_POS_RIGID_BEAMS_ENERGY        = false;
-    bool RIGID_POS_FREE_ENERGY              = false;
-    bool RIGID_POS_RIGID_ENERGY             = false;
-    bool RIGID_POS_RIGID_BEAMS_ENERGY       = false;
-    bool RIGID_BEAMS_POS_FREE_ENERGY        = false;
-    bool RIGID_BEAMS_POS_RIGID_ENERGY       = false;
-    bool RIGID_BEAMS_POS_RIGID_BEAMS_ENERGY = false;
+    bool free = false;
+    bool v_range_shifter = false;
+    bool range_shifter = false;
+    bool iso_shift = false;
+    bool iso_shift_field = false;
 
     // Influence engines variables
     bool influence_engine_beam_model = false;
@@ -67,13 +78,19 @@ private:
     std::string implicit_data_vf_file     = std::string("vf.dat");
     std::string implicit_data_shifts_file = std::string("shifts.dat");
     std::string implicit_ct_traces_file   = std::string("ct_traces.mhd");
-    std::string implicit_cbct_traces_file = std::string("cbct_traces.pdf");
+    std::string implicit_cbct_traces_file = std::string("cbct_traces.mhd");
     std::string implicit_report_file      = std::string("adapt_report.pdf");
+    std::string default_dose_frac_file    = std::string("DoseFrac");
+    std::string default_dij_frac_file     = std::string("DijFrac");
     
 
     void process_command_line(int argc, char** argv);
     // bool check_both_or_none(po::variables_map vm, std::string arg1, std::string arg2);
     // void check_vector_sizes(po::variables_map vm, std::string arg1, std::string arg2);
+    void query_terminal_width();
+    int terminal_width;
+
+    po::variables_map vm;
 };
 
 #endif

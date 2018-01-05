@@ -24,13 +24,13 @@ public:
     void get_dose_at_plan();
     void get_dose_at_frac(const std::vector<float>& new_energies = std::vector<float>());
 
-    Influence_engines_t engine;
+    Adapt_methods_t engine;
     std::vector<float> dose_at_plan;
     std::vector<float> dose_at_frac;
     Array4<float> matrix_at_plan;
     Array4<float> matrix_at_frac;
     uint n_voxels = 0;
-    uint n_spots = 0;
+    uint n_spots;
 private:
     Influence_manager();
     void influence_from_beam_model(std::string outfile, Array4<float>& infe,
@@ -38,12 +38,9 @@ private:
     void influence_from_gpmc_dij();
     void influence_from_gpmc_dose();
 
-    void get_dij(std::string outfile,
-                 Array4<float>& influence, Array3<float>& positions,
+    void get_dij(std::string outfile, Array4<float>& influence, Array3<float>& positions,
                  const std::vector<float>& new_energies = std::vector<float>());
-    void get_dose(std::string dose_file,
-                  Array4<float>& matrix, std::vector<float>& dose,
-                  const std::vector<float>& new_energies = std::vector<float>());
+    void get_dose(std::string dose_file, Array4<float>& matrix, std::vector<float>& dose);
     void read_dose_file (std::string file, std::vector<float>& dose);
 
     void structure_sampler();
@@ -70,8 +67,6 @@ private:
     float mask_sampling_percentage = 25;
     bool get_boundary = false;
     bool save_memory = true;
-
-
 };
 
 #endif

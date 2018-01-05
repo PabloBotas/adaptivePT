@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <stdlib.h>
 #include <fstream>
 #include <array>
 #include <regex>
@@ -50,9 +51,37 @@ bool utils::ends_with_string(std::string const& str,
            str.find(what, str.size() - what.size()) != str.npos;
 }
 
-std::string utils::get_parent_directory(const std::string& str)
+std::string utils::get_parent_path(const std::string& str)
 {
-    return str.substr(0, str.rfind('/'));
+    size_t pos = str.rfind('/');
+    if (pos != std::string::npos) {
+        return str.substr(0, str.rfind('/'));
+    } else {
+        return std::string(".");
+    }
+}
+
+std::string utils::get_full_path(const std::string& str)
+{
+    char *actualpath = realpath(str.c_str(), NULL);
+    std::string path(actualpath);
+    free(actualpath);
+    return path;
+}
+
+std::string utils::get_file_name(const std::string& str)
+{
+    size_t pos = str.rfind('/');
+    if (pos != std::string::npos) {
+        return str.substr(pos+1);
+    } else {
+        return str;
+    }
+}
+
+std::string utils::get_full_parent_path(const std::string& str)
+{
+    return get_parent_path(get_full_path(str));
 }
 
 std::string utils::get_file_extension(std::string const& str)
@@ -67,21 +96,25 @@ std::string utils::remove_file_extension(std::string const& str)
 
 std::string utils::replace_string(std::string const& str,
                                   std::string const& substr,
-                                  std::string const& to_replace)
+                                  std::string const& new_substr)
 {
     std::string out = str;
-    replace_string(out, substr, to_replace);
+    replace_string_inplace(out, substr, new_substr);
     return out;
 }
 
 void utils::replace_string_inplace(std::string& str,
                                    const std::string& substr,
-                                   const std::string& to_replace)
+                                   const std::string& new_substr)
 {
     size_t pos = str.find(substr);
+    // If the new substring contains the substring, break after one replacement
+    bool not_recursive = new_substr.find(substr) != std::string::npos ? true : false;
     while (pos != std::string::npos) {
-        str.replace(pos, substr.length(), to_replace);
+        str.replace(pos, substr.length(), new_substr);
         pos = str.find(substr, pos);
+        if (not_recursive)
+            break;
     }
 }
 
@@ -103,8 +136,8 @@ void utils::copy_file(const std::string& in,
         std::string text;
         for (char ch; src.get(ch); text.push_back(ch)) {
         }
-        for(std::map<std::string, std::string>::iterator it = mymap.begin(); it != mymap.end(); ++it) {
-            replace_string(text, it->first, it->second);
+        for(auto it = mymap.begin(); it != mymap.end(); ++it) {
+            replace_string_inplace(text, it->first, it->second);
         }
         dst << text;
     } else {
