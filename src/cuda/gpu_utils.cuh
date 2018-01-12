@@ -31,4 +31,11 @@ __device__ __host__ void bubble_sort(T arr[], int n, int indx[]);
 template <class T>
 __device__ __host__ void swap(T* a, T* b);
 
+__device__ void sum_kahan (float& old, const float& val, float& err);
+__device__ void sum_kahan (float3& old, const float3& val, float3& err);
+__device__ void sum_mul_kahan (float& old, const float& mult,
+                               const float& val, float& err);
+__device__ void sum_mul_kahan (float3& old, const float3& mult,
+                               const float& val, float3& err);
+
 #endif

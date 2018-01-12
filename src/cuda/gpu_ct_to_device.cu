@@ -14,6 +14,7 @@
 #include "gpu_errorcheck.cuh"
 #include "gpu_utils.cuh"
 #include "density_correction.hpp"
+#include "utils.hpp"
 
 void gpu_ct_to_device::sendGeometries(const Volume_t& ct)
 {
@@ -100,6 +101,46 @@ void freeCTMemory()
     cudaUnbindTexture(dens_tex);
     cudaFreeArray(matid);
     cudaUnbindTexture(matid_tex);
+}
+
+
+void gpu_ct_to_device::sendMask(const std::vector<std::string>& mask_files,
+                                const CT_Dims_t& ct_dims)
+//  generate phantom data based on CT volume
+{
+    bool ifmasks = mask_files.size() ? true : false;
+    gpuErrchk( cudaMemcpyToSymbol(masking_vf, &ifmasks, sizeof(bool), 0, cudaMemcpyHostToDevice) );
+
+    if (ifmasks) {
+        const float mask_threshold = 0.5;
+        Volume_t vol = utils::read_masks (mask_files, mask_threshold);
+        if (vol.nElements != ct_dims.total) {
+            std::cerr << "ERROR! The number of elements found in the VF mask differs from ";
+            std::cerr << "the number of elements in the CT!!" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        std::vector<int> vec(vol.nElements);
+        std::transform (vol.data.begin(), vol.data.end(), vec.begin(),
+            [mask_threshold](const float& d) {return d < mask_threshold ? 0 : 1;});
+
+        // std::ofstream ofs("mask_map.dat", std::ios::binary);
+        // ofs.write((char*)vec.data(), vec.size()*sizeof(int));
+        // ofs.close();
+
+        std::cout << "sendMask: Sending VF mask to device ..." << std::endl;
+        sendVectorToTexture(ct_dims.n.z, ct_dims.n.y, ct_dims.n.x, vec, vf_mask, vf_mask_tex);
+    }
+}
+
+
+void gpu_ct_to_device::removeMask()
+//  generate phantom data based on CT volume
+{
+    bool ifmasks = false;
+    gpuErrchk( cudaMemcpyToSymbol(masking_vf, &ifmasks, sizeof(bool), 0, cudaMemcpyHostToDevice) );
+    cudaFreeArray(vf_mask);
+    cudaUnbindTexture(vf_mask_tex);
 }
 
 

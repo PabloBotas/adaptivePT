@@ -54,14 +54,13 @@ private:
 
     Array3<float> pos_at_plan;
     Array3<float> pos_at_frac;
-    Array3<float> boundary_at_plan;
 
     const Patient_Parameters_t* patient_parameters;
     const CT_Dims_t* ctdims;
     const Volume_metadata_t ct_metadata;
     std::string outputdir;
 
-    std::string ct_mask_file;
+    std::vector<std::string> scoring_mask_files;
     Warper_t warper;
     uint matrix_elements = 0;
     float mask_sampling_percentage = 25;

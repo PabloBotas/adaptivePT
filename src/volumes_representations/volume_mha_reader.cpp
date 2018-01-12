@@ -20,16 +20,16 @@ Mha_reader_t::Mha_reader_t(std::string f) : file(f)
 
 void Mha_reader_t::read_file()
 {
-    read_header();
-    read_body();
+    std::ifstream stream(file);
+    utils::check_fs(stream, file, std::string());
+    read_header(stream);
+    read_body(stream);
+    std::cout << "Bytes read: " << nElements*nb*ElementNumberOfChannels << std::endl;
 }
 
 
-void Mha_reader_t::read_header()
+void Mha_reader_t::read_header(std::ifstream& stream)
 {
-    std::ifstream stream(file);
-    utils::check_fs(stream, file, std::string());
-
     // Get header values
     ObjectType              = getHeaderValue<std::string>(stream, "ObjectType");
     NDims                   = getHeaderValue<unsigned int>(stream, "NDims");
@@ -85,17 +85,10 @@ void Mha_reader_t::read_header()
 }
 
 
-void Mha_reader_t::read_body()
+void Mha_reader_t::read_body(std::ifstream& stream)
 {
-    unsigned int bytes_to_read = nElements*nb*ElementNumberOfChannels;
-    std::ifstream stream(file, std::ios::binary | std::ios::in | std::ios::ate);
-    unsigned int end = stream.tellg();
-    unsigned int header_size = end - bytes_to_read;
-    stream.seekg(header_size);
-
     data.resize(nElements);
-    switch (type_id)
-    {
+    switch (type_id) {
         case 1:
         {
             // std::cout << "INPUT IMAGE FORMAT IS SHORT" << std::endl;
@@ -128,10 +121,11 @@ void Mha_reader_t::read_body()
             break;
         }
         default:
-            break;
+        {
+            std::cerr << "ERROR! Unrecognized MHA data type of file " << file << std::cerr;
+            exit(EXIT_FAILURE);
+        }
     }
-
-    std::cout << "Bytes read: " << bytes_to_read << std::endl;
 }
 
 template<class T>

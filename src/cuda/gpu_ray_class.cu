@@ -2,6 +2,7 @@
 
 #include "gpu_device_globals.cuh"
 #include "gpu_physics.cuh"
+#include "gpu_utils.cuh"
 #include "helper_math.h"
 
 // CONSTRUCTORS --------------------------------------------------------------
@@ -119,9 +120,10 @@ __device__ void Ray::move (const float& step,
                            const float& step_water,
                            const float& de)
 {
-    pos += step*dir;
-    energy -= de;
-    wepl += step_water;
+    sum_mul_kahan(pos, dir, step, error_pos);
+    sum_kahan(energy, -de, error_energy);
+    sum_kahan(wepl, step_water, error_wepl);
+
     if (energy <= stp_w_min_e)
         _alive = false;
 }

@@ -38,8 +38,8 @@
 class band_matrix
 {
 private:
-    std::vector< std::vector<float> > m_upper;  // upper band
-    std::vector< std::vector<float> > m_lower;  // lower band
+    std::vector< std::vector<float>> m_upper;  // upper band
+    std::vector< std::vector<float>> m_lower;  // lower band
 public:
     band_matrix() {};                             // constructor
     band_matrix(int dim, int n_u, int n_l);       // constructor

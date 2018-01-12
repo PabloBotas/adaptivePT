@@ -28,10 +28,10 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
+    gpu_ct_to_device::sendMask(parser.v_field_mask_files, pat.ct);
 
     // Create host buffers and initialize rays
-    std::vector<float4> xbuffer;
-    std::vector<float4> vxbuffer;
+    std::vector<float4> xbuffer, vxbuffer;
     std::vector<short2> ixbuffer;
     create_virtual_source_buffers (pat, xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer, true);
@@ -48,6 +48,8 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
     }
 
     gpu_raytrace (pat, endpoints, parser.ct_traces_file);
+
+    gpu_ct_to_device::removeMask();
 }
 
 void gpu_raytrace_warped (const Patient_Parameters_t &pat,
@@ -68,7 +70,7 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
     create_treatment_plane_buffers (pat, orig_endpoints, init_pos,
                                     xbuffer, vxbuffer, ixbuffer);
     buffers_to_device (xbuffer, vxbuffer, ixbuffer, false);
-    correct_offsets (xbuffer.size(), 
+    correct_offsets (xbuffer.size(),
                      make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
                      make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
     Array4<float> off_endpoints = offset_endpoints (orig_endpoints, 

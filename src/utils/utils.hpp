@@ -3,6 +3,7 @@
 
 #include "special_types.hpp"
 #include "vector4.hpp"
+#include "volume.hpp"
 
 #include <fstream>
 #include <map>
@@ -27,8 +28,13 @@ namespace utils
                                 std::string const& substr,
                                 std::string const& to_replace);
     void copy_file(const std::string& in,
-                   const std::string& out,
-                   std::map<std::string, std::string> mymap=std::map<std::string, std::string>());
+                   const std::string& out);
+    void copy_replace_in_file(const std::string& in,
+                              const std::string& out,
+                              std::map<std::string, std::string> mymap);
+    void append_to_file(const std::string& f,
+                        std::string append);
+    Volume_t read_masks (const std::vector<std::string>& v, const float threshold = 0.5);
     std::string run_command(const std::string cmd);
     void cm_to_mm(Array4<float>& v);
     Vector3_t<float> closest_point(const Vector3_t<float>& vec,

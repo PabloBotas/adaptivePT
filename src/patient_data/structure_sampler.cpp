@@ -122,7 +122,7 @@ void structure_sampler (const std::string& file, const float& percentage,
 }
 
 template
-void structure_sampler< Vector4_t<float> >(const std::string&, const float&,
+void structure_sampler< Vector4_t<float>>(const std::string&, const float&,
                                             const uint, Warper_t, const CT_Dims_t&,
-                                            std::vector< Vector4_t<float> >&,
-                                            std::vector< Vector4_t<float> >&);
+                                            std::vector< Vector4_t<float>>&,
+                                            std::vector< Vector4_t<float>>&);

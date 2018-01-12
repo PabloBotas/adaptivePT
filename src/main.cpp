@@ -7,6 +7,7 @@
 #include "influence_manager.hpp"
 #include "initialize_rays.cuh"
 #include "enviroment.hpp"
+#include "gpmc_manager.hpp"
 #include "gpu_ct_to_device.cuh"
 #include "gpu_main.cuh"
 #include "gpu_source_positioning.cuh"
@@ -117,13 +118,13 @@ int main(int argc, char** argv)
     // 1: Load CT
     Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
     ct.setDims(pat.ct); // The CT volume lacks dimensions information
-    Influence_manager influences(parser, pat, warper, ct.getMetadata());
     // 2: Get endpoints and warped endpoints in CT
     compute_in_ct (pat, parser, ct,                   // inputs
                    warper,                            // outputs
                    endpoints, initpos,                // outputs
                    warped_endpoints, warped_initpos); // outputs
-    // 3: Get influence in CT
+    // 3: Get influence in CT: I need the vf average and that is calculated in compute_in_ct
+    Influence_manager influences(parser, pat, warper, ct.getMetadata());
     influences.get_dose_at_plan();
     // 4: Unload CT (I could destroy the object, but that could raise problems)
     ct.freeMemory();
@@ -173,6 +174,14 @@ int main(int argc, char** argv)
     if (!parser.report_file.empty())
         generate_report(parser.report_file, parser.data_vf_file, parser.data_shifts_file,
                         parser.out_plan, pat.tramp_files);
+
+    // 10: Output files for gPMC simulation
+    Gpmc_manager gpmc(pat, parser.dose_frac_file, "dose", parser.out_plan,
+                      pat.adapted_tramp_names, warper.vf_ave);
+    gpmc.write_dose_files(5000000);
+    if (parser.launch_adapt_simulation) {
+        gpmc.launch();
+    }
 
     // Stop device
     stop_device(start);
@@ -253,7 +262,7 @@ void export_adapted(Patient_Parameters_t& pat,
 
         utils::subset_vector<float>(subset_energies, energy_shift, offset_a, offset_b);
         utils::subset_vector<float>(subset_weights_scaling, weight_scaling, offset_a, offset_b);
-        utils::subset_vector< Vector4_t<float> >(subset_pat_pos, warped_initpos, offset_a, offset_b);
+        utils::subset_vector< Vector4_t<float>>(subset_pat_pos, warped_initpos, offset_a, offset_b);
 
         Tramp_t tramp(pat.tramp_files.at(i));
         tramp.set_new_energies(subset_energies);

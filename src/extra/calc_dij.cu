@@ -166,8 +166,8 @@ void process_commands (int argc, char* argv[],
         po::options_description desc("Allowed options");
         desc.add_options()
         ("help", "Produce this help message.")
-        ("tramps", po::value< std::vector<std::string> >(&tramp_files)->multitoken()->required(), "Tramp files.")
-        ("doses",  po::value< std::vector<std::string> >(&dose_files)->multitoken()->required(), "Dose files.")
+        ("tramps", po::value< std::vector<std::string>>(&tramp_files)->multitoken()->required(), "Tramp files.")
+        ("doses",  po::value< std::vector<std::string>>(&dose_files)->multitoken()->required(), "Dose files.")
         ("outdir", po::value<std::string>(&out_dir)->required(), "Output directory to write Dijs to.")
         ("dims",   po::value<std::vector<ushort>>(&dims)->multitoken()->required(), "Dose cube dimensions.");
 

@@ -17,6 +17,11 @@ texture<float, cudaTextureType3D, cudaReadModeElementType> dens_tex;
 cudaArray* matid;
 texture<float, cudaTextureType3D, cudaReadModeElementType> matid_tex;
 
+// Boolean mask array
+__device__ bool masking_vf;
+cudaArray* vf_mask;
+texture<int, cudaTextureType3D, cudaReadModeElementType> vf_mask_tex;
+
 // Water resticted stopping power
 __device__ __constant__ float stp_w_min_e;
 __device__ __constant__ float stp_w_delta_e;

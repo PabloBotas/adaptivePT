@@ -259,7 +259,7 @@ void Tramp_t::set_new_energies(const std::vector<float>& e_, bool units)
     }
 }
 
-void Tramp_t::set_pos(const std::vector< Vector4_t<float> > p)
+void Tramp_t::set_pos(const std::vector< Vector4_t<float>> p)
 {
     if (p.size() != nspots) {
         std::cerr << "Number of positions to set " << p.size();

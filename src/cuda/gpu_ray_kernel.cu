@@ -19,39 +19,66 @@ __global__ void raytrace_plan_kernel(const ushort num,
                                                ray.get_spot_id(),
                                                spots_per_field);
         ray.set_wepl(0);
-        int4 vox = get_voxel (ray.get_position());
+        int4 vox = get_voxel(ray.get_position());
+        bool if_correct_energy = orig_endpoints ? true : false;
+        bool entered_mask = false;
+        bool vox_in_mask = false;
+        float3 sample_pos = ray.get_position();;
+        float3 initial_pos = ray.get_position();;
+        int sample_vox = vox.w;
 
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
         const float initial_energy = ray.get_energy();
         pos_scorer[ind].w = initial_energy;
 
-        // ray.print();
         while (ray.is_alive() && vox.w >= -1) {
             float step_water = 0, step = 0, de = 0;
             float max_step = to_boundary(ray.get_position(), ray.get_direction(),
-                                          vox, voxUpdater, voxStepper);
+                                         vox, voxUpdater, voxStepper);
 #if defined(__STEP_CENTRAL_AXIS__)
-                get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+            get_step(step, step_water, de, max_step, ray.get_energy(), vox);
 #elif defined(__STEP_Q50__)
-                get_q50_blur_step(step, step_water, de, max_step, ray, vox);
+            get_q50_blur_step(step, step_water, de, max_step, ray, vox);
 #else
-                get_average_blur_step(step, step_water, de, max_step, ray, vox);
+            get_average_blur_step(step, step_water, de, max_step, ray, vox);
 #endif
             ray.move(step, step_water, de);
+            if (masking_vf) {
+                if (vox_in_mask || (!vox_in_mask && !entered_mask)) {
+                    sample_pos = ray.get_position();
+                    sample_vox = vox.w;
+                }
+                if (vox_in_mask && !entered_mask) {
+                    entered_mask = true;
+                }
+            }
+            // This line returns to the old behavior without the mask
+            // sample_pos = ray.get_position();
 
-            if (traces)
-                score_traces(traces, vox.w, !ray.is_alive());
-            if (step == max_step)
+            if (traces && (thread == 0 || thread == 300)) {
+                score_traces(thread, traces, vox.w, !ray.is_alive());
+            }
+            if (step == max_step) {
                 changeVoxel(vox, voxUpdater, voxStepper);
+                if (masking_vf && vox.w != -1) {
+                    vox_in_mask = tex3D(vf_mask_tex, vox.z, vox.y, vox.x) > 0.5;
+                }
+            }
         }
 
         // Save scorer
-        pos_scorer[ind].x = ray.pos.x;
-        pos_scorer[ind].y = ray.pos.y;
-        pos_scorer[ind].z = ray.pos.z;
+        if (traces && (thread == 0 || thread == 300)) {
+            score_traces(thread, traces, sample_vox, true);
+        }
+        if (!masking_vf) {
+            sample_pos = ray.get_position();
+        }
+        pos_scorer[ind].x = sample_pos.x;
+        pos_scorer[ind].y = sample_pos.y;
+        pos_scorer[ind].z = sample_pos.z;
 
-        if (orig_endpoints) {
+        if (if_correct_energy) {
             const float accu_wepl = ray.get_wepl();
             float3 plan_endpoint = make_float3(orig_endpoints[thread]);
             ray.set_energy(initial_energy);
@@ -62,7 +89,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
             while (ray.is_alive() && vox.w != -1) {
                 float step_water = 0, step = 0, de = 0;
                 float max_step = to_boundary(ray.get_position(), ray.get_direction(),
-                                              vox, voxUpdater, voxStepper, plan_endpoint);
+                                             vox, voxUpdater, voxStepper, plan_endpoint);
 #if defined(__STEP_CENTRAL_AXIS__)
                 get_step(step, step_water, de, max_step, ray.get_energy(), vox);
 #elif defined(__STEP_Q50__)
@@ -75,24 +102,26 @@ __global__ void raytrace_plan_kernel(const ushort num,
                 if (voxUpdater != NONE) {
                     if (traces) {
                         int tempvox = sign < 0 ? -vox.w : vox.w;
-                        score_traces(traces, tempvox, false);
+                        score_traces(thread, traces, tempvox, false);
                     }
                     changeVoxel(vox, voxUpdater, voxStepper);
                 } else {
                     if (traces)
-                        score_traces(traces, vox.w, true);
+                        score_traces(thread, traces, vox.w, true);
                     break;
                 }
             }
 
             const float total_wepl = accu_wepl + sign*ray.get_wepl();
-            const float alpha1 = 1.63455120e-05;
-            const float alpha2 = 7.72957942e-04;
-            const float alpha3 = 3.07077098e-14;
-            const float p1 = 1.80084932;
-            const float p2 = 0.669078092;
-            const float p3 = 1.80100517;
-            const float E = pow(total_wepl/alpha1, 1/p1) + pow(total_wepl/alpha2, 1/p2) + pow(total_wepl/alpha3, 1/p3);
+            const float i_alpha1 = 6.11788728306583E+04;
+            const float i_alpha2 = 1.29373145117383E+03;
+            const float i_alpha3 = 3.25651117101543E+13;
+            const float i_p1 = 5.55293543382075E-01;
+            const float i_p2 = 1.49459384779856E+00;
+            const float i_p3 = 5.55245491049867E-01;
+            const float E = powf(total_wepl*i_alpha1, i_p1) + powf(total_wepl*i_alpha2, i_p2) +
+                            powf(total_wepl*i_alpha3, i_p3);
+
             // float dev = 100*(E - initial_energy)/initial_energy;
             // // Coerce change to 0.25% steps
             // const float energy_grid_step = 0.0f;
@@ -106,13 +135,13 @@ __global__ void raytrace_plan_kernel(const ushort num,
     }
 }
 
-__device__ void score_traces(float *traces, int voxnum, bool last)
+__device__ void score_traces(int thread, float *traces, int voxnum, bool last)
 {
     bool del_content = voxnum < 0;
     if (del_content) {
         atomicExch(&traces[abs(voxnum)], 0.0f);
     } else {
-        float val = last ? 50.0f : 1.0f;
+        float val = last ? 100000.f : float(thread);
         atomicExch(&traces[voxnum], val);
     }
 }

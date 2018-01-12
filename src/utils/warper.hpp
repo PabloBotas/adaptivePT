@@ -23,7 +23,8 @@ public:
                         const std::vector<short>& spots_per_field,
                         const Adapt_constraints_t opts);
     Array4<float> apply_to_points (const Array4<float>& pos,
-                                   const CT_Dims_t& ct);
+                                   const CT_Dims_t& ct,
+                                   Vector3_t<float>* ave = NULL);
     void print_vf (unsigned int n = 10);
     Vector3_t<float> vf_ave;
     Array3<float> vf_ave_planes;
@@ -37,8 +38,9 @@ private:
     void apply_rigid_positions_per_beam (const std::vector<short>& spots_per_field);
     void probe (const Array4<float>& p, const CT_Dims_t& ct);
     void write_to_file (const Array4<float>& p,
-                        const std::vector<short>& spots_per_field);
-    void warp_points (Array4<float>& p);
+                        const std::vector<short>& spots_per_field,
+                        const std::vector<BeamAngles_t>& angles);
+    void warp_points (Array4<float>& p, Vector3_t<float>* ave = NULL);
     void warp_init_points (Array4<float>& init_pos, const Planes_t& pln,
                            const std::vector<short>& spots_per_field,
                            const std::vector<BeamAngles_t>& angles);

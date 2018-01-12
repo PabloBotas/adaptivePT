@@ -42,7 +42,7 @@ public:
     enum options { MGH, CM, HALF_CM, FREE, INTERVAL, LIST };
     options mode;
     std::vector<float> wepl_steps;
-    void set_mode (options opt, std::string str = std::string()) {
+    void set_mode (options opt, std::vector<std::string> str = std::vector<std::string>()) {
         mode = opt;
         fill_wepls(str);
     };
@@ -66,7 +66,7 @@ public:
         }
     };
 private:
-    void fill_wepls (std::string str = std::string()) {
+    void fill_wepls (std::vector<std::string> str = std::vector<std::string>()) {
         try {
             if (mode == MGH) {
                 wepl_steps = {3.45, 5.405, 9.2};
@@ -75,21 +75,19 @@ private:
             } else if (mode == HALF_CM) {
                 fill_with_step(0.5);
             } else if (mode == LIST) {
-                std::istringstream iss(str);
-                std::vector<std::string> tokens {std::istream_iterator<std::string>{iss},
-                                                 std::istream_iterator<std::string>{}};
-                for (auto i: tokens) {
+                for (auto i: str) {
                     if (!std::regex_match(i, numrgx))
                         throw std::invalid_argument("Input value for range shifter list of WEPL "
                                                     "thicknesses is not valid: \""+i+"\"");
                     wepl_steps.push_back(std::stof(i));
                 }
             } else if (mode == INTERVAL) {
-                str.erase(str.begin());
-                if (!std::regex_match(str, numrgx))
+                std::string temp = str.front();
+                temp.erase(temp.begin());
+                if (!std::regex_match(temp, numrgx))
                         throw std::invalid_argument("Input value for range shifter discrete WEPL "
-                                                    "interval is not valid: \""+str+"\"");
-                float step = std::stof(str);
+                                                    "interval is not valid: \""+temp+"\"");
+                float step = std::stof(temp);
                 if (step == 0.f) {
                     std::cerr << "WARNING! Input interval for discrete range shifter thickness is 0. "
                                  " The range shifter is not discretized!." << std::endl;

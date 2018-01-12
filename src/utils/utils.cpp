@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "volume.hpp"
 
 #include <string>
 #include <vector>
@@ -17,14 +18,14 @@
 
 void utils::check_fs(const std::ofstream& fs, std::string f, std::string msg)
 {
-    if ( !fs.is_open() ) {
+    if (fs.fail()) {
         std::cerr << "Can not open file " << f << " " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 void utils::check_fs(const std::ifstream& fs, std::string f, std::string msg)
 {
-    if ( !fs.is_open() ) {
+    if (fs.fail()) {
         std::cerr << "Can not open file " << f << " " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -118,9 +119,9 @@ void utils::replace_string_inplace(std::string& str,
     }
 }
 
+
 void utils::copy_file(const std::string& in,
-                      const std::string& out,
-                      std::map<std::string, std::string> mymap)
+                      const std::string& out)
 {
     std::ifstream src(in);
     if (!src) {
@@ -132,17 +133,76 @@ void utils::copy_file(const std::string& in,
         std::cerr << "Can't open " + out + " file" << std::endl;
         exit(EXIT_FAILURE);
     }
-    if (!mymap.empty()) {
-        std::string text;
-        for (char ch; src.get(ch); text.push_back(ch)) {
-        }
-        for(auto it = mymap.begin(); it != mymap.end(); ++it) {
-            replace_string_inplace(text, it->first, it->second);
-        }
-        dst << text;
-    } else {
-        dst << src.rdbuf();
+    dst << src.rdbuf();
+}
+
+
+void utils::copy_replace_in_file(const std::string& in,
+                                 const std::string& out,
+                                 std::map<std::string, std::string> mymap)
+{
+    std::ifstream src(in);
+    if (!src) {
+        std::cerr << "Can't open " + in + " file" << std::endl;
+        exit(EXIT_FAILURE);
     }
+    std::ofstream dst(out);
+    if (!dst) {
+        std::cerr << "Can't open " + out + " file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::string text;
+    for (char ch; src.get(ch); text.push_back(ch)) {
+    }
+    for(auto it = mymap.begin(); it != mymap.end(); ++it) {
+        replace_string_inplace(text, it->first, it->second);
+    }
+    dst << text;
+}
+
+
+Volume_t utils::read_masks (const std::vector<std::string>& v, const float threshold) {
+    // Read structure volume
+    Volume_t vol(v.front(), Volume_t::Source_type::MHA);
+    vol.ext_to_int_coordinates();
+    for (size_t f=1; f < v.size(); ++f) {
+        Volume_t temp(v.at(f), Volume_t::Source_type::MHA);
+        temp.ext_to_int_coordinates();
+        if (temp.nElements != vol.nElements ||
+            temp.n.x != vol.n.x || temp.n.y != vol.n.y || temp.n.z != vol.n.z ||
+            temp.d.x != vol.d.x || temp.d.y != vol.d.y || temp.d.z != vol.d.z) {
+            std::cerr << "ERROR! Dimensions of passed mask " << v.at(f);
+            std::cerr << " differ from first passed mask. Plastimatch says: " << std::endl;
+            std::string cmd("plastimatch header " + v.at(0) + " 2>&1");
+            std::string temp = utils::run_command(cmd);
+            std::cerr << v.front() << ":" << std::endl;
+            std::cerr << temp << std::endl;
+            cmd = "plastimatch header " + v.at(f) + " 2>&1";
+            temp = utils::run_command(cmd);
+            std::cerr << v.at(f) << ":" << std::endl;
+            std::cerr << temp << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        for (uint i = 0; i < temp.nElements; ++i) {
+            if (temp.data.at(i) > threshold && vol.data.at(i) <= threshold) {
+                vol.data.at(i) = 2*threshold;
+            }
+        }
+    }
+
+    return vol;
+}
+
+
+void utils::append_to_file(const std::string& f,
+                           std::string append)
+{
+    std::ofstream src(f, std::ios::ate | std::ios::app);
+    if (!src) {
+        std::cerr << "Can't open " + f + " file" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    src << append;
 }
 
 
@@ -210,6 +270,6 @@ template void
 utils::subset_vector<float>(std::vector<float>&, const std::vector<float>&,
                              const size_t, const size_t);
 template void
-utils::subset_vector< Vector4_t<float> >(std::vector< Vector4_t<float> >&,
-                                          const std::vector< Vector4_t<float> >&,
+utils::subset_vector< Vector4_t<float>>(std::vector< Vector4_t<float>>&,
+                                          const std::vector< Vector4_t<float>>&,
                                           const size_t, const size_t);

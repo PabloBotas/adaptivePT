@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <exception>
@@ -41,7 +42,7 @@ Parser::~Parser()
 
 void Parser::process_command_line(int argc, char** argv)
 {
-    po::options_description desc("Allowed options", terminal_width);
+    po::options_description desc("Allowed options", terminal_width, terminal_width/2);
     try {
         desc.add_options()
         ("help", "Produce this help message.")
@@ -144,19 +145,38 @@ void Parser::process_command_line(int argc, char** argv)
                             "calculated in the daily geometry and after applying the vector field "
                             "to the initial plan. Can be an output from the \"beam_model\" or the "
                             "\"gpmc_dij\" mode. Not necessary for geometric mode.")
-        ("ct_mask",     po::value<std::string>(&ct_mask_file)->
+        ("vf_mask",     po::value<std::vector<std::string>>()->
+                            multitoken(),
+                            "Binary image of a mask in CT space. It represents the volume in which "
+                            "the vector field is probed. Spots are raytraced in CT space and the "
+                            "vector field is probed at the distal position along the beamlet "
+                            "central axis (endpoint). If the beamlet enters the mask volume, the "
+                            "enpoint will be taken as the last position along the central axis in "
+                            "the mask. If it doesn't, the endpoint will simply be the last "
+                            "position along the central axis. The spot will be moved according to "
+                            "the vector field value at this position. It is recommended to pass an "
+                            "expansion of the target volume. If more than one file are provided, "
+                            "The mask will be the union of all the files. If no file is provided, "
+                            "the vector field will not be masked")
+        ("mask",        po::value<std::vector<std::string>>()->
+                            multitoken()->
                             required(),
-                            "Binary image of a mask in CT to use during beam model calculation, "
-                            "to pass to gPMC for Dij or to evaluate the dose on.")
+                            "Binary image of one or more mask in CT to use during Dij calculation "
+                            " with the beam model, to feed to gPMC for Dij calculation or to "
+                            "evaluate the dose on.")
         // Launchers
         ("opt4D",       po::bool_switch(&launch_opt4D)->
                             default_value(launch_opt4D),
                             "If Opt4D should be launched. If a file destination is not provided as "
                             "well, the default will be set.")
+        ("sim_adapt",   po::bool_switch(&launch_adapt_simulation)->
+                            default_value(launch_adapt_simulation),
+                            "If gPMC should be launched to simulate the adaptated plan.")
         // Adaptation methods
-        ("constraint",  po::value<std::string>(&constraint_vec)->
+        ("constraint",  po::value<std::vector<std::string>>()->
                             multitoken()->
-                            implicit_value(adapt_constraint_free_str),
+                            implicit_value(std::vector<std::string>{adapt_constraint_free_str},
+                                           adapt_constraint_free_str),
                             "Constrains set on the adaptation process. One or more can be "
                             "activated. In case conflicting options are found, the most "
                             "restrictive ones will be selected. Multitoken option."
@@ -182,10 +202,12 @@ void Parser::process_command_line(int argc, char** argv)
                             "  -\"iso_shift\": A global isocenter shift is calculated as the "
                             "average displacement.\n"
                             "  -\"iso_shift_field\": A field-specific isocenter shift.")
-        ("rshifter_steps", po::value<std::string>(&rshifter_steps_vec)->
+        ("rshifter_steps", po::value<std::vector<std::string>>()->
                             multitoken()->
-                            default_value(rshifter_steps_half_cm)->
-                            implicit_value(rshifter_steps_half_cm),
+                            default_value(std::vector<std::string>{rshifter_steps_half_cm},
+                                          rshifter_steps_half_cm)->
+                            implicit_value(std::vector<std::string>{rshifter_steps_half_cm},
+                                           rshifter_steps_half_cm),
                             "Possible WEPL values taken by modified or new range shifters. "
                             "Thicknesses are discretized by default. This is common practice in "
                             "the clinic because range shifters are commissioned and there are "
@@ -216,6 +238,18 @@ void Parser::process_command_line(int argc, char** argv)
             exit(EXIT_SUCCESS);
         }
         po::notify(vm);
+
+
+        // MULTITOKEN OPTIONS
+        if (!vm["mask"].empty())
+            scoring_mask_files = vm["mask"].as<std::vector<std::string>>();
+        if (!vm["vf_mask"].empty())
+            v_field_mask_files = vm["vf_mask"].as<std::vector<std::string>>();
+        if (!vm["constraint"].empty())
+            constraint_vec = vm["constraint"].as<std::vector<std::string>>();
+        if (!vm["rshifter_steps"].empty())
+            rshifter_steps_vec = vm["rshifter_steps"].as<std::vector<std::string>>();
+
 
         // ADAPT METHOD OPTIONS
         adapt_method_str = utils::toLower(adapt_method_str);
@@ -253,10 +287,7 @@ void Parser::process_command_line(int argc, char** argv)
         }
        
         // ADAPT METHOD CONSTRAINTS
-        std::istringstream iss(constraint_vec);
-        std::vector<std::string> tokens {std::istream_iterator<std::string>{iss},
-                                         std::istream_iterator<std::string>{}};
-        for (auto str: tokens) {
+        for (auto str: constraint_vec) {
             str = utils::toLower(str);
             if (str == adapt_constraint_free_str) {
                 free = true;
@@ -292,22 +323,50 @@ void Parser::process_command_line(int argc, char** argv)
             adapt_constraints = Adapt_constraints_t::FREE;
 
         // RANGE SHIFTER STEPS
-        rshifter_steps_vec = utils::toLower(rshifter_steps_vec);
-        if (rshifter_steps_vec == rshifter_steps_free) {
-            rshifter_steps.set_mode(RShifter_steps_t::FREE);
-        } else if (rshifter_steps_vec == rshifter_steps_half_cm) {
-            rshifter_steps.set_mode(RShifter_steps_t::HALF_CM);
-        } else if (rshifter_steps_vec == rshifter_steps_cm) {
-            rshifter_steps.set_mode(RShifter_steps_t::CM);
-        } else if (rshifter_steps_vec == rshifter_steps_mgh) {
-            rshifter_steps.set_mode(RShifter_steps_t::MGH);
-        } else if (!rshifter_steps_vec.empty() && rshifter_steps_vec.at(0) == 'x') {
-            rshifter_steps.set_mode(RShifter_steps_t::INTERVAL, rshifter_steps_vec);
-        } else if (!rshifter_steps_vec.empty()) {
+        if (rshifter_steps_vec.size() == 1) {
+            std::string temp = utils::toLower(rshifter_steps_vec.front());
+            if (temp == rshifter_steps_free) {
+                rshifter_steps.set_mode(RShifter_steps_t::FREE);
+            } else if (temp == rshifter_steps_half_cm) {
+                rshifter_steps.set_mode(RShifter_steps_t::HALF_CM);
+            } else if (temp == rshifter_steps_cm) {
+                rshifter_steps.set_mode(RShifter_steps_t::CM);
+            } else if (temp == rshifter_steps_mgh) {
+                rshifter_steps.set_mode(RShifter_steps_t::MGH);
+            } else if (temp.at(0) == 'x') {
+                rshifter_steps.set_mode(RShifter_steps_t::INTERVAL, rshifter_steps_vec);
+            } else {
+                throw std::invalid_argument("Unrecognized range shifter discretization mode. It "
+                                            "could not be deduced from \""+temp+"\"");
+            }
+        } else if (rshifter_steps_vec.size() > 1) {
             rshifter_steps.set_mode(RShifter_steps_t::LIST, rshifter_steps_vec);
         } else {
-            throw std::invalid_argument("Unrecognized range shifter discretization mode. It could "
-                                        "not be deduced from: \""+rshifter_steps_vec+"\"");
+            std::string temp;
+            for (auto i: rshifter_steps_vec)
+                temp += i+" ";
+            throw std::invalid_argument("Unrecognized range shifter discretization mode. It "
+                                        "could not be deduced from \""+temp+"\"");
+        }
+
+        // PARSE PASSED MASKS AND VERIFY THEY EXIST
+        for (auto& str: scoring_mask_files) {
+            if (std::ifstream(str)) {
+                str = utils::get_full_path(str);
+            } else {
+                std::cerr << "Mask file not accessible: \""+str+"\"!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        // PARSE VF MASKS
+        if (v_field_mask_files.size() != 0) {
+            for (auto& str: v_field_mask_files) {
+                if (std::ifstream(str)) {
+                    str = utils::get_full_path(str);
+                } else {
+                    std::cerr << "Vf mask file not accessible: \""+str+"\"!" << std::endl;
+                }
+            }
         }
 
         // REPORTING
@@ -328,10 +387,13 @@ void Parser::process_command_line(int argc, char** argv)
             !cbct_traces_file.empty() && cbct_traces_file.find('/') == std::string::npos)
             cbct_traces_file = out_dir + '/' + cbct_traces_file;
 
+        // CREATE OUTPUT DIRECTORIES
+        mkdir(out_dir.c_str(), 0774);
+        mkdir(out_plan.c_str(), 0774);
+        
         // NORMALIZE INPUTS
         machine = utils::toLower(machine);
-    }
-    catch(std::exception& e) {
+    } catch(std::exception& e) {
         std::cerr << "ERROR! " << e.what() << std::endl;
         print_inputs();
         std::cerr << desc << std::endl;
@@ -386,11 +448,11 @@ void Parser::print_inputs () {
             }
         } else { // Assumes that the only remainder is vector<string>
             try {
-                std::vector<std::string> vect = vm[it->first].as<std::vector<std::string> >();
+                std::vector<std::string> vect = vm[it->first].as<std::vector<std::string>>();
                 uint i = 0;
                 for (std::vector<std::string>::iterator oit=vect.begin();
                      oit != vect.end(); oit++, ++i) {
-                    std::cout << "\r> " << it->first << "[" << i << "]=" << (*oit) << std::endl;
+                    std::cout << "\r> " << it->first << "[" << i << "] = " << (*oit) << std::endl;
                 }
             } catch (const boost::bad_any_cast &) {
                 std::cout << "UnknownType(" << ((boost::any)it->second.value()).type().name() << ")" << std::endl;

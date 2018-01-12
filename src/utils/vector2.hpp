@@ -38,7 +38,7 @@ public:
 };
 
 template <class T>
-using Array2 = std::vector< Vector2_t<T> >;
+using Array2 = std::vector< Vector2_t<T>>;
 
 #include "vector2.ipp"
 

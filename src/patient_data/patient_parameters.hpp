@@ -33,8 +33,9 @@ public:
     ushort total_spots;
     std::vector<short> spots_per_field;
     std::vector<short> accu_spots_per_field;
-    std::vector< std::vector<short> > energy_layers;
+    std::vector< std::vector<short>> energy_layers;
     std::vector<float> source_energies;
+     std::vector<uint> n_fractions;
 
     CT_Dims_t ct;
     CT_Dims_t original_ct;
@@ -57,6 +58,7 @@ private:
     void getTopasBeamParameters();
     void set_spots_data();
     void set_planning_CT_file();
+    void set_new_tramps();
 
     void consolidate_originals();
     std::vector<BeamAngles_t> original_angles;

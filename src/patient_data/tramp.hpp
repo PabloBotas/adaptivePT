@@ -24,7 +24,7 @@ public:
     std::vector<float> getWEPLs();
     void energy_to_internal();
     void shift_energies(const std::vector<float>& e_, bool units = true);
-    void set_pos(const std::vector< Vector4_t<float> > p);
+    void set_pos(const std::vector< Vector4_t<float>> p);
     void print(unsigned int n);
     void print(unsigned int n0, unsigned int n1);
     void defaults();

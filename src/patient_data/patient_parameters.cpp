@@ -21,6 +21,7 @@ Patient_Parameters_t::Patient_Parameters_t(std::string dir) : patient_dir(dir),
 {
     exploreBeamDirectories();
     parseTopasFiles();
+    set_new_tramps();
     set_spots_data();
     set_planning_CT_file();
 }
@@ -58,8 +59,6 @@ void Patient_Parameters_t::exploreBeamDirectories()
 
     // Get tramp files
     tramp_files.resize(nbeams);
-    geometric_tramp_names.resize(nbeams);
-    adapted_tramp_names.resize(nbeams);
     std::vector<std::string> temp = getFilesWithSuffix(tramp_dir, ".tramp_modified");
     if (temp.size() == 0)
         temp = getFilesWithSuffix(tramp_dir, ".tramp");
@@ -74,17 +73,23 @@ void Patient_Parameters_t::exploreBeamDirectories()
         exit(EXIT_FAILURE);
     }
     std::copy(temp.begin(), temp.end(), tramp_files.begin());
-    for (uint i = 0; i < nbeams; ++i) {
-        adapted_tramp_names.at(i) = std::string("adapted_beam_" + std::to_string(i) +
-                                                ".tramp_modified");
-        geometric_tramp_names.at(i) = std::string("geometric_beam_" + std::to_string(i) +
-                                                  ".tramp_modified");
-    }
 
     // Get topas parameter files
     topas_files.resize(nbeams);
     for (unsigned int i = 0; i < nbeams; i++) {
         topas_files.at(i) = getFilesWithSuffix(beam_dirs[i], "MCAUTO_DICOM.txt")[0];
+    }
+}
+
+void Patient_Parameters_t::set_new_tramps()
+{
+    geometric_tramp_names.resize(nbeams);
+    adapted_tramp_names.resize(nbeams);
+    for (uint i = 0; i < nbeams; ++i) {
+        adapted_tramp_names.at(i) = std::string("adapted_beam_" + std::to_string(i) + "_" +
+                                                 beam_names.at(i) + ".tramp_modified");
+        geometric_tramp_names.at(i) = std::string("geometric_beam_" + std::to_string(i) + "_" +
+                                                  beam_names.at(i) + ".tramp_modified");
     }
 }
 
@@ -139,6 +144,8 @@ void Patient_Parameters_t::consolidate_originals()
 void Patient_Parameters_t::getTopasBeamParameters()
 {
     // Resize containers
+    beam_names.resize(nbeams);
+    n_fractions.resize(nbeams);
     apertures.resize(nbeams);
     range_shifters.resize(nbeams);
     angles.resize(nbeams);
@@ -153,6 +160,9 @@ void Patient_Parameters_t::getTopasBeamParameters()
         RangeShifter_Dims_t& rs = range_shifters.at(i);
         BeamAngles_t& angle = angles.at(i);
         float& isoToBeam = isocenter_to_beam_distance.at(i);
+
+        // Fractions
+        n_fractions.at(i) = pars.readInteger<uint>("Rt/beam/NumberOfFractionsPlanned", 1);
 
         // Aperture
         ap.exists = pars.readBool("Rt/beam/IncludeAperture", false);

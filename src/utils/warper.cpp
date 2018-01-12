@@ -47,7 +47,7 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
     set_average();
     apply_position_options(options, spots_per_field);
     if (exp_file)
-        write_to_file (endpoints, spots_per_field);
+        write_to_file (endpoints, spots_per_field, angles);
 
     warp_points (endpoints);
     warp_init_points (init_pos, treatment_plane, spots_per_field, angles);
@@ -55,12 +55,13 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
 }
 
 Array4<float> Warper_t::apply_to_points (const Array4<float>& pos,
-                                         const CT_Dims_t& ct)
+                                         const CT_Dims_t& ct,
+                                         Vector3_t<float>* ave)
 {
     probe (pos, ct);
     Array4<float> newpos(pos.size());
     newpos.assign(pos.begin(), pos.end());
-    warp_points (newpos);
+    warp_points (newpos, ave);
     return newpos;
 }
 
@@ -258,17 +259,28 @@ void Warper_t::project_vf_on_plane (const Planes_t& pln,
 }
 
 
-void Warper_t::warp_points (Array4<float>& p)
+void Warper_t::warp_points (Array4<float>& p, Vector3_t<float>* ave)
 {
     for (size_t i = 0; i < p.size(); i++) {
         p.at(i).x += vf.at(i).x;
         p.at(i).y += vf.at(i).y;
         p.at(i).z += vf.at(i).z;
+        if (ave) {
+            ave->x += vf.at(i).x;
+            ave->y += vf.at(i).y;
+            ave->z += vf.at(i).z;
+        }
+    }
+    if (ave) {
+        ave->x /= p.size();
+        ave->y /= p.size();
+        ave->z /= p.size();
     }
 }
 
 void Warper_t::write_to_file(const Array4<float>& p,
-                             const std::vector<short>& spots_per_field)
+                             const std::vector<short>& spots_per_field,
+                             const std::vector<BeamAngles_t>& angles)
 {
     std::string dir = output.substr(0, output.find_last_of('/'));
     mkdir(dir.c_str(), 0774);
@@ -277,17 +289,18 @@ void Warper_t::write_to_file(const Array4<float>& p,
     utils::check_fs(ofs, output, "to write vector field.");
     std::cout << "Writting probed VF to " << output << " ... ";
 
-    int beamid = 0;
-    ofs << "vx vy vz x y z beamid spotid\n";
-    for (short i = 0, spotid = 0; i < (short)vf.size(); i++, spotid++) {
-        if (i == spots_per_field.at(beamid)) {
-            spotid -= spots_per_field.at(beamid);
-            beamid += 1;
+    ofs << "vx vy vz x y z beamid spotid gantryangle couchangle\n";
+    uint accu_spot = 0;
+    for (uint ibeam = 0; ibeam < spots_per_field.size(); ++ibeam) {
+        for (short i=0; i < spots_per_field.at(ibeam); ++i) {
+            uint idx = i + accu_spot;
+            ofs << vf.at(idx).x << " " << vf.at(idx).y << " " << vf.at(idx).z << " ";
+            ofs << p.at(idx).x + origins.x << " " << p.at(idx).y + origins.y;
+            ofs << " " << p.at(idx).z + origins.z << " ";
+            ofs << ibeam << " " << i << " " << angles.at(ibeam).gantry << " ";
+            ofs << angles.at(ibeam).couch << "\n";
         }
-        ofs << vf.at(i).x << " " << vf.at(i).y << " " << vf.at(i).z << " ";
-        ofs << p.at(i).x + origins.x << " " << p.at(i).y + origins.y;
-        ofs << " " << p.at(i).z + origins.z << " ";
-        ofs << beamid << " " << spotid << "\n";
+        accu_spot += spots_per_field.at(ibeam);
     }
     ofs.close();
     std::cout << "done!" << std::endl;

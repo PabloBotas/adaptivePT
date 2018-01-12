@@ -26,6 +26,7 @@ Aperture_Dims_t::Aperture_Dims_t():
 // RangeShifter_Dims_t ---------------------------------------
 RangeShifter_Dims_t::RangeShifter_Dims_t():
                      exists(false),
+                     adapted(false),
                      thick(0),
                      zdown(0),
                      zup(0),
@@ -36,33 +37,62 @@ RangeShifter_Dims_t::RangeShifter_Dims_t():
 
 void RangeShifter_Dims_t::substract(float x)
 {
+    adapted = true;
     wepl -= x;
     density = wepl/thick;
     if (wepl == 0)
         exists = false;
 }
 
-void RangeShifter_Dims_t::create(float pos, float w)
+void RangeShifter_Dims_t::create(float zup_, float w)
 {
     // __RANGE_SHIFTER_THICKNESS__ is defined in CMake step, defaulting to 0.01
     exists = true;
-    zup = pos;
-    zdown = pos - __RANGE_SHIFTER_THICKNESS__;
-    thick = zup - zdown;
-    density = w/thick;
+    zup = zup_;
+    zdown = zup - __RANGE_SHIFTER_THICKNESS__;
+    thick = __RANGE_SHIFTER_THICKNESS__;
     wepl = w;
+    density = wepl/thick;
 }
 
 void RangeShifter_Dims_t::add(float w)
 {
+    adapted = true;
     wepl += w;
     density = w/thick;
 }
 
+void RangeShifter_Dims_t::set_adapted()
+{
+    adapted = true;
+}
+
 void RangeShifter_Dims_t::set_wepl(float w)
 {
+    adapted = true;
     wepl = w;
     density = w/thick;
+}
+
+std::string RangeShifter_Dims_t::get_info_as_str()
+{
+    std::string str;
+    if (exists) {
+        str = "adapted " + std::string(adapted ? "true" : "false") + " ";
+        str += "thick " + std::to_string(thick) + " ";
+        str += "wepl " + std::to_string(wepl) + " ";
+        str += "density " + std::to_string(density) + " ";
+        str += "zdown " + std::to_string(zdown) + " ";
+        str += "zup " + std::to_string(zup);
+    } else {
+        str = "Empty";
+    }
+    return str;
+}
+
+void RangeShifter_Dims_t::print(std::ostream& stream)
+{
+    stream << get_info_as_str() << std::endl;
 }
 
 // SAD_t ---------------------------------------

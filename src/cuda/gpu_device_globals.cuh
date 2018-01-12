@@ -52,6 +52,11 @@ extern texture<float, cudaTextureType3D, cudaReadModeElementType> dens_tex;
 extern cudaArray* matid;
 extern texture<float, cudaTextureType3D, cudaReadModeElementType> matid_tex;
 
+// Boolean mask array
+extern __device__ bool masking_vf;
+extern cudaArray* vf_mask;
+extern texture<int, cudaTextureType3D, cudaReadModeElementType> vf_mask_tex;
+
 // Water resticted stopping power
 extern __device__ __constant__ float stp_w_min_e;
 extern __device__ __constant__ float stp_w_delta_e;

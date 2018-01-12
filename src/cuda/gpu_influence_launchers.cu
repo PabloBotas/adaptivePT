@@ -33,7 +33,7 @@ void influence_from_beam_model_launcher(std::string outfile,
 
     // Create scorer array
     float4 *dev_influence = NULL;
-    array_to_device<float4, Vector4_t<float> >(dev_influence, influence.data(), influence.size());
+    array_to_device<float4, Vector4_t<float>>(dev_influence, influence.data(), influence.size());
     // Create scorer array
     float *dev_inf_volume = NULL;
     allocate_scorer<float>(dev_inf_volume, inf_cube.size());

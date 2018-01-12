@@ -53,7 +53,7 @@ public:
 };
 
 template <class T>
-using Array4 = std::vector< Vector4_t<T> >;
+using Array4 = std::vector< Vector4_t<T>>;
 
 #include "vector4.ipp"
 

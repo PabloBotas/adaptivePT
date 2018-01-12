@@ -31,7 +31,7 @@ public:
 
     // Data containers
     std::vector<std::string> cols;
-    std::vector< std::vector<float> > data;
+    std::vector< std::vector<float>> data;
 };
 
 #endif

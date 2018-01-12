@@ -40,8 +40,8 @@ public:
 
 private:
     void read_file();
-    void read_header();
-    void read_body();
+    void read_header(std::ifstream& stream);
+    void read_body(std::ifstream& stream);
     template<class T>
     void read_body_to_vector(std::vector<T>& temp, std::ifstream& stream);
     template<class T>

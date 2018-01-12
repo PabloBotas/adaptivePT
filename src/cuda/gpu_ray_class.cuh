@@ -6,8 +6,8 @@ class Ray
     float wepl;
     float energy;
     float initial_energy;
-    short  beam_id;
-    short  spot_id;
+    short beam_id;
+    short spot_id;
 public:
     float3 pos;
     float3 dir;
@@ -45,7 +45,10 @@ public:
 private:
     bool  _alive     = true;
     float _min_wepl = 1e-08;
+    float error_wepl = 0.f;
+    float error_energy = 0.f;
+    float3 error_pos = make_float3(0.f, 0.f, 0.f);
+    float3 error_dir = make_float3(0.f, 0.f, 0.f);
 };
-
 
 #endif

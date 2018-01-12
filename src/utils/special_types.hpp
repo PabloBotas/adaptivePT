@@ -2,6 +2,7 @@
 #define __SPECIAL_TYPES_HPP__
 
 #include "vector3.hpp"
+#include <iostream>
 #include <string>
 
 // BeamAngles_t ---------------------------------------
@@ -45,18 +46,20 @@ struct Aperture_Dims_t
 struct RangeShifter_Dims_t
 {
     bool exists;
+    bool adapted;
     float thick;
     float zdown;
     float zup;
-    RangeShifter_Dims_t();
-private:
     float density;
-public:
+    RangeShifter_Dims_t();
     float wepl;
     void add (float w);
+    void set_adapted();
     void set_wepl(float w);
     void substract (float w);
     void create (float pos, float w);
+    std::string get_info_as_str();
+    void print(std::ostream& stream = std::cout);
 };
 
 // SAD_t ---------------------------------------

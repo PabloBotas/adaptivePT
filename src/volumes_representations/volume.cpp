@@ -81,9 +81,8 @@ void Volume_t::freeMemory()
 #if defined __DEBUG_OUTPUT_READ_CT__
 void debug_ct(std::string f, float* data, size_t n)
 {
-    std::ofstream ofs;
-    ofs.open(f, std::ios::out | std::ios::binary);
-    utils::check_fs(ofs, f, "for write");
+    std::ofstream ofs(f, std::ios::out | std::ios::binary);
+    utils::check_fs(ofs, f, "to write");
     ofs.write (reinterpret_cast<char*>(data, n*sizeof(float)));
 }
 #endif
@@ -121,6 +120,7 @@ void Volume_t::read_volume()
             n = reader.dim;
             d = reader.spacing;
             origin = reader.origin;
+            original_mha_origin = reader.origin;
             data.resize(nElements);
             import_from_metaimage<short>(reader.data);
             #if defined __DEBUG_OUTPUT_READ_CT__
@@ -251,7 +251,8 @@ void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file
     header << "BinaryData = True\n";
     header << "BinaryDataByteOrderMSB = False\n";
     header << "TransformMatrix = 1 0 0 0 1 0 0 0 1\n";
-    header << "Offset = " << CM2MM*origin.z << " " << CM2MM*origin.y << " " << CM2MM*origin.x << "\n";
+    header << "Offset = " << CM2MM*origin.z << " " << CM2MM*origin.y << " ";
+    header << CM2MM*origin.x << "\n";
     header << "CenterOfRotation = 0 0 0\n";
     header << "ElementSpacing = " << CM2MM*d.z << " " << CM2MM*d.y << " " << CM2MM*d.x << "\n";
     header << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";

@@ -217,6 +217,7 @@ void physical_range_shifter (const RShifter_steps_t& rshifter_steps,
             // to energies
             if (range_change_ave.at(i) < 0) {
                 rs.at(i).create(isocenter_to_beam_distance.at(i), range_change_ave.at(i));
+                rs.at(i).set_adapted();
             } else {
                 remaining_range_shift.at(i) = range_change_ave.at(i);
             }
@@ -300,7 +301,7 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                 rshifter_index = rshifter_steps.get_wepl_index(rshifter);
                 // Increase spot energies to compensate for the new range shifter
                 for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
-                    const float& E0 = temp.at(ispot + accu_spots);
+                    const float& E0 = temp.at(ispot);
                     const float R0 = e_r[0] + e_r[1]*E0/1e6 + e_r[2]*std::pow(E0/1e6, 2) +
                                      e_r[3]*std::pow(E0/1e6, 3) + e_r[4]*std::pow(E0/1e6, 4) +
                                      e_r[5]*std::pow(E0/1e6, 5);
@@ -308,7 +309,7 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                     const float E1 = std::pow(R/r_e[0], 1/r_e[1]) + std::pow(R/r_e[2], 1/r_e[3]) +
                                      std::pow(R/r_e[4], 1/r_e[5]);
                     // std::cerr << "Energy of spot @ beam: " << ispot << " @ " << ibeam << " = ";
-                    // std::cerr << temp.at(ispot + accu_spots)/1e6 << " MeV ";
+                    // std::cerr << temp.at(ispot)/1e6 << " MeV ";
                     // std::cerr << "changed to " << E1 << " MeV." << std::endl;
                     if (E1*1e6 > max_e) {
                         std::cerr << "WARNING! The range shifter to force energies too small to ";
@@ -321,7 +322,7 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                         no_errors = false;
                         break;
                     }
-                    temp.at(ispot + accu_spots) = E1*1e6;
+                    temp.at(ispot) = E1*1e6;
                 }
                 if (no_errors) {
                     std::copy(temp.begin(), temp.end(), energies.begin() + accu_spots);
@@ -332,6 +333,7 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                         rs.at(ibeam).set_wepl(rshifter);
                     } else {
                         rs.at(ibeam).create(isocenter_to_beam_distance.at(ibeam), rshifter);
+                        rs.at(ibeam).set_adapted();
                     }
                 } else {
                     // There were errors, cap energy to minimum!

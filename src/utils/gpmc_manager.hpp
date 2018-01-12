@@ -1,8 +1,9 @@
-#ifndef __OPT4D_MANAGER_HPP__
-#define __OPT4D_MANAGER_HPP__
+#ifndef __GPMC_MANAGER_HPP__
+#define __GPMC_MANAGER_HPP__
 
 #include "enviroment.hpp"
 #include "patient_parameters.hpp"
+#include "special_types.hpp"
 #include "vector4.hpp"
 
 #include <string>
@@ -13,11 +14,19 @@ class Gpmc_manager
 public:
     Gpmc_manager(Patient_Parameters_t pat_, std::string dosefile_,
                  std::string scorer_, std::string trampdir_,
-                 std::vector<std::string> tramp_files_);
+                 std::vector<std::string> tramp_files_,
+                 Vector3_t<float> iso_shift_);
     ~Gpmc_manager();
-    void write_templates();
+    void calculate_dij(float min, float max, bool toctgrid, std::vector<std::string> maskfile);
+    void calculate_dose(float sf);
+    void write_templates(bool add_mask, bool sum_beams);
+    void write_dose_files(float sf);
+    void write_dij_files(float min_p_spot, float max_p_spot,
+                         bool toctgrid, std::vector<std::string> maskfiles);
     void rescale_tramp_weigths(float min_p_spot, float max_p_spot);
-    void calculate_dij(float min, float max, bool toctgrid, std::string maskfile);
+
+    void launch_dij();
+    void launch_dose();
     void launch();
 private:
     Gpmc_manager();
@@ -28,7 +37,9 @@ private:
     std::string out_directory;
     std::string machine;
     std::string ct_volume;
+    std::vector<RangeShifter_Dims_t> range_shifters;
     std::vector<std::string> tramp_files;
+    Vector3_t<float> iso_shift;
 
     std::string result_name;
     std::string dose_file;
@@ -37,7 +48,7 @@ private:
     float min_p_per_spot_dij;
     float max_p_per_spot_dij;
     bool to_ct_grid;
-    std::string mask;
+    std::vector<std::string> masks;
     std::string trampdir;
     
     // default file names

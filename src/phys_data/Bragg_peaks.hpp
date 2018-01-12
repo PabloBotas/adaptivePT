@@ -6,7 +6,7 @@
 // XXXXXXXXXXXX elements
 namespace bragg_peaks
 {
-std::vector< std::vector<float> > factor =
+std::vector< std::vector<float>> factor =
 {
     
 };

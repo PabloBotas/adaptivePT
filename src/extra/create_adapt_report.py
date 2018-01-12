@@ -26,23 +26,24 @@ def find_range(a, margin=5., va=None):
     return [a_min - margin/100.*rng, a_max + margin/100.*rng]
 
 
-def is_outlier(value, p25, p75):
+def is_outlier(value, p0, p1):
     """Check if value is an outlier
     """
-    lower = p25 - 1.5 * (p75 - p25)
-    upper = p75 + 1.5 * (p75 - p25)
+    IQR = (p1 - p0)
+    lower = p0 - 1.5*IQR
+    upper = p1 + 1.5*IQR
     return value <= lower or value >= upper
  
  
 def get_indices_of_outliers(values):
     """Get outlier indices (if any)
     """
-    p25 = np.percentile(values, 25)
-    p75 = np.percentile(values, 75)
+    p0 = np.percentile(values, 10)
+    p1 = np.percentile(values, 90)
      
     indices_of_outliers = []
     for ind, value in enumerate(values):
-        if is_outlier(value, p25, p75):
+        if is_outlier(value, p0, p1):
             indices_of_outliers.append(ind)
     return indices_of_outliers
 
@@ -66,10 +67,46 @@ def add_rectangle(ax, x, y, width, height, color, alpha):
         )
     )
 
+def add_axis_frame(fig, ax, color, alpha=1):
+    ax.relim()
+    x = ax.get_xbound()
+    y = ax.get_ybound()
+    print(x,y)
+    rect = patches.Rectangle((x[0], 5.28),
+                             x[1]-x[0], 12.8-5.28,
+                             edgecolor='red', alpha=0.9,
+                             linewidth=4,
+                             fill=False)
+    rect.set_clip_on(False)
+    ax.add_patch(rect)
+
+def freedman_diaconis_bins(x):
+    r = find_range(x)
+    return int((r[1] - r[0])/(2*np.subtract(*np.percentile(x, [75, 25]))/np.power(len(x), 1/3)) + 1)
+
+
+def shimazaki_bins(x):
+    from scipy.optimize import minimize
+    r = np.max(x)-np.min(x)
+    delta = r/10
+    bnds = ((r/1000, None),)
+    def cost(delta):
+        # print(delta[0], int(r/delta[0] + 1), r)
+        k,_ = np.histogram(x, int(r/delta[0] + 1))
+        ave = np.mean(k)
+        v = np.var(k)
+        return (2*ave-v)/(delta[0]*delta[0])
+    result = minimize(cost, ((delta),), tol=1e-6, bounds=bnds)
+    return int(r/result.x+1)
+
+
+def optimal_n_bins(x):
+    return freedman_diaconis_bins(x)
+
 
 def analize_vf(vf_file, pp):
     r = np.genfromtxt(vf_file, skip_header=1, delimiter=' ',
-                      names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid']).T
+                      names=['vx', 'vy', 'vz', 'x', 'y', 'z', 'beamid', 'spotid', 'gantryangle', 'couchangle']).T
     vx = np.array(r['vx'])
     vy = np.array(r['vy'])
     vz = np.array(r['vz'])
@@ -78,6 +115,8 @@ def analize_vf(vf_file, pp):
     z = np.array(r['z'])
     beamid = np.array(r['beamid']).astype(int)
     spotid = np.array(r['spotid']).astype(int)
+    beamangle = np.array(r['gantryangle'])
+    couchangle = np.array(r['couchangle'])
 
     x = x if x.size > 1 else np.array([x])
     y = y if y.size > 1 else np.array([y])
@@ -87,6 +126,9 @@ def analize_vf(vf_file, pp):
     vz = vz if vz.size > 1 else np.array([vz])
     beamid = beamid if beamid.size > 1 else np.array([beamid])
     spotid = spotid if spotid.size > 1 else np.array([spotid])
+    beamangle = beamangle if beamangle.size > 1 else np.array([beamangle])
+    couchangle = couchangle if couchangle.size > 1 else np.array([couchangle])
+    beamangle = np.unique(beamangle)
 
     npoints = x.size
 
@@ -95,92 +137,119 @@ def analize_vf(vf_file, pp):
     ang_y = np.array([np.arccos(vy[i]/d[i]) if d[i] != 0 else 0 for i in range(npoints)])
     ang_z = np.array([np.arccos(vz[i]/d[i]) if d[i] != 0 else 0 for i in range(npoints)])
 
-    nbins = 25
-    nangles = 360
+    nbins = optimal_n_bins(d)
+    nangles1 = optimal_n_bins(ang_x)
+    nangles2 = optimal_n_bins(ang_y)
+    nangles3 = optimal_n_bins(ang_z)
 
-    fig = plt.figure(figsize = (10, 6))
+    fig = plt.figure(figsize=(10, 6))
+    ax1 = plt.subplot2grid((2, 12), (0, 0), colspan=3)
+    ax2 = plt.subplot2grid((2, 12), (0, 3), colspan=3, projection='polar')
+    ax3 = plt.subplot2grid((2, 12), (0, 6), colspan=3, projection='polar')
+    ax4 = plt.subplot2grid((2, 12), (0, 9), colspan=3, projection='polar')
+    ax5 = plt.subplot2grid((2, 12), (1, 0), colspan=4)
+    ax6 = plt.subplot2grid((2, 12), (1, 4), colspan=4)
+    ax7 = plt.subplot2grid((2, 12), (1, 8), colspan=4)
     fig.suptitle('Vector field analysis at endpoints')
 
-    ax = fig.add_subplot(2, 4, 1)
-    bins_y, bins_x = np.histogram(d, nbins)
+    # FIGURE 1, PLOT 1 --------------------------------
+    bins_y, bins_x = np.histogram(d, bins=nbins)
     cm = plt.cm.get_cmap('rainbow')
     hist_colors = [cm(((i-bins_x.min())/(bins_x.max()-bins_x.min()))) for i in bins_x]
-    ax.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1]-bins_x[0], alpha=0.75)
-    ax.set_xlabel('Vector size (cm)', fontsize=8)
+    ax1.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1]-bins_x[0], alpha=0.75)
+    ax1.set_xlabel('Vector size (cm)', fontsize=8)
 
-    ax = fig.add_subplot(2, 4, 2, projection='polar')
-    b, _, _ = ax.hist(ang_x, nangles, weights=d, histtype='step',
-                      alpha=1, color='r', fill=True, facecolor='r')
-    ax.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b)))
-    ax.set_rmax(np.round(1.05*max(b)))
-    ax.set_title('Angle x', fontsize=11)
-    ax = fig.add_subplot(2, 4, 3, projection='polar')
-    b, _, _ = ax.hist(ang_y, nangles, weights=d, histtype='step',
-                      alpha=1, color='r', fill=True, facecolor='r')
-    ax.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b)))
-    ax.set_rmax(np.round(1.05*max(b)))
-    ax.set_title('Angle y', fontsize=11)
-    txt="Angular histogram. Each probe of the vector field has a weight equal to its length."
-    ax.set_xlabel(r"\begin{center}\textit{\small{" + txt + r"}}\end{center}")
-    ax = fig.add_subplot(2, 4, 4, projection='polar')
-    b, _, _ = ax.hist(ang_z, nangles, weights=d, histtype='step',
-                      alpha=1, color='r', fill=True, facecolor='r')
-    ax.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b)))
-    ax.set_rmax(np.round(1.05*max(b)))
-    ax.set_title('Angle z', fontsize=11)
+    # FIGURE 1, POLAR PLOT 1 --------------------------------
+    weights = d/float(np.sum(d))
+    b, _, _ = ax2.hist(ang_x, nangles1, weights=weights, histtype='step',
+                      alpha=1, color='r')
+    ax2.set_rorigin(-0.4*max(b))
+    ax2.tick_params(direction='out', pad=-2)
+    ax2.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b), decimals=2))
+    ax2.set_title('Angle x', fontsize=11)
 
+    # FIGURE 1, POLAR PLOT 2 --------------------------------
+    b, _, _ = ax3.hist(ang_y, nangles2, weights=weights, histtype='step',
+                      alpha=1, color='r')
+    color_list = ['b', 'g', 'c', 'm', 'y', 'k']
+    for i,ang in enumerate(beamangle):
+        temp = ang + 270.0*np.pi/180
+        print((temp*180.0/np.pi) % 360.0)
+        ax3.axvline(x=temp, linewidth=20, alpha=0.2, label='beam '+str(i),
+                   zorder=0, color=color_list[i])
+    ax3.set_rorigin(-0.4*max(b))
+    ax3.tick_params(direction='out', pad=-2)
+    ax3.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b), decimals=2))
+    ax3.set_title('Angle y', fontsize=11)
+    leg = ax3.legend(shadow=True, fancybox=True)
+    for legobj in leg.legendHandles:
+        legobj.set_linewidth(2.0)
+
+    # FIGURE 1, POLAR PLOT 3 --------------------------------
+    b, _, _ = ax4.hist(ang_z, nangles3, weights=weights, histtype='step',
+                      alpha=1, color='r')
+    ax4.set_rorigin(-0.4*max(b))
+    ax4.tick_params(direction='out', pad=-2)
+    ax4.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b), decimals=2))
+    ax4.set_title('Angle z', fontsize=11)
+
+    # FIGURE 1, QUIVER PLOT 1 --------------------------------
     # Detect outliers
     outliers_x = get_indices_of_outliers(x)
     outliers_y = get_indices_of_outliers(y)
     outliers_z = get_indices_of_outliers(z)
     outliers = np.round(np.unique(np.concatenate((outliers_x, outliers_y, outliers_z)))).astype(int)
 
-    ax = fig.add_subplot(2, 3, 4)
     dummy = vx if vx.any() or vy.any() else np.full((npoints, 1), 0.00000001)
-    ax.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
-              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
-    ax.set_xlabel('pos x (cm)', fontsize=8)
-    ax.set_ylabel('pos y (cm)', fontsize=8)
+    ax5.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
+              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=1)
+    ax5.set_aspect('equal', 'datalim')
+    ax5.set_xlabel('pos x (cm)', fontsize=8)
+    ax5.set_ylabel('pos y (cm)', fontsize=8)
     # Detect outliers
     width = 0.05*(x.max()-x.min())
     height = 0.05*(y.max()-y.min())
     for circ in outliers:
-        add_ellipse(ax, x[circ]+0.5*dummy[circ], y[circ]+0.5*vy[circ], width, height, 'red')
-        ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
+        add_ellipse(ax5, x[circ]+0.5*dummy[circ], y[circ]+0.5*vy[circ], width, height, 'red')
+        ax5.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
                     xy=(x[circ], y[circ]), fontsize=6,
                     xytext=(x[circ], y[circ]))
 
-    ax = fig.add_subplot(2, 3, 5)
+    # FIGURE 1, QUIVER PLOT 2 --------------------------------
     dummy = vy if vy.any() or vz.any() else np.full((npoints, 1), 0.00000001)
-    ax.quiver(y, z, dummy, vz, d, angles='xy', scale_units='xy', scale=1,
-              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
-    ax.set_xlabel('pos y (cm)', fontsize=8)
-    ax.set_ylabel('pos z (cm)', fontsize=8)
+    ax6.quiver(y, z, dummy, vz, d, angles='xy', scale_units='xy', scale=1,
+              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=1)
+    ax6.set_aspect('equal', 'datalim')
+    ax6.set_xlabel('pos y (cm)', fontsize=8)
+    ax6.set_ylabel('pos z (cm)', fontsize=8)
     # Detect outliers
-    width = 0.05*(y.max()-y.min())
     height = 0.05*(z.max()-z.min())
+    width = 0.05*(y.max()-y.min())
     for circ in outliers:
-        add_ellipse(ax, y[circ]+0.5*dummy[circ], z[circ]+0.5*vz[circ], width, height, 'red')
-        ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
+        add_ellipse(ax6, y[circ]+0.5*dummy[circ], z[circ]+0.5*vz[circ], width, height, 'red')
+        ax6.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
                     xy=(y[circ], z[circ]), fontsize=6,
                     xytext=(y[circ], z[circ]))
 
-    ax = fig.add_subplot(2, 3, 6)
+    # FIGURE 1, QUIVER PLOT 3 --------------------------------
     dummy = vz if vz.any() or vx.any() else np.full((npoints, 1), 0.00000001)
-    ax.quiver(z, x, dummy, vx, d, angles='xy', scale_units='xy', scale=1,
-              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=0.75)
-    ax.set_xlabel('pos z (cm)', fontsize=8)
-    ax.set_ylabel('pos x (cm)', fontsize=8)
+    ax7.quiver(z, x, dummy, vx, d, angles='xy', scale_units='xy', scale=1,
+              cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=1)
+    ax7.set_aspect('equal', 'datalim')
+    ax7.set_xlabel('pos z (cm)', fontsize=8)
+    ax7.set_ylabel('pos x (cm)', fontsize=8)
     # Detect outliers
     width = 0.05*(z.max()-z.min())
     height = 0.05*(x.max()-x.min())
     for circ in outliers:
-        add_ellipse(ax, z[circ]+0.5*dummy[circ], x[circ]+0.5*vx[circ], width, height, 'red')
-        ax.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
+        add_ellipse(ax7, z[circ]+0.5*dummy[circ], x[circ]+0.5*vx[circ], width, height, 'red')
+        ax7.annotate('B' + str(beamid[circ]) + 'S' + str(spotid[circ]),
                     xy=(z[circ], x[circ]), fontsize=6,
                     xytext=(z[circ], x[circ]))
 
-    pp.savefig(fig, bbox_inches='tight')
+    fig.tight_layout()
+    # add_axis_frame(fig, ax5, 'red')
+    pp.savefig(fig, bbox_inches='tight', dpi='figure')
 
 
 def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
@@ -237,7 +306,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         number_layers = len(unique_energies)
         layer_id = np.array([int(np.squeeze(np.where(unique_energies == i))) for i in tramp_e])
 
-        fig = plt.figure(figsize = (10, 8))
+        fig = plt.figure(figsize = (10, 10))
         fig.suptitle('Tramp adaptations analysis. Beam: {}'.format(tramp_num))
 
         # FIGURE 1, PLOT 1 --------------------------------
@@ -248,8 +317,8 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
             layer = (tramp_e+de)[bool_mask]
             average = np.mean(layer)
             pos_text_y = 1.01*max(layer) if max(layer) > 1.05*layer_energy else 1.01*1.05*layer_energy
-            ax.annotate("{:.2f} %".format(
-                100*(average-layer_energy)/layer_energy), xy=(accu_len, pos_text_y), fontsize=4)
+            ax.annotate("{:.2f}".format(
+                100*(average-layer_energy)/layer_energy), xy=(accu_len, pos_text_y), fontsize=5)
             box_x0 = accu_len-1 if i != 0 else accu_len
             box_x1 = len(layer) if i != 0 else len(layer)-1
             add_rectangle(ax, box_x0, min(layer), box_x1, max(layer)-min(layer), 'blue', 0.1)
@@ -264,28 +333,35 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax.set_ylabel('Energy (MeV)', fontsize=7)
         ax.annotate('N. spots = ' + str(len(tramp_e)) + '\nOrig. layers  = ' +
                     str(number_layers) + '\nAdapt. layers = ' + str(len(np.unique(tramp_e+de))),
-                    xy=(5, min(min(tramp_e+de), min(tramp_e))), fontsize=6,
+                    xy=(5, min(min(tramp_e+de), min(tramp_e))), fontsize=7,
                     textcoords='axes fraction', xytext=(0.04, 0.04))
 
         # FIGURE 1, PLOT 2 --------------------------------
         ax = fig.add_subplot(4, 2, 2)
-        nbins = 25
         color_range = find_range(de, 0.)
+        if np.abs(color_range[0]) > np.abs(color_range[1]):
+            color_range = (-np.abs(color_range[0]), np.abs(color_range[0]))
+        else:
+            color_range = (-np.abs(color_range[1]), np.abs(color_range[1]))
         if color_range[0] == color_range[1]:
             color_range[0] -= 2
             color_range[0] += 2
-        xrange = find_range(de)
         cm = plt.cm.get_cmap('rainbow')
-        bins_y, bins_x = np.histogram(de, nbins)
+        bins_y, bins_x = np.histogram(de, bins=optimal_n_bins(de))
         hist_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in bins_x]
         ax.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1] - bins_x[0], alpha=0.75, linewidth=0)
-        ax.set_xlim(xrange)
+        ax.axvline(x=0, color='k', linewidth=1)
+        ax.set_xlim(find_range(de))
         ax.set_xlabel('Energy shift (MeV)', fontsize=7)
 
         # FIGURE 1, PLOT 3 --------------------------------
         ax = fig.add_subplot(4, 2, 3)
         cmap = plt.cm.get_cmap('rainbow')
         color_range = find_range(de, 0.)
+        if np.abs(color_range[0]) > np.abs(color_range[1]):
+            color_range = (-np.abs(color_range[0]), np.abs(color_range[0]))
+        else:
+            color_range = (-np.abs(color_range[1]), np.abs(color_range[1]))
         if color_range[0] == color_range[1]:
             color_range[0] -= 2
             color_range[0] += 2
@@ -293,29 +369,28 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
             if d[i] > 0.001:
                 ax.arrow(0.1 * vx[i] + tramp_x[i], 0.1 * vy[i] + tramp_y[i],
                          0.8 * vx[i], 0.8 * vy[i],
-                         fc='k', ec='k', alpha=0.15, zorder=0)
+                         fc='k', ec='k', alpha=0.25, zorder=0)
         scat_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in de]
         ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.25, zorder=1,
-                   edgecolors='black', alpha=0.5, facecolors='')
-        ax.scatter(x, y, s=10, linewidth=0.5, alpha=0.75, zorder=2, edgecolors='k',
+                   edgecolors='black', alpha=0.75, facecolors='')
+        ax.scatter(x, y, s=10, linewidth=0.5, alpha=1, zorder=2, edgecolors='k',
                    facecolors=scat_colors)
         ax.set_xlabel('X (mm)', fontsize=7)
         ax.set_ylabel('Y (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 4 --------------------------------
         ax = fig.add_subplot(4, 2, 4)
-        nbins = 25
         if d.max()-d.min() < 0.1:
-            ax.hist(d, bins=nbins, range=(d.min()-0.05, d.max()+0.05))
+            ax.hist(d, bins=optimal_n_bins(d), range=(d.min()-0.05, d.max()+0.05))
         else:
-            ax.hist(d, bins=nbins)
+            ax.hist(d, bins=optimal_n_bins(d))
         ax.set_xlabel('Shift size (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 5 --------------------------------
         ax = fig.add_subplot(4, 2, 5)
         ax.step(range(len(tramp_y)), tramp_y, color='black', alpha=0.5)
         ax.step(range(len(tramp_y)), y, color='blue', alpha=0.5)
-        ax.plot(y, linestyle='None', linewidth=0.5, color='red', marker='o', markersize=2)
+        ax.plot(y, linestyle='None', linewidth=1, color='red', marker='o', markersize=2)
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Slow dimension pos (mm)', fontsize=7)
         ax.annotate('N. spots = ' + str(len(tramp_e)) + '\n' +

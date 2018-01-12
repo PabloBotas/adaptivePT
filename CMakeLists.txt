@@ -92,30 +92,32 @@ endif()
 # endif()
 
 # Range shifter definitions
-set(RANGE_SHIFTER_THICKNESS 0.01 CACHE STRING "Thickness in cm of created range shifters (default is 0.01). The WEPL will be adjusted with the density.")
+set(RANGE_SHIFTER_THICKNESS "0.01" CACHE STRING "Thickness in cm of created range shifters (default
+                                                 is 0.01). The WEPL will be adjusted with the
+                                                 density.")
 string(TOLOWER ${RANGE_SHIFTER_THICKNESS} temp)
 if ("default" STREQUAL ${temp})
-    set(RANGE_SHIFTER_THICKNESS 0.01)
+    set(RANGE_SHIFTER_THICKNESS "0.01")
 elseif((NOT RANGE_SHIFTER_THICKNESS MATCHES "^[+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$") OR
     (RANGE_SHIFTER_THICKNESS LESS 0) OR
     (RANGE_SHIFTER_THICKNESS EQUAL 0))
     message(FATAL_ERROR "RANGE_SHIFTER_THICKNESS must be a number bigger than zero.")
 endif()
-add_definitions(-D__RANGE_SHIFTER_THICKNESS__)
+add_definitions(-D__RANGE_SHIFTER_THICKNESS__=${RANGE_SHIFTER_THICKNESS})
 
-set(RANGE_SHIFTER_DENSITY 1.15 CACHE STRING "Nominal density of the range shifter (default is 1.15).")
+set(RANGE_SHIFTER_DENSITY "1.15" CACHE STRING "Nominal density of the range shifter (default is
+                                               1.15).")
 string(TOLOWER ${RANGE_SHIFTER_DENSITY} temp)
 if ("default" STREQUAL ${temp})
-    set(RANGE_SHIFTER_DENSITY 1.15)
+    set(RANGE_SHIFTER_DENSITY "1.15")
 elseif((NOT RANGE_SHIFTER_DENSITY MATCHES "^[+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$") OR
     (RANGE_SHIFTER_DENSITY LESS 0) OR
     (RANGE_SHIFTER_DENSITY EQUAL 0))
     message(FATAL_ERROR "RANGE_SHIFTER_DENSITY must be a number bigger than zero.")
 endif()
-add_definitions(-D__RANGE_SHIFTER_DENSITY__)
+add_definitions(-D__RANGE_SHIFTER_DENSITY__=${RANGE_SHIFTER_DENSITY})
 
 option(RANGE_SHIFTER_STEPS "If the range shifter should be discretized and how." ON)
-set(RANGE_SHIFTER_DENSITY 1.15 CACHE STRING "If the range shifter should be discretized and how.")
 add_definitions(-D__RANGE_SHIFTER_DISCRETE_MGH__)
 
 add_subdirectory(src)

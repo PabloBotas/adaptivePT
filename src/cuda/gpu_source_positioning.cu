@@ -96,7 +96,7 @@ Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
 {
     Array4<float> off_endpoints = orig_endpoints;
     float4* dev_orig_endpoints = NULL;
-    array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, off_endpoints.data(), orig_endpoints.size());
+    array_to_device<float4, Vector4_t<float>>(dev_orig_endpoints, off_endpoints.data(), orig_endpoints.size());
 
     size_t num = off_endpoints.size();
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;

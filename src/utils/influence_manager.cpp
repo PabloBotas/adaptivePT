@@ -26,7 +26,7 @@ Influence_manager::Influence_manager(const Parser& parser_, const Patient_Parame
     ctdims(&pat.ct),
     ct_metadata(ct_metadata_),
     outputdir(parser_.out_dir),
-    ct_mask_file(parser_.ct_mask_file),
+    scoring_mask_files(parser_.scoring_mask_files),
     // Needed for structure sampling
     warper(warper_)
 {
@@ -138,14 +138,13 @@ void Influence_manager::get_dij(std::string outfile,
 
         if (save_memory) {
             positions.clear();
-            boundary_at_plan.clear();
         }
         
         influence_from_beam_model (outfile, influence, new_energies);
     } else if (engine == Adapt_methods_t::GPMC_DIJ) {
         Gpmc_manager gpmc(*patient_parameters, outfile, "dosedij", outputdir,
-                          patient_parameters->geometric_tramp_names);
-        gpmc.calculate_dij(1e5, 1e7, false, ct_mask_file);
+                          patient_parameters->geometric_tramp_names, warper.vf_ave);
+        gpmc.calculate_dij(1e5, 1e7, false, scoring_mask_files);
     } else if (engine == Adapt_methods_t::GPMC_DOSE) {
         // NOT IMPLEMENTED YET!!
     }
@@ -173,13 +172,12 @@ void Influence_manager::read_dose_file (std::string file, std::vector<float>& do
 
 void Influence_manager::structure_sampler ()
 {
-    // Read structure volume
-    Volume_t vol(ct_mask_file, Volume_t::Source_type::MHA);
-    vol.ext_to_int_coordinates();
+    const float mask_threshold = 0.5;
+    // Read structure volumes
+    Volume_t vol = utils::read_masks (scoring_mask_files, mask_threshold);
 
     // Store active voxel positions in array
     Array3<float> positions;
-    const float mask_threshold = 0.5;
     for (uint index = 0; index < vol.nElements; ++index) {
         if (vol.data.at(index) > mask_threshold) {
             Vector3_t<float> pos_temp;
@@ -188,35 +186,6 @@ void Influence_manager::structure_sampler ()
             idx_temp.x = index/(vol.n.y*vol.n.z) % vol.n.x;
             idx_temp.y = index/vol.n.z % vol.n.y;
             idx_temp.z = index % vol.n.z;
-            // Check if it's boundary of target and store it
-            bool is_boundary = false;
-            if (get_boundary) {
-                for (int i = -1; i <= 1; ++i) {
-                    for (int j = -1; j <= 1; ++j) {
-                        for (int k = -1; k <= 1; ++k) {
-                            if (i != 0 && j != 0 && k != 0) {
-                                if (idx_temp.x+i >= (int)vol.n.x || idx_temp.x+i < 0 ||
-                                    idx_temp.y+j >= (int)vol.n.y || idx_temp.y+j < 0 ||
-                                    idx_temp.z+k >= (int)vol.n.z || idx_temp.z+k < 0) {
-                                    is_boundary = true;
-                                    break;
-                                }
-                                uint index_bound = (idx_temp.z+k) + (idx_temp.y+j)*vol.n.z +
-                                                   (idx_temp.x+i)*vol.n.z*vol.n.y;
-                                if (vol.data.at(index_bound) < mask_threshold) {
-                                    is_boundary = true;
-                                    break;
-                                }
-                            }
-                            
-                        }
-                        if (is_boundary)
-                            break;
-                    }
-                    if (is_boundary)
-                        break;
-                }
-            }
             if (idx_temp.x >= (int)vol.n.x ||
                 idx_temp.y >= (int)vol.n.y ||
                 idx_temp.z >= (int)vol.n.z) {
@@ -227,8 +196,6 @@ void Influence_manager::structure_sampler ()
             pos_temp.y = vol.d.y * (idx_temp.y + 0.5);
             pos_temp.z = vol.d.z * (idx_temp.z + 0.5);
             positions.push_back(pos_temp);
-            if (get_boundary && is_boundary)
-                boundary_at_plan.push_back(pos_temp);
         }
     }
 
@@ -264,7 +231,12 @@ void Influence_manager::structure_sampler ()
         std::sort(rand_indexes.begin(), rand_indexes.end());
     }
     std::cout << " points (" << 100*float(n_voxels)/positions.size();
-    std::cout << " %) of structure in " << ct_mask_file << std::endl;
+    std::cout << " %) of mask(s) in ";
+    for (size_t i = 0; i < scoring_mask_files.size(); ++i) {
+        std::cout << "\"" << scoring_mask_files.at(i) << "\"" << std::endl;
+        if (i != scoring_mask_files.size()-1)
+            std::cout << ", ";
+    }
 
     for (uint i=0; i < n_voxels; ++i) {
         pos_at_plan.at(i).x = positions.at(rand_indexes.at(i)).x;

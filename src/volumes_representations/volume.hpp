@@ -20,8 +20,7 @@ struct Volume_metadata_t
 class Volume_t
 {
 public:
-    enum Source_type
-    {
+    enum Source_type {
         CTVOLUME,
         DOSE,
         MHA
@@ -59,6 +58,7 @@ private:
     Vector3_t<float> original_d;
     Vector3_t<float> original_origin;
     Vector3_t<float> original_imgCenter;
+    Vector3_t<float> original_mha_origin;
     void read_volume();
     template <class T>
     void import_from_metaimage(const std::vector<T>& data);

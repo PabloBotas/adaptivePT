@@ -71,7 +71,7 @@ void Opt4D_manager::write_templates()
         std::map<std::string, std::string> replace_map {
             {"MINAVERAGECONS", std::to_string(min_average_constrain)},
         };
-        utils::copy_file(template_plan_file, plan_file, replace_map);
+        utils::copy_replace_in_file(template_plan_file, plan_file, replace_map);
     } else {
         utils::copy_file(template_plan_file, plan_file);
     }
@@ -184,8 +184,8 @@ void Opt4D_manager::write_dij(const std::vector<float>& data)
 
     // Get non-zero values and indexes
     std::vector<int> non_zeros(n_spots, 0);
-    std::vector< std::vector<int> > indexes(n_spots);
-    std::vector< std::vector<short> > values(n_spots);
+    std::vector< std::vector<int>> indexes(n_spots);
+    std::vector< std::vector<short>> values(n_spots);
     for (size_t i = 0; i<n_spots; i++) {
         for (size_t j = 0; j<n_voxels; j++) {
             int index = n_voxels*i+j;

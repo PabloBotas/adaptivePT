@@ -38,8 +38,8 @@ template void array_to_device<float>(float*&, const float*, size_t);
 template void array_to_device<float2>(float2*&, const float2*, size_t);
 template void array_to_device<float3>(float3*&, const float3*, size_t);
 template void array_to_device<float4>(float4*&, const float4*, size_t);
-template void array_to_device<float4, Vector4_t<float> >(float4*&, const Vector4_t<float>*, size_t);
-template void array_to_device<float3, Vector3_t<float> >(float3*&, const Vector3_t<float>*, size_t);
+template void array_to_device<float4, Vector4_t<float>>(float4*&, const Vector4_t<float>*, size_t);
+template void array_to_device<float3, Vector3_t<float>>(float3*&, const Vector3_t<float>*, size_t);
 
 ///////////////////////////////////////
 
@@ -81,7 +81,10 @@ template void sendVectorToTexture<float>(size_t w, size_t h, size_t d,
                                          std::vector<float> host_vec,
                                          cudaArray* array,
                                          texture<float, 3, cudaReadModeElementType>& tex);
-
+template void sendVectorToTexture<int>(size_t w, size_t h, size_t d,
+                                       std::vector<int> host_vec,
+                                       cudaArray* array,
+                                       texture<int, 3, cudaReadModeElementType>& tex);
 ///////////////////////////////////////
 template <class T>
 __device__ __host__ void bubble_sort(T arr[], int n, int indx[])
@@ -106,4 +109,31 @@ __device__ __host__ void swap(T* a, T* b)
 template void swap(int*, int*);
 template void swap(float*, float*);
 
+///////////////////////////////////////
+__device__ void sum_kahan (float& old, const float& val, float& err) {
+    float change = val - err;
+    float new_val = old + val;
+    err = (new_val - old) - change;
+    old = new_val;
+}
 
+__device__ void sum_kahan (float3& old, const float3& val, float3& err) {
+    sum_kahan(old.x, val.x, err.x);
+    sum_kahan(old.y, val.y, err.y);
+    sum_kahan(old.z, val.z, err.z);
+}
+
+__device__ void sum_mul_kahan (float& old, const float& mult,
+                               const float& val, float& err) {
+    float change = __fmaf_rn(mult, val, -err);
+    float new_val = __fmaf_rn(mult, val, old);
+    err = (new_val - old) - change;
+    old = new_val;
+}
+
+__device__ void sum_mul_kahan (float3& old, const float3& mult,
+                               const float& val, float3& err) {
+    sum_mul_kahan(old.x, mult.x, val, err.x);
+    sum_mul_kahan(old.y, mult.y, val, err.y);
+    sum_mul_kahan(old.z, mult.z, val, err.z);
+}

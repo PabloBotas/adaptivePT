@@ -21,7 +21,7 @@ void do_raytrace (const std::vector<short>& spots_per_field,
     // Set up optional target endpoints
     float4* dev_orig_endpoints = NULL;
     if (!orig_endpoints.empty())
-        array_to_device<float4, Vector4_t<float> >(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
+        array_to_device<float4, Vector4_t<float>>(dev_orig_endpoints, orig_endpoints.data(), orig_endpoints.size());
 
     short* spf_gpu = NULL;
     array_to_device<short>(spf_gpu, spots_per_field.data(), spots_per_field.size());
