@@ -82,7 +82,10 @@ def add_axis_frame(fig, ax, color, alpha=1):
 
 def freedman_diaconis_bins(x):
     r = find_range(x)
-    return int((r[1] - r[0])/(2*np.subtract(*np.percentile(x, [75, 25]))/np.power(len(x), 1/3)) + 1)
+    perc = np.percentile(x, [75, 25])
+    if r[0] == r[1] or perc[0] == perc[1]:
+        return 1
+    return int((r[1] - r[0])/(2*np.subtract(*perc)/np.power(len(x), 1/3)) + 1)
 
 
 def shimazaki_bins(x):
