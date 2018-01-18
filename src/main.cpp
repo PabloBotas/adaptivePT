@@ -70,7 +70,7 @@ void export_shifts(const std::vector<float> e,
                    const short& beamid,
                    const Vector3_t<float>& isocenter_shift);
 
-void generate_report(const std::string& report_file,
+void generate_report(const std::string& vf_report_file,
                      const std::string& data_vf_file,
                      const std::string& data_shifts_file,
                      const std::string& out_dir,
@@ -171,14 +171,16 @@ int main(int argc, char** argv)
                     new_energies, weight_scaling,
                     warped_initpos, warped_endpoints, warper,
                     pat.adapted_tramp_names);
-    if (!parser.report_file.empty())
-        generate_report(parser.report_file, parser.data_vf_file, parser.data_shifts_file,
+
+    if (!parser.vf_report_file.empty()) {
+        generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
                         parser.out_plan, pat.tramp_files);
+    }
 
     // 10: Output files for gPMC simulation
     Gpmc_manager gpmc(pat, parser.dose_frac_file, "dose", parser.out_plan,
                       pat.adapted_tramp_names, warper.vf_ave);
-    gpmc.write_dose_files(5000000);
+    gpmc.write_dose_files(5000);
     if (parser.launch_adapt_simulation) {
         gpmc.launch();
     }
@@ -199,8 +201,6 @@ void compute_in_ct(const Patient_Parameters_t& pat,
                    Array4<float>& warped_initpos)
 {
     // Get endpoints in CT ----------------------------
-    endpoints.resize(pat.total_spots);
-    initpos.resize(pat.total_spots);
     Array4<float> initpos_xbuffer_dbg(pat.total_spots);
     gpu_raytrace_original (pat, parser, ct, endpoints, initpos_xbuffer_dbg, initpos);
 
@@ -277,7 +277,6 @@ void export_adapted(Patient_Parameters_t& pat,
             export_shifts(tramp.get_last_energy_shift_eV(), subset_weights_scaling,
                           subset_pat_pos, shifts_file, i, warper.vf_ave);
     }
-
 }
 
 void export_shifts(const std::vector<float> e,
@@ -316,7 +315,7 @@ void export_shifts(const std::vector<float> e,
     }
 }
 
-void generate_report(const std::string& report_file,
+void generate_report(const std::string& vf_report_file,
                      const std::string& data_vf_file,
                      const std::string& data_shifts_file,
                      const std::string& out_dir,
@@ -331,7 +330,7 @@ void generate_report(const std::string& report_file,
     for (size_t i = 0; i < tramp_files.size(); i++)
         tramps += tramp_files.at(i) + " ";
     std::string outdir = "--outdir " + out_dir + " ";
-    std::string outfile = "--outfile " + report_file;
+    std::string outfile = "--outfile " + vf_report_file;
     std::string command = interp + code + vf + shifts + tramps + outdir + outfile;
     std::cout << "Running: " << command << std::endl;
     int res = system(command.c_str());

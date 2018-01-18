@@ -11,11 +11,11 @@ __device__ Ray::Ray (float4 x_, float4 vx_, short2 ix_)
     pos.x  = x_.x;
     pos.y  = x_.y;
     pos.z  = x_.z;
-    wepl   = x_.w;
+    energy = x_.w;
     dir.x  = vx_.x;
     dir.y  = vx_.y;
     dir.z  = vx_.z;
-    energy = vx_.w;
+    wepl   = vx_.w;
     initial_energy = energy;
 
     beam_id = ix_.x;
@@ -123,6 +123,9 @@ __device__ void Ray::move (const float& step,
     sum_mul_kahan(pos, dir, step, error_pos);
     sum_kahan(energy, -de, error_energy);
     sum_kahan(wepl, step_water, error_wepl);
+    // pos += dir*step;
+    // energy -= de;
+    // wepl += step_water;
 
     if (energy <= stp_w_min_e)
         _alive = false;

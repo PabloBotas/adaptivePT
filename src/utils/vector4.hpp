@@ -20,6 +20,7 @@ public:
     Vector4_t(const Vector4_t<T> &obj);
     Vector4_t(const Vector2_t<T> &obj);
     Vector4_t(const Vector3_t<T> &obj);
+    Vector4_t(const Vector3_t<T> &obj, const T w_);
     void print(std::string sep = "\n") const;
     void print_as_3D(std::string sep = "\n") const;
     float length() const;

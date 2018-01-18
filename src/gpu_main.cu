@@ -39,12 +39,12 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
                                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z));
 
     gpuErrchk( cudaMemcpyFromSymbol(&(initpos[0].x), xdata, sizeof(float4)*xbuffer.size(), 0, cudaMemcpyDeviceToHost) );
-    // Copy buffer with initial positions and wepl
+    // Copy buffer with initial positions and energy
     for (size_t i = 0; i < xbuffer.size(); i++) {
         initpos_xbuffer_dbg.at(i).x = xbuffer[i].x;
         initpos_xbuffer_dbg.at(i).y = xbuffer[i].y;
         initpos_xbuffer_dbg.at(i).z = xbuffer[i].z;
-        initpos_xbuffer_dbg.at(i).w = xbuffer[i].w; // wepl
+        initpos_xbuffer_dbg.at(i).w = xbuffer[i].w; // energy
     }
 
     gpu_raytrace (pat, endpoints, parser.ct_traces_file);

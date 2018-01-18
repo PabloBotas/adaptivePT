@@ -89,15 +89,15 @@ void Parser::process_command_line(int argc, char** argv)
                             default_value(cbct_traces_file)->
                             implicit_value(implicit_cbct_traces_file),
                             "If the traces on the CBCT volume should be scored to a file.")
-        ("report",      po::value<std::string>(&report_file)->
-                            default_value(report_file)->
-                            implicit_value(implicit_report_file),
-                            "If a report should be generated. Requires out_vf and out_shifts "
-                            "options.")
+        ("vf_report",   po::value<std::string>(&vf_report_file)->
+                            default_value(vf_report_file)->
+                            implicit_value(implicit_vf_report_file),
+                            "If a report should be generated with information about the vector "
+                            "field and the subsequent spots movement. Requires out_vf and "
+                            "out_shifts options.")
         // Weight adjustment modes
         ("method",      po::value<std::string>(&adapt_method_str)->
-                            required()->
-                            implicit_value(adapt_method_geometric_str),
+                            default_value(adapt_method_geometric_str),
                             "Adaptation method to use. The code is able to adapt a plan to a given "
                             "fraction using several methods. The basic approach consists of a the "
                             "geometrical adaptation focusing only in position and energy shifts, "
@@ -159,10 +159,9 @@ void Parser::process_command_line(int argc, char** argv)
                             "The mask will be the union of all the files. If no file is provided, "
                             "the vector field will not be masked")
         ("mask",        po::value<std::vector<std::string>>()->
-                            multitoken()->
-                            required(),
+                            multitoken(),
                             "Binary image of one or more mask in CT to use during Dij calculation "
-                            " with the beam model, to feed to gPMC for Dij calculation or to "
+                            "with the beam model, to feed to gPMC for Dij calculation or to "
                             "evaluate the dose on.")
         // Launchers
         ("opt4D",       po::bool_switch(&launch_opt4D)->
@@ -267,6 +266,8 @@ void Parser::process_command_line(int argc, char** argv)
                 std::string ext = "." + utils::get_file_extension(dij_frac_file);
                 dij_plan_file = utils::replace_string(dij_frac_file, ext, "_at_plan"+ext);
                 std::cerr << dij_plan_file << std::endl;
+            } else if (scoring_mask_files.size() == 0) {
+                throw std::invalid_argument("No mask given to reduce estimation space of the Dij.");
             }
         } else if (adapt_method_str == adapt_method_gpmc_dij_str) {
             adapt_method = Adapt_methods_t::GPMC_DIJ;
@@ -276,17 +277,28 @@ void Parser::process_command_line(int argc, char** argv)
             } else if (dij_frac_file.empty()) {
                 throw std::invalid_argument("Name of output fraction Dij file is required when "
                                             "using gPMC for Dij reoptimization");
+            }  else if (scoring_mask_files.size() == 0) {
+                throw std::invalid_argument("No mask given to reduce calculation space of the Dij.");
             }
         } else if(adapt_method_str == adapt_method_cold_spots_str) {
             adapt_method = Adapt_methods_t::GPMC_DOSE;
-            if (dose_plan_file.empty())
+            if (dose_plan_file.empty()) {
                 throw std::invalid_argument("the plan dose is required when using gPMC for "
                                             "cold/hot spots correction");
+            }  else if (scoring_mask_files.size() == 0) {
+                throw std::invalid_argument("No mask given to reduce cold/hot spots correction "
+                                            "domain.");
+            }
         } else {
             throw std::invalid_argument("Unrecognized adaptation method \""+adapt_method_str+"\"!");
         }
        
         // ADAPT METHOD CONSTRAINTS
+        bool free = true;
+        bool v_range_shifter = false;
+        bool range_shifter = false;
+        bool iso_shift = false;
+        bool iso_shift_field = false;
         for (auto str: constraint_vec) {
             str = utils::toLower(str);
             if (str == adapt_constraint_free_str) {
@@ -370,7 +382,7 @@ void Parser::process_command_line(int argc, char** argv)
         }
 
         // REPORTING
-        if ( !report_file.empty() && ( data_shifts_file.empty() || data_vf_file.empty()))
+        if ( !vf_report_file.empty() && ( data_shifts_file.empty() || data_vf_file.empty()))
             throw std::invalid_argument("report option needs shifts and vf output");
 
         // CORRECT PATHS
@@ -388,8 +400,8 @@ void Parser::process_command_line(int argc, char** argv)
             cbct_traces_file = out_dir + '/' + cbct_traces_file;
 
         // CREATE OUTPUT DIRECTORIES
-        mkdir(out_dir.c_str(), 0774);
         mkdir(out_plan.c_str(), 0774);
+        mkdir(out_dir.c_str(), 0774);
         
         // NORMALIZE INPUTS
         machine = utils::toLower(machine);

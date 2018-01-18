@@ -70,6 +70,15 @@ Vector4_t<T>::Vector4_t(const Vector3_t<T> &obj)
 }
 
 template<class T>
+Vector4_t<T>::Vector4_t(const Vector3_t<T> &obj, const T w_)
+{
+    x = obj.x;
+    y = obj.y;
+    z = obj.z;
+    w = w_;
+}
+
+template<class T>
 void Vector4_t<T>::print(std::string sep) const
 {
     std::cout << x << "  ";

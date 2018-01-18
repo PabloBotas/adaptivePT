@@ -49,8 +49,8 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
             float energy = src.energies_internal.at(i)*MeV2eV; // eV
             float wepl   = src.wepls.at(i);                    // cm
 
-            xbuffer.push_back( make_float4(pos.x, pos.y, pos.z, wepl) );
-            vxbuffer.push_back( make_float4(dCos.x, dCos.y, dCos.z, energy) );
+            xbuffer.push_back( make_float4(pos.x, pos.y, pos.z, energy) );
+            vxbuffer.push_back( make_float4(dCos.x, dCos.y, dCos.z, wepl) );
             ixbuffer.push_back( make_short2(ibeam, i) );
         }
     }
@@ -72,16 +72,16 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
         float3 end   = make_float3(endpoints.at(i).x, endpoints.at(i).y, endpoints.at(i).z);
         float3 dir   = end - start;
         float3 dCos  = dir/length(dir);
-        float wepl   = init_pos.at(i).w;
-        float energy = endpoints.at(i).w;
+        float wepl   = endpoints.at(i).w;
+        float energy = init_pos.at(i).w;
         short2 meta  = get_beam_spot_id(i, pat.spots_per_field);
 
         int3 nvox   = make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z);
         float3 dvox = make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
         float3 start2 = ray_trace_to_CT_volume(start, dCos, nvox, dvox);
 
-        xbuffer.at(i)  = make_float4(start2, wepl);
-        vxbuffer.at(i) = make_float4(dCos, energy);
+        xbuffer.at(i)  = make_float4(start2, energy);
+        vxbuffer.at(i) = make_float4(dCos, wepl);
         ixbuffer.at(i) = meta;
 
         // printf("%d - 0 - %f %f %f - %f %f %f - %f %f %f - %f %f %f - %f %f %f\n", 

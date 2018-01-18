@@ -71,7 +71,7 @@ void Gpmc_manager::calculate_dose(float spot_factor_)
 
 void Gpmc_manager::write_dose_files(float spot_factor_)
 {
-    to_ct_grid = false;
+    to_ct_grid = true;
     spot_factor = spot_factor_;
     write_templates(false, true);
 }

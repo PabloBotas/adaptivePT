@@ -377,6 +377,117 @@ inline __host__ __device__ uint4 make_uint4(int4 a)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// equal comparison
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ bool operator==(const int2& a, const int2& b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+inline __host__ __device__ bool operator==(const uint2& a, const uint2& b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+inline __host__ __device__ bool operator==(const float2& a, const float2& b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+inline __host__ __device__ bool operator==(const double2& a, const double2& b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+
+inline __host__ __device__ bool operator==(const int3& a, const int3& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+inline __host__ __device__ bool operator==(const uint3& a, const uint3& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+inline __host__ __device__ bool operator==(const float3& a, const float3& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+inline __host__ __device__ bool operator==(const double3& a, const double3& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+inline __host__ __device__ bool operator==(const int4& a, const int4& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+inline __host__ __device__ bool operator==(const uint4& a, const uint4& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+inline __host__ __device__ bool operator==(const float4& a, const float4& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+inline __host__ __device__ bool operator==(const double4& a, const double4& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// different comparison
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ bool operator!=(const int2& a, const int2& b)
+{
+    return a.x != b.x || a.y != b.y;
+}
+inline __host__ __device__ bool operator!=(const uint2& a, const uint2& b)
+{
+    return a.x != b.x || a.y != b.y;
+}
+inline __host__ __device__ bool operator!=(const float2& a, const float2& b)
+{
+    return a.x != b.x || a.y != b.y;
+}
+inline __host__ __device__ bool operator!=(const double2& a, const double2& b)
+{
+    return a.x != b.x || a.y != b.y;
+}
+
+inline __host__ __device__ bool operator!=(const int3& a, const int3& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z;
+}
+inline __host__ __device__ bool operator!=(const uint3& a, const uint3& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z;
+}
+inline __host__ __device__ bool operator!=(const float3& a, const float3& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z;
+}
+inline __host__ __device__ bool operator!=(const double3& a, const double3& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z;
+}
+
+inline __host__ __device__ bool operator!=(const int4& a, const int4& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z || a.w != b.w;
+}
+inline __host__ __device__ bool operator!=(const uint4& a, const uint4& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z || a.w != b.w;
+}
+inline __host__ __device__ bool operator!=(const float4& a, const float4& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z || a.w != b.w;
+}
+inline __host__ __device__ bool operator!=(const double4& a, const double4& b)
+{
+    return a.x != b.x || a.y != b.y || a.z != b.z || a.w != b.w;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // negate
 ////////////////////////////////////////////////////////////////////////////////
 

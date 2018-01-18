@@ -229,7 +229,7 @@ void Warper_t::warp_init_points (Array4<float>& init_pos,
         //     std::cout << "X:  " << X.x << " " << X.y << " " << X.z << std::endl;
         // }
 
-        init_pos.at(i) = X;
+        init_pos.at(i) = Vector4_t<float>(X, init_pos.at(i).w);
     }
 }
 

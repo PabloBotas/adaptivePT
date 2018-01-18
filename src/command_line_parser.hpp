@@ -28,7 +28,7 @@ public:
     std::string data_vf_file;
     std::string ct_traces_file;
     std::string cbct_traces_file;
-    std::string report_file;
+    std::string vf_report_file;
     // Launchers
     bool launch_opt4D = false;
     bool launch_adapt_simulation = false;
@@ -68,13 +68,6 @@ private:
     // std::string scoring_mask_files_str;
     // std::string v_field_mask_files_str;
 
-    // SHIFTS CONSTRAINS VARIABLES
-    bool free = false;
-    bool v_range_shifter = false;
-    bool range_shifter = false;
-    bool iso_shift = false;
-    bool iso_shift_field = false;
-
     // Influence engines variables
     bool influence_engine_beam_model = false;
     bool influence_engine_gpmc_dij   = false;
@@ -86,7 +79,7 @@ private:
     std::string implicit_data_shifts_file = std::string("shifts.dat");
     std::string implicit_ct_traces_file   = std::string("ct_traces.mhd");
     std::string implicit_cbct_traces_file = std::string("cbct_traces.mhd");
-    std::string implicit_report_file      = std::string("adapt_report.pdf");
+    std::string implicit_vf_report_file   = std::string("adapt_vf_report.pdf");
     std::string default_dose_frac_file    = std::string("DoseFrac");
     std::string default_dij_frac_file     = std::string("DijFrac");
     
