@@ -158,9 +158,7 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
                 info = set_info_dims(info, len(mc_data))
                 ranges['x'] = np.arange(info[ibeam]['nx']) * info[ibeam]['dx']
 
-            if nspots < 10:
-                print("    Spot {} ...".format(idose))
-            elif idose % 10 == 0:
+            if nspots < 10 or idose % 10 == 0:
                 print("    Spot {} ...".format(idose))
             mc_data = mc_data.reshape((info[ibeam]['nz'], info[ibeam]['ny'], info[ibeam]['nx']))
             ray_data = ray_data.reshape((info[ibeam]['nz'], info[ibeam]['ny'], info[ibeam]['nx']))
@@ -202,8 +200,8 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
                 y, x = np.where(ray_data > 0.)
                 pol = np.poly1d(np.polyfit(x, y, 1))
                 ax = fig.add_subplot(rows_per_figure, 3, 3*(idose % rows_per_figure) + 1)
-                ax.imshow(mc_data, aspect='auto', origin='lower', alpha=0.8)
-                ax.plot(x, pol(x), color='black')
+                ax.imshow(mc_data, aspect='auto', origin='lower')
+                ax.plot(x, pol(x), color='black', alpha=0.25)
                 ax.set_xlim([0, mc_data.shape[0]])
                 ax.set_ylim([0, mc_data.shape[1]])
                 ax.annotate("Spot {}".format(idose), xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - 5, 0),
@@ -212,7 +210,7 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
 
                 # DDD
                 ax = fig.add_subplot(rows_per_figure, 3, 3*(idose % rows_per_figure) + 2)
-                ax.plot(mc_dd, color='black')
+                ax.plot(mc_dd, color='black', linewidth=0.75)
                 for i in ['r90', 'r80', 'r50']:
                     x = ranges[i][-1]; y = mc_dd[int(ranges[i][-1])]
                     ax.plot(x, y, 'or', markersize=2)
@@ -223,7 +221,7 @@ def get_ranges(mc_list, rays_list, info, nspots, plot_profiles, outfile):
 
                 # PROFILE
                 ax = fig.add_subplot(rows_per_figure, 3, 3*(idose % rows_per_figure) + 3)
-                ax.plot(mc_prof, color='black')
+                ax.plot(mc_prof, color='black', linewidth=0.75)
                 ax2 = ax.twinx()
                 ax2.plot(ray_prof, linewidth=0.2, color='blue')
                 ax2.yaxis.set_ticklabels([])
