@@ -132,9 +132,9 @@ __host__ __device__ int getabs(int xvox, int yvox, int zvox, int ny, int nz)
 __device__ int4 get_voxel (float3 pos)
 {
     int4 vox;
-    vox.x = floor(pos.x/ctVoxSize.x);
-    vox.y = floor(pos.y/ctVoxSize.y);
-    vox.z = floor(pos.z/ctVoxSize.z);
+    vox.x = int(floor(pos.x/ctVoxSize.x)+0.5);
+    vox.y = int(floor(pos.y/ctVoxSize.y)+0.5);
+    vox.z = int(floor(pos.z/ctVoxSize.z)+0.5);
     // Check if in CT grid
     if (vox.x < 0 || vox.x >= ctVox.x ||
         vox.y < 0 || vox.y >= ctVox.y ||
