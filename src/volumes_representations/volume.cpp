@@ -82,8 +82,8 @@ void Volume_t::freeMemory()
 void debug_ct(std::string f, float* data, size_t n)
 {
     std::ofstream ofs(f, std::ios::out | std::ios::binary);
-    utils::check_fs(ofs, f, "to write");
-    ofs.write (reinterpret_cast<char*>(data, n*sizeof(float)));
+    utils::check_fs(ofs, f, "to write and debug volume");
+    ofs.write (reinterpret_cast<char*>(data), n*sizeof(float));
 }
 #endif
 
