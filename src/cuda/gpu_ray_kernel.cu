@@ -14,12 +14,16 @@ __global__ void raytrace_plan_kernel(const ushort num,
 {
     const int thread = blockIdx.x*blockDim.x + threadIdx.x;
     if (thread < num) {
+
+        
+
         Ray ray(xdata[thread], vxdata[thread], ixdata[thread]);
         size_t const ind = get_endpoints_index(ray.get_beam_id(),
                                                ray.get_spot_id(),
                                                spots_per_field);
         ray.set_wepl(0);
         int4 vox = get_voxel(ray.get_position());
+
         bool if_correct_energy = orig_endpoints ? true : false;
         bool entered_mask = false;
         bool vox_in_mask = false;
@@ -31,7 +35,6 @@ __global__ void raytrace_plan_kernel(const ushort num,
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
         const float initial_energy = ray.get_energy();
-        // pos_scorer[ind].w = initial_energy;
 
         while (ray.is_alive() && vox.w >= -1) {
             float step_water = 0, step = 0, de = 0;
@@ -56,9 +59,6 @@ __global__ void raytrace_plan_kernel(const ushort num,
                 }
             }
 
-            // if (thread == 0)
-                // printf("%f %f %f %f %f\n",
-                       // initial_energy, step, step_water, ray.get_wepl(), ray.get_energy());
             // This lines return to the old behavior without the mask
             // sample_pos = ray.get_position();
             // sample_vox = vox.w;
@@ -126,31 +126,23 @@ __global__ void raytrace_plan_kernel(const ushort num,
 
             const float delta_wepl = (accu_wepl + sign*ray.get_wepl()) - orig_wepl;
             const float total_wepl = accu_wepl + delta_wepl;
-            const float i_alpha1 = 2.97706178;
-            const float i_alpha2 = 9.60320348e+02;
-            const float i_alpha3 = 7.32441249e+07;
-            const float i_p1 = 8.70526438e-01;
-            const float i_p2 = 4.99299201e-01;
-            const float i_p3 = -2.11977495e+01;
-            const float E = 1e6*(powf(total_wepl*i_alpha1, i_p1) + powf(total_wepl*i_alpha2, i_p2) +
-                            powf(total_wepl*i_alpha3, i_p3));
 
-            // const float alpha1 = 1.63455120e-05;
-            // const float alpha2 = 7.72957942e-04;
-            // const float alpha3 = 3.07077098e-14;
-            // const float p1 = 1.80084932;
-            // const float p2 = 0.669078092;
-            // const float p3 = 1.80100517;
-            // const float E = powf(total_wepl/alpha1, 1/p1) +
-            //                 powf(total_wepl/alpha2, 1/p2) +
-            //                 powf(total_wepl/alpha3, 1/p3);
-
-            // const float E = 1e6*(0.0002658*powf(total_wepl, 3) + 0.007914*total_wepl*total_wepl +
-            //                 0.5202*total_wepl + 3.515);
-
-            printf("%d %f %f %f %f %f %f %f\n",
-                    thread, E, initial_energy, total_wepl, accu_wepl, sign*ray.get_wepl(),
-                    orig_wepl, delta_wepl);
+            const float alpha1 = 61178.8728306583;
+            const float alpha2 = 1293.73145117383;
+            const float alpha3 = 32565111710154.3;
+            const float p1 = 0.555293543;
+            const float p2 = 1.494593848;
+            const float p3 = 0.555245491;
+            // This will calibrate the curve to the vicinity of the energy
+            // My observations say that I have errors of about ~0.3 % in energy,
+            // but this simple approach cuts them down to 0.0001703...
+            const float E0 = powf(orig_wepl*alpha1, p1) +
+                             powf(orig_wepl*alpha2, p2) +
+                             powf(orig_wepl*alpha3, p3);
+            const float E = initial_energy/E0 *(
+                            powf(total_wepl*alpha1, p1) +
+                            powf(total_wepl*alpha2, p2) +
+                            powf(total_wepl*alpha3, p3));
 
             // float dev = 100*(E - initial_energy)/initial_energy;
             // // Coerce change to 0.25% steps
