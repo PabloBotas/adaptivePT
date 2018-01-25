@@ -163,9 +163,9 @@ def analize_vf(vf_file, pp):
     ax1.set_xlabel('Vector size (cm)', fontsize=8)
 
     # FIGURE 1, POLAR PLOT 1 --------------------------------
-    weights = d/float(np.sum(d))
+    weights = d/float(np.sum(d)) if np.any(d) else np.ones_like(d)
     b, _, _ = ax2.hist(ang_x, nangles1, weights=weights, histtype='step',
-                      alpha=1, color='r')
+                       alpha=1, color='r')
     ax2.set_rorigin(-0.4*max(b))
     ax2.tick_params(direction='out', pad=-2)
     ax2.set_rticks(np.round(np.array([0.25, 0.5, 0.75, 1])*max(b), decimals=2))
