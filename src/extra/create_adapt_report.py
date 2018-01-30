@@ -81,10 +81,10 @@ def add_axis_frame(fig, ax, color, alpha=1):
     ax.add_patch(rect)
 
 def freedman_diaconis_bins(x):
-    r = find_range(x)
+    r = [x.min(), x.max()]
     perc = np.percentile(x, [75, 25])
-    if r[0] == r[1] or perc[0] == perc[1]:
-        return 1
+    if r[0] - r[1] < 1e-10 or perc[0] - perc[1] < 1e-10:
+        return 5
     return int((r[1] - r[0])/(2*np.subtract(*perc)/np.power(len(x), 1/3)) + 1)
 
 
@@ -177,6 +177,7 @@ def analize_vf(vf_file, pp):
     color_list = ['b', 'g', 'c', 'm', 'y', 'k']
     for i,ang in enumerate(beamangle):
         temp = ang + 270.0*np.pi/180
+        # temp = np.pi
         print((temp*180.0/np.pi) % 360.0)
         ax3.axvline(x=temp, linewidth=20, alpha=0.2, label='beam '+str(i),
                    zorder=0, color=color_list[i])
@@ -204,11 +205,13 @@ def analize_vf(vf_file, pp):
     outliers = np.round(np.unique(np.concatenate((outliers_x, outliers_y, outliers_z)))).astype(int)
 
     dummy = vx if vx.any() or vy.any() else np.full((npoints, 1), 0.00000001)
-    ax5.quiver(x, y, dummy, vy, d, angles='xy', scale_units='xy', scale=1,
+    ax5.quiver(y, x, vy, dummy, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=1)
+    ax5.invert_yaxis()
     ax5.set_aspect('equal', 'datalim')
-    ax5.set_xlabel('pos x (cm)', fontsize=8)
-    ax5.set_ylabel('pos y (cm)', fontsize=8)
+    ax5.set_title('Yellow view', fontsize=10)
+    ax5.set_xlabel('pos y (cm)', fontsize=8)
+    ax5.set_ylabel('pos x (cm)', fontsize=8)
     # Detect outliers
     width = 0.05*(x.max()-x.min())
     height = 0.05*(y.max()-y.min())
@@ -220,11 +223,13 @@ def analize_vf(vf_file, pp):
 
     # FIGURE 1, QUIVER PLOT 2 --------------------------------
     dummy = vy if vy.any() or vz.any() else np.full((npoints, 1), 0.00000001)
-    ax6.quiver(y, z, dummy, vz, d, angles='xy', scale_units='xy', scale=1,
+    ax6.quiver(z, y, vz, dummy, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=1)
+    ax6.invert_yaxis()
     ax6.set_aspect('equal', 'datalim')
-    ax6.set_xlabel('pos y (cm)', fontsize=8)
-    ax6.set_ylabel('pos z (cm)', fontsize=8)
+    ax6.set_title('Red view', fontsize=10)
+    ax6.set_xlabel('pos z (cm)', fontsize=8)
+    ax6.set_ylabel('pos y (cm)', fontsize=8)
     # Detect outliers
     height = 0.05*(z.max()-z.min())
     width = 0.05*(y.max()-y.min())
@@ -238,7 +243,9 @@ def analize_vf(vf_file, pp):
     dummy = vz if vz.any() or vx.any() else np.full((npoints, 1), 0.00000001)
     ax7.quiver(z, x, dummy, vx, d, angles='xy', scale_units='xy', scale=1,
               cmap=plt.cm.get_cmap('rainbow'), pivot='tail', alpha=1)
+    ax7.invert_xaxis()
     ax7.set_aspect('equal', 'datalim')
+    ax7.set_title('Green view', fontsize=10)
     ax7.set_xlabel('pos z (cm)', fontsize=8)
     ax7.set_ylabel('pos x (cm)', fontsize=8)
     # Detect outliers
@@ -374,9 +381,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
                          0.8 * vx[i], 0.8 * vy[i],
                          fc='k', ec='k', alpha=0.25, zorder=0)
         scat_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in de]
-        ax.scatter(tramp_x, tramp_y, s=10, linewidth=0.25, zorder=1,
+        ax.scatter(tramp_x, tramp_y, s=8, linewidth=0.25, zorder=1,
                    edgecolors='black', alpha=0.75, facecolors='')
-        ax.scatter(x, y, s=10, linewidth=0.5, alpha=1, zorder=2, edgecolors='k',
+        ax.scatter(x, y, s=12, linewidth=0.5, alpha=1, zorder=2, edgecolors='k',
                    facecolors=scat_colors)
         ax.set_xlabel('X (mm)', fontsize=7)
         ax.set_ylabel('Y (mm)', fontsize=7)
