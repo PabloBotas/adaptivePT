@@ -3,6 +3,7 @@
 #include "program_options.hpp"
 #include "special_types.hpp"
 #include "utils.hpp"
+#include "volume_vf_reader.hpp"
 
 #include <cmath>
 #include <fstream>
@@ -43,7 +44,7 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
                               const std::vector<short>& spots_per_field,
                               const Adapt_constraints_t options)
 {
-    probe (endpoints, ct);
+    probe_plastimatch (endpoints, ct);
     set_average();
     apply_position_options(options, spots_per_field);
     if (exp_file)
@@ -58,7 +59,7 @@ Array4<float> Warper_t::apply_to_points (const Array4<float>& pos,
                                          const CT_Dims_t& ct,
                                          Vector3_t<float>* ave)
 {
-    probe (pos, ct);
+    probe_plastimatch (pos, ct);
     Array4<float> newpos(pos.size());
     newpos.assign(pos.begin(), pos.end());
     warp_points (newpos, ave);
@@ -316,7 +317,7 @@ void Warper_t::set_probes (const Array4<float>& p)
     }
 }
 
-void Warper_t::probe (const Array4<float>& p, const CT_Dims_t& ct)
+void Warper_t::probe_plastimatch (const Array4<float>& p, const CT_Dims_t& ct)
 {
     set_probes(p);
 
@@ -344,6 +345,7 @@ void Warper_t::probe (const Array4<float>& p, const CT_Dims_t& ct)
 
     // plastimatch probe --location "0 0 0; 0.5 0.5 0.5; 1 1 1" infile.nrrd
     // Build command
+    // TODO: this approach works if VF and CT share dimensions and binning
     std::string str;
     size_t elements = probes.size();
     const size_t locs_per_batch = 3000;
@@ -351,18 +353,20 @@ void Warper_t::probe (const Array4<float>& p, const CT_Dims_t& ct)
     for (size_t batch = 0; batch < nbatches; batch++) {
         std::string locations;
         for (size_t i = batch*locs_per_batch; i < elements && i < (batch+1)*locs_per_batch; i++) {
-            Vector4_t<float> temp;
-            temp.x = ct.n.x*ct.d.x - probes.at(i).x + origins.x;
-            temp.y = probes.at(i).y + origins.y;
-            temp.z = probes.at(i).z + origins.z;
-            locations += to_location_str(temp, i+1 == elements && i+1 == (batch+1)*locs_per_batch);
+            Vector3_t<uint> idx;
+            idx.x = probes.at(i).x/ct.d.x;
+            idx.y = probes.at(i).y/ct.d.y;
+            idx.z = probes.at(i).z/ct.d.z;
+            idx.x = ct.n.x - idx.x - 1;
+            std::swap(idx.x, idx.z);
+            locations += to_location_str(idx, i+1 == elements && i+1 == (batch+1)*locs_per_batch);
         }
-        std::string cmd = "plastimatch probe --location \"";
+        std::string cmd = "plastimatch probe --index \"";
         cmd += locations + "\" ";
         cmd += file + " 2>&1";
 
         // Run command
-        str += utils::run_command(cmd);
+        str = utils::run_command(cmd);
     }
 
     // Get vf from stdout
@@ -383,15 +387,63 @@ void Warper_t::probe (const Array4<float>& p, const CT_Dims_t& ct)
                 ss_per_space >> dummy;
                 ss_per_space >> dummy >> dummy >> dummy;
                 ss_per_space >> dummy >> dummy >> dummy;
-                ss_per_space >> z >> y >> x;
+                ss_per_space >> x >> y >> z;
             }
             // Change cordinate system and units
-            v.x = x/10;
+            v.x = z/10;
             v.y = -y/10;
-            v.z = -z/10;
+            v.z = -x/10;
             // Store
+            // printf("%f %f %f || ", v.x, v.y, v.z);
             vf.push_back(v);
         }
+        printf("\n");
+    }
+}
+
+void Warper_t::probe_internal (const Array4<float>& p, const CT_Dims_t& ct)
+{
+    std::cout << "Probing vector field ..." << std::endl;
+    // Get vector field image
+    if ( ! (utils::ends_with_string(file, ".mha") || 
+            utils::ends_with_string(file, ".mhd")) ) {
+        std::string ext = utils::get_file_extension(file);
+        std::string trans_cmd;
+        trans_cmd = "plastimatch xf-convert --input " + file;
+        file = utils::replace_string(file, ext, "mha");
+        trans_cmd += " --output " + file +
+                     " --output-type vf";
+
+        std::string temp = utils::run_command(trans_cmd);
+        std::cout << temp << std::endl;
+    }
+
+    set_probes(p);
+    Vf_reader_t vol(file);
+    vol.to_int_coordinates();
+
+    if (vf.size() > 0)
+        vf.clear();
+    vf.reserve(p.size());
+
+    for (size_t i = 0; i < p.size(); ++i) {
+        Vector3_t<float> temp;
+        temp.x = p.at(i).x + (ct.origin.x - ct.n.x*ct.d.x + ct.d.x/2)
+                           - (vol.origin.x - vol.n.x*vol.d.x + vol.d.x/2);
+        temp.y = p.at(i).y - (ct.origin.y + ct.n.y*ct.d.y - ct.d.y/2)
+                           + (vol.origin.y + vol.n.y*vol.d.y - vol.d.y/2);
+        temp.z = p.at(i).z - (ct.origin.z + ct.n.z*ct.d.z - ct.d.z/2)
+                           + (vol.origin.z + vol.n.z*vol.d.z - vol.d.z/2);
+        Vector3_t<int> vox;
+        vox.x = int(floor(temp.x/vol.d.x)+0.5);
+        vox.y = int(floor(temp.y/vol.d.y)+0.5);
+        vox.z = int(floor(temp.z/vol.d.z)+0.5);
+        size_t absvox = vox.z + vox.y*vol.n.z + vox.x*vol.n.z*vol.n.y;
+        if (i == 5) {
+            Vector3_t<float> temp2 = vol.data.at(absvox);
+            std::cerr << "VF: " << temp2.x << " " << temp2.y << " " << temp2.z << std::endl;
+        }
+        vf.push_back(vol.data.at(absvox));
     }
 }
 
@@ -419,13 +471,13 @@ void Warper_t::flip_direction_X (Array4<float>& vec)
 }
 
 
-std::string Warper_t::to_location_str (const Vector3_t<float>& p,
+std::string Warper_t::to_location_str (const Vector3_t<uint>& p,
                                        const bool last)
 {
     std::string s;
-    s += std::to_string(p.z) + " " + 
+    s += std::to_string(p.x) + " " + 
          std::to_string(p.y) + " " + 
-         std::to_string(p.x);
+         std::to_string(p.z);
     if (!last)
         s += "; ";
     return s;

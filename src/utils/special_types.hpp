@@ -27,6 +27,7 @@ struct Planes_t
 struct CT_Dims_t
 {
     Vector3_t<float> offset;
+    Vector3_t<float> origin;
     Vector3_t<float> isocenter;
     Vector3_t<float> d;
     Vector3_t<unsigned int> n;

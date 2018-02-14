@@ -12,8 +12,10 @@
 class Gpmc_manager
 {
 public:
-    Gpmc_manager(Patient_Parameters_t pat_, std::string dosefile_,
-                 std::string scorer_, std::string trampdir_,
+    Gpmc_manager(Patient_Parameters_t pat_, std::string new_patient,
+                 std::string dosefile_,
+                 std::string scorer_, std::string outdir_,
+                 std::string tramp_dir_,
                  std::vector<std::string> tramp_files_,
                  Vector3_t<float> iso_shift_);
     ~Gpmc_manager();
@@ -28,21 +30,25 @@ public:
     void launch_dij();
     void launch_dose();
     void launch();
+    std::string get_total_dose_file();
+    std::vector<std::string> get_field_dose_files();
+    std::vector<std::string> get_field_dij_files();
+    float get_to_Gy_factor();
 private:
     Gpmc_manager();
     
     std::string input_file;
     std::string launcher_file;
-    std::string pat_directory;
+    std::string patient;
     std::string out_directory;
     std::string machine;
     std::string ct_volume;
     std::vector<RangeShifter_Dims_t> range_shifters;
     std::vector<std::string> tramp_files;
+    std::vector<std::string> beam_names;
     Vector3_t<float> iso_shift;
 
-    std::string result_name;
-    std::string dose_file;
+    std::string result_name_root;
     std::string scorer;
     float spot_factor;
     float min_p_per_spot_dij;
@@ -50,7 +56,9 @@ private:
     bool to_ct_grid;
     std::vector<std::string> masks;
     std::string trampdir;
-    
+
+    uint nfractions = 30;
+
     // default file names
     std::string template_launcher_file = std::string(INSTALLATION_PATH) +
                                          "/src/extra/gpmc_launcher_template.sh";

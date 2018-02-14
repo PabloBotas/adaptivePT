@@ -14,14 +14,16 @@ public:
     Vf_reader_t(std::string file);
 
     std::string file;
-    Vector3_t<unsigned int> dim;
+    Vector3_t<unsigned int> n;
     unsigned int nElements;
-    Vector3_t<float> spacing;
+    Vector3_t<float> d;
     Vector3_t<float> origin;
     unsigned short nb;
     unsigned short type_id;
 
     Array3<float> data;
+
+    void to_int_coordinates();
 
 private:
     void read_file();

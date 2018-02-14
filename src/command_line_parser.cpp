@@ -42,7 +42,9 @@ Parser::~Parser()
 
 void Parser::process_command_line(int argc, char** argv)
 {
-    po::options_description desc("Allowed options", terminal_width, terminal_width/2);
+    // po::options_description desc("Allowed options. Please, read carefully for proper usage!!",
+    //                              terminal_width, terminal_width/2);
+    po::options_description desc("Allowed options. Please, read carefully for proper usage!!");
     try {
         desc.add_options()
         ("help", "Produce this help message.")
@@ -50,9 +52,12 @@ void Parser::process_command_line(int argc, char** argv)
                         default_value(skip_cbct),
                         "If the calculation on the CBCT should be skipped for debugging purposes.")
         // Common parameters
-        ("patient",     po::value<std::string>(&patient)->
+        ("plan_dir",    po::value<std::string>(&patient)->
                             required(),
-                            "Patient directory as produced by MCAuto-Astroid.")
+                            "Base patient directory as produced by MCAuto-Astroid.")
+        ("adapt_dir",   po::value<std::string>(&new_patient)->
+                            required(),
+                            "New plan directory.")
         ("cbct",        po::value<std::string>(&cbct_file)->
                             required(),
                             "CBCT in MHA format to adapt the plan to.")
@@ -126,10 +131,14 @@ void Parser::process_command_line(int argc, char** argv)
         // Weight adjustment files
         ("plan_dose",   po::value<std::string>(&dose_plan_file),
                             "Plan dose distribution, usually from gPMC.")
+        ("field_plan_doses", po::value<std::vector<std::string>>()->
+                            multitoken(),
+                            "Plan dose distributions per field warped to be used as ground truth, "
+                            "Required if using cold spots adaptation. As output by gPMC or in mha.")
         ("frac_dose",   po::value<std::string>(&dose_frac_file)->
                             default_value(default_dose_frac_file)->
                             implicit_value(default_dose_frac_file),
-                            "File root of fraction dose distribution after physical adaptation. "
+                            "File root of fraction dose distribution after geometrical adaptation. "
                             "\".beam_#.dose\" will be appended to the string here passed. This is "
                             "an output file calculated with gPMC and then read for cold/hot spot "
                             "corrections.")
@@ -146,7 +155,8 @@ void Parser::process_command_line(int argc, char** argv)
                             "to the initial plan. Can be an output from the \"beam_model\" or the "
                             "\"gpmc_dij\" mode. Not necessary for geometric mode.")
         ("vf_mask",     po::value<std::vector<std::string>>()->
-                            multitoken(),
+                            multitoken()->
+                            implicit_value(std::vector<std::string>{""}, ""),
                             "Binary image of a mask in CT space. It represents the volume in which "
                             "the vector field is probed. Spots are raytraced in CT space and the "
                             "vector field is probed at the distal position along the beamlet "
@@ -156,13 +166,27 @@ void Parser::process_command_line(int argc, char** argv)
                             "position along the central axis. The spot will be moved according to "
                             "the vector field value at this position. It is recommended to pass an "
                             "expansion of the target volume. If more than one file are provided, "
-                            "The mask will be the union of all the files. If no file is provided, "
-                            "the vector field will not be masked")
-        ("mask",        po::value<std::vector<std::string>>()->
+                            "the mask will be the union of all the files. If the command is not "
+                            "provided, the vector field will not be masked.")
+        ("target_mask", po::value<std::vector<std::string>>()->
                             multitoken(),
-                            "Binary image of one or more mask in CT to use during Dij calculation "
-                            "with the beam model, to feed to gPMC for Dij calculation or to "
-                            "evaluate the dose on.")
+                            "Binary image of one or more masks in CBCT to be used during Dij "
+                            "calculation with the beam model, to feed to gPMC for Dij calculation, "
+                            "to evaluate the dose on or to feed to Opt4D as target for "
+                            "reoptimization.")
+        ("target_rim",  po::value<std::vector<std::string>>()->
+                            multitoken(),
+                            "Binary image of one or more mask in CBCT. It is used by Opt4D to try to "
+                            "keep the dose low outside the target.")
+        ("oars",        po::value<std::vector<std::string>>()->
+                            multitoken(),
+                            "Binary image of one or more mask of OARs in CBCT. Used by Opt4D to keep "
+                            "the dose low in these regions.")
+        ("presciption", po::value<float>(&dose_prescription)->
+                            default_value(dose_prescription),
+                            "Dose prescribed to the target. The current implementation only allows "
+                            "a single dose level and will be applied at the composite area covered "
+                            "by to the \"mask\".")
         // Launchers
         ("opt4D",       po::bool_switch(&launch_opt4D)->
                             default_value(launch_opt4D),
@@ -240,14 +264,41 @@ void Parser::process_command_line(int argc, char** argv)
 
 
         // MULTITOKEN OPTIONS
-        if (!vm["mask"].empty())
-            scoring_mask_files = vm["mask"].as<std::vector<std::string>>();
+        if (!vm["target_mask"].empty())
+            target_mask_files = vm["target_mask"].as<std::vector<std::string>>();
+        if (!vm["target_rim"].empty())
+            target_rim_files = vm["target_rim"].as<std::vector<std::string>>();
+        if (!vm["oars"].empty())
+            oars_files = vm["oars"].as<std::vector<std::string>>();
         if (!vm["vf_mask"].empty())
             v_field_mask_files = vm["vf_mask"].as<std::vector<std::string>>();
-        if (!vm["constraint"].empty())
+        if (!vm["constraint"].empty()) {
             constraint_vec = vm["constraint"].as<std::vector<std::string>>();
+            for (size_t i=0; i<constraint_vec.size(); ++i) {
+                std::string str = constraint_vec.at(i);
+                auto pos = str.find(' ');
+                if (pos != std::string::npos) {
+                    // replace multiple spaces with single
+                    std::regex re("  +");
+                    str = std::regex_replace(str, re, " ");
+                    // remove leading and trailing spaces
+                    if (pos == 0)
+                        str = str.substr(1, str.size()-1);
+                    if (str.find_last_of(' ') == str.size()-1)
+                        str = str.substr(0, str.size()-2);
+                    // append new values to vector
+                    std::istringstream iss(str);
+                    for(std::string s; iss >> s;)
+                        constraint_vec.push_back(s);
+                    // remove old element with spaces
+                    constraint_vec.erase(constraint_vec.begin()+i);
+                }
+            }
+        }
         if (!vm["rshifter_steps"].empty())
             rshifter_steps_vec = vm["rshifter_steps"].as<std::vector<std::string>>();
+        if (!vm["field_plan_doses"].empty())
+            field_dose_plan_files = vm["field_plan_doses"].as<std::vector<std::string>>();
 
 
         // ADAPT METHOD OPTIONS
@@ -266,7 +317,7 @@ void Parser::process_command_line(int argc, char** argv)
                 std::string ext = "." + utils::get_file_extension(dij_frac_file);
                 dij_plan_file = utils::replace_string(dij_frac_file, ext, "_at_plan"+ext);
                 std::cerr << dij_plan_file << std::endl;
-            } else if (scoring_mask_files.size() == 0) {
+            } else if (target_mask_files.size() == 0) {
                 throw std::invalid_argument("No mask given to reduce estimation space of the Dij.");
             }
         } else if (adapt_method_str == adapt_method_gpmc_dij_str) {
@@ -277,17 +328,17 @@ void Parser::process_command_line(int argc, char** argv)
             } else if (dij_frac_file.empty()) {
                 throw std::invalid_argument("Name of output fraction Dij file is required when "
                                             "using gPMC for Dij reoptimization");
-            }  else if (scoring_mask_files.size() == 0) {
+            }  else if (target_mask_files.size() == 0) {
                 throw std::invalid_argument("No mask given to reduce calculation space of the Dij.");
             }
         } else if(adapt_method_str == adapt_method_cold_spots_str) {
             adapt_method = Adapt_methods_t::GPMC_DOSE;
-            if (dose_plan_file.empty()) {
-                throw std::invalid_argument("the plan dose is required when using gPMC for "
-                                            "cold/hot spots correction");
-            }  else if (scoring_mask_files.size() == 0) {
-                throw std::invalid_argument("No mask given to reduce cold/hot spots correction "
-                                            "domain.");
+            if (target_mask_files.size() == 0) {
+                throw std::invalid_argument("No target mask to perform cold/hot spots correction.");
+            } else if (target_rim_files.size() == 0) {
+                throw std::invalid_argument("No target rim to reduce dose outside the target.");
+            } else if (field_dose_plan_files.size() == 0) {
+                throw std::invalid_argument("No plan dose per field were provided!");
             }
         } else {
             throw std::invalid_argument("Unrecognized adaptation method \""+adapt_method_str+"\"!");
@@ -361,8 +412,27 @@ void Parser::process_command_line(int argc, char** argv)
                                         "could not be deduced from \""+temp+"\"");
         }
 
-        // PARSE PASSED MASKS AND VERIFY THEY EXIST
-        for (auto& str: scoring_mask_files) {
+        // PARSE PASSED TARGET MASKS AND VERIFY THEY EXIST
+        target_expanded_files.reserve(target_mask_files.size() + target_rim_files.size());
+        for (auto& str: target_mask_files) {
+            if (std::ifstream(str)) {
+                str = utils::get_full_path(str);
+                target_expanded_files.push_back(str);
+            } else {
+                std::cerr << "Mask file not accessible: \""+str+"\"!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        for (auto& str: target_rim_files) {
+            if (std::ifstream(str)) {
+                str = utils::get_full_path(str);
+                target_expanded_files.push_back(str);
+            } else {
+                std::cerr << "Mask file not accessible: \""+str+"\"!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        for (auto& str: oars_files) {
             if (std::ifstream(str)) {
                 str = utils::get_full_path(str);
             } else {
@@ -370,6 +440,7 @@ void Parser::process_command_line(int argc, char** argv)
                 exit(EXIT_FAILURE);
             }
         }
+
         // PARSE VF MASKS
         if (v_field_mask_files.size() != 0) {
             for (auto& str: v_field_mask_files) {
@@ -386,6 +457,7 @@ void Parser::process_command_line(int argc, char** argv)
             throw std::invalid_argument("report option needs shifts and vf output");
 
         // CORRECT PATHS
+        new_patient = utils::get_full_path(new_patient);
         if (!out_dir.empty() &&
             !data_shifts_file.empty() && data_shifts_file.find('/') == std::string::npos)
             data_shifts_file = out_dir + '/' + data_shifts_file;

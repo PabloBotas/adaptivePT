@@ -108,6 +108,11 @@ void Patient_Parameters_t::getTopasGlobalParameters()
     virtualSAD.a = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances0");
     virtualSAD.b = pars.readReal<float>("Rt/beam/VirtualSourceAxisDistances1");
 
+    // CT location
+    ct.origin.x = pars.readReal<float>("Rt/CT/ImagePositionPatient0");
+    ct.origin.y = pars.readReal<float>("Rt/CT/ImagePositionPatient1");
+    ct.origin.z = pars.readReal<float>("Rt/CT/ImagePositionPatient2");
+
     // CT grid resolution
     ct.d.x = pars.readReal<float>("Rt/CT/PixelSpacing0");
     ct.d.y = pars.readReal<float>("Rt/CT/PixelSpacing1");
@@ -238,7 +243,11 @@ void Patient_Parameters_t::ct_to_int_coordinates()
     std::swap(ct.d.x, ct.d.z);
     std::swap(ct.n.x, ct.n.z);
     std::swap(ct.offset.x, ct.offset.z);
+    std::swap(ct.isocenter.x, ct.isocenter.z);
+    std::swap(ct.origin.x, ct.origin.z);
     ct.offset.x *= -1;
+    ct.isocenter.x *= -1;
+    ct.origin.x *= -1;
 
     // From the center to the corner
     ct.offset.x -= 0.5*ct.n.x*ct.d.x;
@@ -259,21 +268,28 @@ void Patient_Parameters_t::ct_to_ext_coordinates()
     ct.offset.x += 0.5*ct.n.x*ct.d.x;
 
     ct.offset.x *= -1;
+    ct.isocenter.x *= -1;
+    ct.origin.x *= -1;
     std::swap(ct.d.x, ct.d.z);
     std::swap(ct.n.x, ct.n.z);
     std::swap(ct.offset.x, ct.offset.z);
+    std::swap(ct.isocenter.x, ct.isocenter.z);
+    std::swap(ct.origin.x, ct.origin.z);
 
     for (size_t i = 0; i < angles.size(); i++) {
         angles[i].couch *= -1.0; //reverse couch angle
-        angles[i].gantry = (270.0 * (M_PI/180.0)) - angles[i].gantry;
+        angles[i].gantry = angles[i].gantry - (270.0 * (M_PI/180.0));
     }
 }
 
-void Patient_Parameters_t::update_geometry_with_external(const Volume_t& v)
+void Patient_Parameters_t::update_geometry(const Volume_t& v)
 {
     consolidate_originals();
 
     ct.offset = ct.offset + 0.5*(ct.n*ct.d - v.n*v.d);
+    ct.origin.x = v.origin.x;
+    ct.origin.y = v.origin.y;
+    ct.origin.z = v.origin.z;
     ct.n.x = v.n.x;
     ct.n.y = v.n.y;
     ct.n.z = v.n.z;
@@ -295,6 +311,8 @@ void Patient_Parameters_t::set_spots_data()
         accu_spots_per_field.push_back(acc);
         source_energies.reserve(source_energies.size() + tramp.energies.size());
         source_energies.insert(source_energies.end(), tramp.energies.begin(), tramp.energies.end());
+        source_weights.reserve(source_weights.size() + tramp.weights.size());
+        source_weights.insert(source_weights.end(), tramp.weights.begin(), tramp.weights.end());
 
         float temp = tramp.energies.front();
         std::vector<short> idxs;

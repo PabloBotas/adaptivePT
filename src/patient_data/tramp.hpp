@@ -16,6 +16,7 @@ public:
     Tramp_t(std::string file, std::string machine);
     ~Tramp_t();
     void setEnergies();
+    void setWeights();
     void set_new_energies(const std::vector<float>& e_, bool units=true);
     void to_file(std::string file, std::string dir = std::string());
     void set_weights(const std::vector<float>& w);
@@ -37,6 +38,7 @@ public:
     std::vector<float> get_ypos();
 
     std::vector<Spot_t> spots;
+    std::vector<float> weights;
     std::vector<float> energies;
     std::vector<float> energies_internal;
     std::vector<float> last_energy_shift;

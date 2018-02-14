@@ -33,8 +33,9 @@ public:
     ushort total_spots;
     std::vector<short> spots_per_field;
     std::vector<short> accu_spots_per_field;
-    std::vector< std::vector<short>> energy_layers;
+    std::vector<std::vector<short>> energy_layers;
     std::vector<float> source_energies;
+    std::vector<float> source_weights;
      std::vector<uint> n_fractions;
 
     CT_Dims_t ct;
@@ -49,7 +50,7 @@ public:
 
     void ct_to_int_coordinates();
     void ct_to_ext_coordinates();
-    void update_geometry_with_external(const Volume_t& vol);
+    void update_geometry(const Volume_t& vol);
 
 private:
     void exploreBeamDirectories();

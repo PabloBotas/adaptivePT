@@ -96,27 +96,20 @@ void virtual_range_shifter (const RShifter_steps_t& rshifter_steps,
     uint accu_spots = 0;
     std::vector<float> range_change_ave(nbeams, 0);
 
-    const double e_r[6] = {-0.04796, 0.008392, 0.0008097, -1.357e-06, 2.099e-09, -1.754e-12};
-    const double r_e[6] = {7.99143832, 6.69077816e-01, 1.96456917e-03,
-                           1.80100513, 7.32441249e-08, -2.11977495e-01};
-
     for (size_t i = 0; i < nbeams; i++) {
-        // Average energy of all the spots
-        float average_energy = 
-            std::accumulate(orig_energies.begin(), orig_energies.end(), 0.0)/orig_energies.size();
+        // Average energy of all the spots in the beam
+        auto init_idx = orig_energies.begin() + accu_spots;
+        auto stop_idx = init_idx + spots_per_field.at(i);
+        float average_energy = std::accumulate(init_idx, stop_idx, 0.0)/orig_energies.size();
 
         // Get average range change of the spots with initial E >= average_energy
         uint considered_spots = 0;
         for (short ispot = 0; ispot < spots_per_field.at(i); ispot++) {
             if (orig_energies.at(ispot + accu_spots) >= average_energy) {
-                const float& E1 = new_energies.at(ispot + accu_spots);
-                const float& E0 = orig_energies.at(ispot + accu_spots);
-                const float R1 = e_r[0] + e_r[1]*E1/1e6 + e_r[2]*std::pow(E1/1e6, 2) +
-                                 e_r[3]*std::pow(E1/1e6, 3) + e_r[4]*std::pow(E1/1e6, 4) +
-                                 e_r[5]*std::pow(E1/1e6, 5);
-                const float R0 = e_r[0] + e_r[1]*E0 + e_r[2]*std::pow(E0, 2) +
-                                 e_r[3]*std::pow(E0, 3) + e_r[4]*std::pow(E0, 4) +
-                                 e_r[5]*std::pow(E0, 5);
+                const float& E1 = new_energies.at(ispot + accu_spots);  // eV
+                const float& E0 = orig_energies.at(ispot + accu_spots); // MeV
+                const float R1 = utils::range_from_energy(E1);
+                const float R0 = utils::range_from_energy(E0, false);
                 range_change_ave.at(i) += R1-R0;
                 considered_spots++;
             }
@@ -135,14 +128,11 @@ void virtual_range_shifter (const RShifter_steps_t& rshifter_steps,
                 uint idx = ispot + accu_spots;
                 if (!(ispot != 0 && orig_energies.at(idx) == orig_energies.at(idx-1))) {
                     const float& E0 = orig_energies.at(idx);
-                    float R0 = e_r[0] + e_r[1]*E0 + e_r[2]*std::pow(E0, 2) +
-                               e_r[3]*std::pow(E0, 3) + e_r[4]*std::pow(E0, 4) +
-                               e_r[5]*std::pow(E0, 5);
+                    float R0 = utils::range_from_energy(E0, false);
                     float R = R0 + range_change_ave.at(i);
-                    E_new = std::pow(R/r_e[0], 1/r_e[1]) + std::pow(R/r_e[2], 1/r_e[3]) +
-                            std::pow(R/r_e[4], 1/r_e[5]);
+                    E_new = utils::energy_from_range(R);
                 }
-                new_energies.at(idx) = E_new*1e6;
+                new_energies.at(idx) = E_new;
             }
         } else {
             for (short ispot = 0; ispot < spots_per_field.at(i); ispot++) {
@@ -167,26 +157,18 @@ void physical_range_shifter (const RShifter_steps_t& rshifter_steps,
     uint accu_spots = 0;
     std::vector<float> range_change_ave(nbeams);
 
-    const double e_r[6] = {-0.04796, 0.008392, 0.0008097, -1.357e-06, 2.099e-09, -1.754e-12};
-    const double r_e[6] = {7.99143832, 6.69077816e-01, 1.96456917e-03,
-                           1.80100513, 7.32441249e-08, -2.11977495e-01};
     for (size_t ibeam = 0; ibeam < nbeams; ibeam++) {
-        float average_energy = 0;
-        for (uint i = 0; i < orig_energies.size(); ++i)
-            average_energy += orig_energies.at(i);
-        average_energy /= orig_energies.size();
+        auto init_idx = orig_energies.begin() + accu_spots;
+        auto stop_idx = init_idx + spots_per_field.at(ibeam);
+        float average_energy = std::accumulate(init_idx, stop_idx, 0.0)/orig_energies.size();
 
         uint considered_spots = 0;
         for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
             if (orig_energies.at(ispot + accu_spots) >= average_energy) {
                 const float& E1 = new_energies.at(ispot + accu_spots);
                 const float& E0 = orig_energies.at(ispot + accu_spots);
-                const float R1 = e_r[0] + e_r[1]*E1/1e6 + e_r[2]*std::pow(E1/1e6, 2) +
-                                 e_r[3]*std::pow(E1/1e6, 3) + e_r[4]*std::pow(E1/1e6, 4) +
-                                 e_r[5]*std::pow(E1/1e6, 5);
-                const float R0 = e_r[0] + e_r[1]*E0 + e_r[2]*std::pow(E0, 2) +
-                                 e_r[3]*std::pow(E0, 3) + e_r[4]*std::pow(E0, 4) +
-                                 e_r[5]*std::pow(E0, 5);
+                const float R1 = utils::range_from_energy(E1);        // eV
+                const float R0 = utils::range_from_energy(E0, false); // MeV
                 range_change_ave.at(ibeam) += R1-R0;
                 considered_spots++;
             }
@@ -227,16 +209,13 @@ void physical_range_shifter (const RShifter_steps_t& rshifter_steps,
     accu_spots = 0;
     for (size_t i = 0; i < nbeams; i++) {        
         if (remaining_range_shift.at(i) != 0) {
-            // what is the energy shift per layer so that we get the remaining range shift?
+            // what is the energy per layer so that we get the remaining range shift?
             for (short ispot = 0; ispot < spots_per_field.at(i); ispot++) {
                 const float& E0 = orig_energies.at(ispot + accu_spots);
-                const float R0 = e_r[0] + e_r[1]*E0 + e_r[2]*std::pow(E0, 2) +
-                                 e_r[3]*std::pow(E0, 3) + e_r[4]*std::pow(E0, 4) +
-                                 e_r[5]*std::pow(E0, 5);
+                const float R0 = utils::range_from_energy(E0, false);
                 const float R = R0 + remaining_range_shift.at(i);
-                const float E1 = std::pow(R/r_e[0], 1/r_e[1]) + std::pow(R/r_e[2], 1/r_e[3]) +
-                                 std::pow(R/r_e[4], 1/r_e[5]);
-                new_energies.at(ispot + accu_spots) = E1*1e6;
+                const float E1 = utils::energy_from_range(R);
+                new_energies.at(ispot + accu_spots) = E1;
             }
             accu_spots += spots_per_field.at(i);
         } else {
@@ -256,9 +235,6 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                            const std::vector<float>& below_thres,
                            const std::string& machine)
 {
-    const double e_r[6] = {-0.04796, 0.008392, 0.0008097, -1.357e-06, 2.099e-09, -1.754e-12};
-    const double r_e[6] = {7.99143832, 6.69077816e-01, 1.96456917e-03,
-                           1.80100513, 7.32441249e-08, -2.11977495e-01};
     // Get minimum energy and range for machine
     float min_e{}, max_e{};
     if (machine == "topassmallspots"     ||
@@ -272,9 +248,7 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
         min_e = 91.015*1e6;
         max_e = 223.58*1e6;
     }
-    float min_range = e_r[0] + e_r[1]*min_e/1e6 + e_r[2]*std::pow(min_e/1e6, 2) +
-                      e_r[3]*std::pow(min_e/1e6, 3) + e_r[4]*std::pow(min_e/1e6, 4) +
-                      e_r[5]*std::pow(min_e/1e6, 5);
+    float min_range = utils::range_from_energy(min_e);
     
     // Get the range difference so that the energy is deliverable
     uint accu_spots{};
@@ -283,9 +257,7 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
             std::vector<float> temp(energies.begin() + accu_spots,
                                     energies.begin() + accu_spots + spots_per_field.at(ibeam));
             const float& E = below_thres.at(ibeam);
-            const float R = e_r[0] + e_r[1]*E/1e6 + e_r[2]*std::pow(E/1e6, 2) +
-                            e_r[3]*std::pow(E/1e6, 3) + e_r[4]*std::pow(E/1e6, 4) +
-                            e_r[5]*std::pow(E/1e6, 5);
+            const float R = utils::range_from_energy(E);
             // Discretize range shifter according to user option
             int rshifter_index = -1;
             bool no_errors = false;
@@ -302,27 +274,25 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                 // Increase spot energies to compensate for the new range shifter
                 for (short ispot = 0; ispot < spots_per_field.at(ibeam); ispot++) {
                     const float& E0 = temp.at(ispot);
-                    const float R0 = e_r[0] + e_r[1]*E0/1e6 + e_r[2]*std::pow(E0/1e6, 2) +
-                                     e_r[3]*std::pow(E0/1e6, 3) + e_r[4]*std::pow(E0/1e6, 4) +
-                                     e_r[5]*std::pow(E0/1e6, 5);
+                    const float R0 = utils::range_from_energy(E0);
                     const float R = R0 + rshifter;
-                    const float E1 = std::pow(R/r_e[0], 1/r_e[1]) + std::pow(R/r_e[2], 1/r_e[3]) +
-                                     std::pow(R/r_e[4], 1/r_e[5]);
+                    const float E1 = utils::energy_from_range(R);
                     // std::cerr << "Energy of spot @ beam: " << ispot << " @ " << ibeam << " = ";
                     // std::cerr << temp.at(ispot)/1e6 << " MeV ";
-                    // std::cerr << "changed to " << E1 << " MeV." << std::endl;
-                    if (E1*1e6 > max_e) {
+                    // std::cerr << "changed to " << E1/1e6 << " MeV." << std::endl;
+                    if (E1 > max_e) {
                         std::cerr << "WARNING! The range shifter to force energies too small to ";
                         std::cerr << "be in the gantry energy range makes the high energy spots ";
-                        std::cerr << "outside the possible energies: " << E1 << " > " << max_e/1e6;
-                        std::cerr << ". The distal edge has higher importance so this is not ";
-                        std::cerr << "allowed. A thinner ranger shifter will be attempted, ";
-                        std::cerr << "reducing the capping effect of the underflow spots of beam ";
-                        std::cerr << "added or increased for beam " << ibeam << "." << std::endl;
+                        std::cerr << "outside the possible energies: " << E1/1e6 << " > ";
+                        std::cerr << max_e/1e6 << ". The distal edge has higher importance so ";
+                        std::cerr << "this is not allowed. A thinner ranger shifter will be ";
+                        std::cerr << "attempted, reducing the capping effect of the underflow ";
+                        std::cerr << "spots of beam added or increased for beam " << ibeam << ".";
+                        std::cerr << std::endl;
                         no_errors = false;
                         break;
                     }
-                    temp.at(ispot) = E1*1e6;
+                    temp.at(ispot) = E1;
                 }
                 if (no_errors) {
                     std::copy(temp.begin(), temp.end(), energies.begin() + accu_spots);

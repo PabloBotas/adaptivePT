@@ -22,11 +22,12 @@ Influence_manager::Influence_manager(const Parser& parser_, const Patient_Parame
     gpmc_dij_frac_file(parser_.dij_frac_file),
     beam_model_dij_plan_file(parser_.dij_plan_file),
     beam_model_dij_frac_file(parser_.dij_frac_file),
+    new_patient_dir(parser_.new_patient),
     patient_parameters(&pat),
     ctdims(&pat.ct),
     ct_metadata(ct_metadata_),
     outputdir(parser_.out_dir),
-    scoring_mask_files(parser_.scoring_mask_files),
+    scoring_mask_files(parser_.target_expanded_files),
     // Needed for structure sampling
     warper(warper_)
 {
@@ -51,7 +52,8 @@ Influence_manager::Influence_manager(const Parser& parser_, const Patient_Parame
 
 void Influence_manager::get_dose_at_plan()
 {
-    if (engine == Adapt_methods_t::GEOMETRIC) {
+    if (engine == Adapt_methods_t::GEOMETRIC ||
+        engine == Adapt_methods_t::GPMC_DOSE) {
         return;
     } else if (engine == Adapt_methods_t::BEAM_MODEL) {
         if (!matrix_at_plan.size())
@@ -63,7 +65,8 @@ void Influence_manager::get_dose_at_plan()
 
 void Influence_manager::get_dose_at_frac(const std::vector<float>& new_energies)
 {
-    if (engine == Adapt_methods_t::GEOMETRIC) {
+    if (engine == Adapt_methods_t::GEOMETRIC ||
+        engine == Adapt_methods_t::GPMC_DOSE) {
         return;
     } else if (engine == Adapt_methods_t::BEAM_MODEL) {
         if (!matrix_at_frac.size())
@@ -142,8 +145,8 @@ void Influence_manager::get_dij(std::string outfile,
         
         influence_from_beam_model (outfile, influence, new_energies);
     } else if (engine == Adapt_methods_t::GPMC_DIJ) {
-        Gpmc_manager gpmc(*patient_parameters, outfile, "dosedij", outputdir,
-                          patient_parameters->geometric_tramp_names, warper.vf_ave);
+        Gpmc_manager gpmc(*patient_parameters, new_patient_dir, outfile, "dosedij", outputdir,
+                          outputdir, patient_parameters->geometric_tramp_names, warper.vf_ave);
         gpmc.calculate_dij(1e5, 1e7, false, scoring_mask_files);
     } else if (engine == Adapt_methods_t::GPMC_DOSE) {
         // NOT IMPLEMENTED YET!!

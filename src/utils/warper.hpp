@@ -36,7 +36,8 @@ private:
     void apply_position_options (Adapt_constraints_t options, const std::vector<short>& spots_per_field);
     void apply_rigid_positions ();
     void apply_rigid_positions_per_beam (const std::vector<short>& spots_per_field);
-    void probe (const Array4<float>& p, const CT_Dims_t& ct);
+    void probe_plastimatch (const Array4<float>& p, const CT_Dims_t& ct);
+    void probe_internal (const Array4<float>& p, const CT_Dims_t& ct);
     void write_to_file (const Array4<float>& p,
                         const std::vector<short>& spots_per_field,
                         const std::vector<BeamAngles_t>& angles);
@@ -50,7 +51,7 @@ private:
     // Utils
     void flip_positions_X (Array4<float>& vec, const CT_Dims_t dims);
     void flip_direction_X (Array4<float>& vec);
-    std::string to_location_str (const Vector3_t<float>& p, const bool last);
+    std::string to_location_str (const Vector3_t<uint>& p, const bool last);
     void set_average ();
     void set_probes (const Array4<float>& p);
 

@@ -20,7 +20,7 @@ void Dose_reader_t::read_file(std::string file)
 
     //  open file
     std::ifstream stream(file, std::ios::binary | std::ios::ate);
-    utils::check_fs(stream, file, "to read planning CT.");
+    utils::check_fs(stream, file, "to read dose volume.");
     nElements = stream.tellg()/sizeof(float);
     size_t bytes_to_read = nElements*sizeof(float);
     stream.seekg(0, std::ios::beg);

@@ -51,6 +51,7 @@ private:
     std::string gpmc_dij_frac_file;
     std::string beam_model_dij_plan_file;
     std::string beam_model_dij_frac_file;
+    std::string new_patient_dir;
 
     Array3<float> pos_at_plan;
     Array3<float> pos_at_frac;

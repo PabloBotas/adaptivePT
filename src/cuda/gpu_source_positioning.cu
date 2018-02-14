@@ -5,6 +5,8 @@
 #include "gpu_geometry_tools.cuh"
 #include "gpu_utils.cuh"
 
+#include <assert.h>
+
 void virtual_src_to_treatment_plane(const unsigned int& num,
                                     const std::vector<BeamAngles_t>& angles,
                                     const float3& ct_offsets)
@@ -60,39 +62,20 @@ __global__ void virtual_src_to_treatment_plane_kernel(const int num,
 }
 
 void correct_offsets(const unsigned int& num,
-                     const float3& offsets,
-                     const float3& original_offsets)
+                     const float3& cbct_origin, const int3& cbct_n, const float3& cbct_d,
+                     const float3& ct_origin, const int3& ct_n, const float3& ct_d)
 {
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
-    correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num, offsets, original_offsets);
+    correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num,
+                             cbct_origin, cbct_n, cbct_d,
+                             ct_origin, ct_n, ct_d);
     check_kernel_execution(__FILE__, __LINE__);
 }
 
-__global__ void correct_offsets_kernel(const int num,
-                                       const float3 offsets,
-                                       const float3 original_offsets)
-//  set source direction
-{
-    const int tid = blockIdx.x*blockDim.x + threadIdx.x;
-    if (tid < num) {
-        float4 pos  = xdata[tid];
-        float4 vel  = vxdata[tid];
-
-        // Add offsets
-        pos.x += original_offsets.x - offsets.x;
-        pos.y += original_offsets.y - offsets.y;
-        pos.z += original_offsets.z - offsets.z;
-
-        // Initialize them inside the CT
-        pos = ray_trace_to_CT_volume(pos, vel);
-        xdata[tid]  = pos;
-        vxdata[tid] = vel;
-    }
-}
 
 Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
-                                const float3& offsets,
-                                const float3& original_offsets)
+                               const float3& cbct_origin, const int3& cbct_n, const float3& cbct_d,
+                               const float3& ct_origin, const int3& ct_n, const float3& ct_d)
 {
     Array4<float> off_endpoints = orig_endpoints;
     float4* dev_orig_endpoints = NULL;
@@ -101,9 +84,9 @@ Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
     size_t num = off_endpoints.size();
     int nblocks = 1 + (num-1)/NTHREAD_PER_BLOCK_SOURCE;
     correct_offsets_kernel<<<nblocks, NTHREAD_PER_BLOCK_SOURCE>>>(num,
-                             dev_orig_endpoints,
-                             offsets,
-                             original_offsets);
+                             cbct_origin, cbct_n, cbct_d,
+                             ct_origin, ct_n, ct_d,
+                             dev_orig_endpoints);
     check_kernel_execution(__FILE__, __LINE__);
 
     retrieve_scorer<float, float4>(&off_endpoints[0].x, dev_orig_endpoints, num);
@@ -114,19 +97,37 @@ Array4<float> offset_endpoints(const Array4<float>& orig_endpoints,
 }
 
 __global__ void correct_offsets_kernel(const int num,
-                                       float4* dev_orig_endpoints,
-                                       const float3 offsets,
-                                       const float3 original_offsets)
+                                       const float3 cbct_origin,
+                                       const int3 cbct_n,
+                                       const float3 cbct_d,
+                                       const float3 ct_origin,
+                                       const int3 ct_n,
+                                       const float3 ct_d,
+                                       float4* dev_orig_endpoints)
 //  set source direction
 {
     const int tid = blockIdx.x*blockDim.x + threadIdx.x;
     if (tid < num) {
-        dev_orig_endpoints[tid].x += original_offsets.x - offsets.x;
-        dev_orig_endpoints[tid].y += original_offsets.y - offsets.y;
-        dev_orig_endpoints[tid].z += original_offsets.z - offsets.z;
+        float4 pos;
+        if (dev_orig_endpoints) {
+            pos = dev_orig_endpoints[tid];
+        } else {
+            pos = xdata[tid];
+        }
 
-        // printf("%d - 0 - %f %f %f\n", 
-               // tid, dev_orig_endpoints[tid].x, dev_orig_endpoints[tid].y, dev_orig_endpoints[tid].z);
+        pos.x = pos.x + (ct_origin.x - ct_n.x*ct_d.x + ct_d.x/2)
+                      - (cbct_origin.x - cbct_n.x*cbct_d.x + cbct_d.x/2);
+        pos.y = pos.y - (ct_origin.y + ct_n.y*ct_d.y - ct_d.y/2)
+                      + (cbct_origin.y + cbct_n.y*cbct_d.y - cbct_d.y/2);
+        pos.z = pos.z - (ct_origin.z + ct_n.z*ct_d.z - ct_d.z/2)
+                      + (cbct_origin.z + cbct_n.z*cbct_d.z - cbct_d.z/2);
+
+        if (!dev_orig_endpoints) {
+            pos = ray_trace_to_CT_volume(pos, vxdata[tid]);
+            xdata[tid] = pos;
+        } else {
+            dev_orig_endpoints[tid] = pos;
+        }
     }
 }
 
@@ -140,7 +141,7 @@ __host__ void treatment_plane_to_virtual_src(Array4<float>& pos,
         temp[i].x = pat.angles.at(i).gantry;
         temp[i].y = pat.angles.at(i).couch;
     }
-    float3 offset = make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z);
+    float3 offset = make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z);
     offset -= make_float3(isocenter_shift.x, isocenter_shift.y, isocenter_shift.z);
 
     for (size_t i = 0; i < dir.size(); i++) {
@@ -232,22 +233,22 @@ __global__ void treatment_plane_to_virtual_src_kernel(const int num,
 }
 
 __device__ float4 ray_trace_to_CT_volume(const float4& p,
-                                          const float4& v)
+                                         const float4& v)
 {
     return ray_trace_to_CT_volume(p, v, ctVox, ctVoxSize);
 }
 
-__device__ __host__ float4 ray_trace_to_CT_volume(const float4& p,
-                                                   const float4& v,
-                                                   const int3 nvox,
-                                                   const float3 dvox)
+__device__ float4 ray_trace_to_CT_volume(const float4& p,
+                                         const float4& v,
+                                         const int3 nvox,
+                                         const float3 dvox)
 {
     float4 out = p;
 
     float3 CT_size = nvox*dvox;
-    if ((p.x > dvox.x && p.x < CT_size.x) &&
-        (p.y > dvox.y && p.y < CT_size.y) &&
-        (p.z > dvox.z && p.z < CT_size.z))
+    if ((p.x > 0 && p.x < CT_size.x) &&
+        (p.y > 0 && p.y < CT_size.y) &&
+        (p.z > 0 && p.z < CT_size.z))
         return out;
 
     // 0.001f is to start a fraction of a voxel inside the CT
@@ -279,13 +280,24 @@ __device__ __host__ float4 ray_trace_to_CT_volume(const float4& p,
         out.z = p.z + v.z*alphaMin;
     }
 
+    if ((out.x <= 0 || out.x >= CT_size.x) ||
+        (out.y <= 0 || out.y >= CT_size.y) || 
+        (out.z <= 0 || out.z >= CT_size.z)) {
+        int i = blockIdx.x*blockDim.x + threadIdx.x;
+        printf("ERROR! Position outside simulation volume:\n%d - Size %f %f %f - Pos %f %f %f\n", 
+               i, CT_size.x, CT_size.y, CT_size.z, out.x, out.y, out.z);
+        assert((out.x > 0 && out.x <= CT_size.x) &&
+               (out.y > 0 && out.y <= CT_size.y) &&
+               (out.z > 0 && out.z <= CT_size.z));
+    }
+
     return out;
 }
 
-__device__ __host__ float3 ray_trace_to_CT_volume(const float3& p,
-                                                   const float3& v,
-                                                   const int3 nvox,
-                                                   const float3 dvox)
+__device__ float3 ray_trace_to_CT_volume(const float3& p,
+                                         const float3& v,
+                                         const int3 nvox,
+                                         const float3 dvox)
 {
     float4 p_4 = make_float4(p, 0);
     float4 v_4 = make_float4(v, 0);

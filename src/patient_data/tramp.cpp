@@ -26,6 +26,7 @@ Tramp_t::Tramp_t(std::string f, std::string machine_) : machine(machine_), inter
     defaults();
     read_();
     setEnergies();
+    setWeights();
     energy_to_internal();
     setWEPLs();
 }
@@ -35,6 +36,7 @@ Tramp_t::Tramp_t(std::string f) : internal_energy_set(false), file(f)
     defaults();
     read_();
     setEnergies();
+    setWeights();
     setWEPLs();
 }
 
@@ -84,7 +86,7 @@ void Tramp_t::read_()
     // std::cout << "Reading file " << file << std::endl;
     std::ifstream stream(file);
     if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << file << std::endl;
+        std::cerr << "Can't open tramp file: " << file << std::endl;
         return;
     }
 
@@ -131,7 +133,7 @@ void Tramp_t::read_file_header(std::string f)
 {
     std::ifstream stream(f);
     if (!stream.is_open()) {
-        std::cerr << "Can't open file: " << f << std::endl;
+        std::cerr << "Can't open file tramp: " << f << std::endl;
         return;
     }
 
@@ -209,6 +211,14 @@ void Tramp_t::setEnergies()
         energies.push_back(spots[i].e);
     }
     last_energy_shift.resize(nspots);
+}
+
+
+void Tramp_t::setWeights()
+{
+    weights.reserve(nspots);
+    for (size_t i = 0; i < nspots; i++)
+        weights.push_back(spots[i].w);
 }
 
 

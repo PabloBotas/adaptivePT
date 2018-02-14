@@ -38,22 +38,16 @@ void Vf_reader_t::read_header()
     std::getline(stream, dummy_line);
     std::getline(stream, dummy_line);
     std::getline(stream, dummy_line);
-    origin                      = getHeaderVector<float>(stream, "Offset", 3);
+    origin = getHeaderVector<float>(stream, "Offset", 3);
     std::getline(stream, dummy_line);
     std::getline(stream, dummy_line);
-    spacing                     = getHeaderVector<float>(stream, "ElementSpacing", 3);
-    dim                         = getHeaderVector<unsigned int>(stream, "DimSize", 3);
+    d = getHeaderVector<float>(stream, "ElementSpacing", 3);
+    n = getHeaderVector<unsigned int>(stream, "DimSize", 3);
     std::getline(stream, dummy_line);
-    std::string ElType          = getHeaderValue<std::string>(stream, "ElementType");
+    std::string ElType = getHeaderValue<std::string>(stream, "ElementType");
     std::string ElementDataFile = getHeaderValue<std::string>(stream, "ElementDataFile");
 
-    origin.x /= 10;
-    origin.y /= 10;
-    origin.z /= 10;
-    spacing.x /= 10;
-    spacing.y /= 10;
-    spacing.z /= 10;
-    nElements = dim.x*dim.y*dim.z;
+    nElements = n.x*n.y*n.z;
 
     if (ElType.compare("MET_FLOAT") == 0) {
         nb = sizeof(float);
@@ -66,11 +60,11 @@ void Vf_reader_t::read_header()
 
     std::cout << "MHA file: " << file << std::endl;
     std::cout << "    - dimensions: ";
-    std::cout << dim.x << ", " << dim.y << ", " << dim.z << " (" << nElements << ")" << std::endl;
+    std::cout << n.x << ", " << n.y << ", " << n.z << " (" << nElements << ")" << std::endl;
     std::cout << "    - origin:     ";
     std::cout << origin.x << ", " << origin.y << ", " << origin.z << std::endl;
     std::cout << "    - spacing:    ";
-    std::cout << spacing.x << ", " << spacing.y << ", " << spacing.z << std::endl;
+    std::cout << d.x << ", " << d.y << ", " << d.z << std::endl;
     std::cout << "    - data type:  ";
     std::cout << ElType << " (" << nb << " bytes)" << std::endl;
 }
@@ -94,15 +88,24 @@ void Vf_reader_t::read_body()
             std::vector<float> temp_y(nElements);
             std::vector<float> temp_z(nElements);
             for (unsigned int i = 0; i < nElements; ++i) {
-                stream.read(reinterpret_cast<char*>(&temp_z[i]), nb);
-                stream.read(reinterpret_cast<char*>(&temp_y[i]), nb);
-                stream.read(reinterpret_cast<char*>(&temp_x[i]), nb);
-                data.at(i).x = temp_x[i]/10;
-                data.at(i).y = -temp_y[i]/10;
-                data.at(i).z = -temp_z[i]/10;
+                float temp_x;
+                float temp_y;
+                float temp_z;
+                stream.read(reinterpret_cast<char*>(&temp_x), nb);
+                // stream.read(reinterpret_cast<char*>(&temp_z), nb);
+                stream.read(reinterpret_cast<char*>(&temp_y), nb);
+                stream.read(reinterpret_cast<char*>(&temp_z), nb);
+                // stream.read(reinterpret_cast<char*>(&temp_x), nb);
+                // data.at(i).x = temp_x[i]/10;
+                // data.at(i).y = -temp_y[i]/10;
+                // data.at(i).z = -temp_z[i]/10;
+                data.at(i).x = temp_x;
+                data.at(i).y = temp_y;
+                data.at(i).z = temp_z;
 
-                if (i<10)
-                    std::cout << data.at(i).x << " " << data.at(i).y << " " << data.at(i).z << std::endl;
+                // if (temp_x != 0 || temp_y != 0 || temp_z != 0) {
+                //     std::cout << temp_x << " " << temp_y << " " << temp_z << std::endl;
+                // }
             }
             break;
         }
@@ -111,6 +114,46 @@ void Vf_reader_t::read_body()
     }
 
     std::cout << "Bytes read: " << bytes_to_read << std::endl;
+}
+
+void Vf_reader_t::to_int_coordinates()
+{
+    std::swap(d.x, d.z);
+    std::swap(n.x, n.z);
+    std::swap(origin.x, origin.z);
+    origin.x *= -1;
+
+    Array3<float> temp = data;
+    // std::copy(data.begin(), data.end(), temp.begin());
+    for (size_t i=0; i<nElements; ++i) {
+        temp.at(i) /= 10;
+        std::swap(temp.at(i).x, temp.at(i).z);
+        temp.at(i).x *= 1;
+        temp.at(i).y *= -1;
+        temp.at(i).z *= -1;
+
+        int ix = i/(n.y*n.z) % n.x;
+        int iy = i/n.z % n.y;
+        int iz = i % n.z;
+
+        ix = n.x-ix-1;
+
+        int idx = iz + iy*n.z + ix*n.z*n.y;
+        data.at(idx) = temp.at(i);
+    }
+
+    origin.x /= 10;
+    origin.y /= 10;
+    origin.z /= 10;
+    d.x /= 10;
+    d.y /= 10;
+    d.z /= 10;
+
+    // std::ofstream fout("vf_internal.dat", std::ios::out | std::ios::binary);
+    // for (uint i = 0; i < data.size(); ++i) {
+    //     float d = std::sqrt(data.at(i).x*data.at(i).x + data.at(i).y*data.at(i).y + data.at(i).z*data.at(i).z);
+    //     fout.write((char*)&d, sizeof(float));
+    // }
 }
 
 

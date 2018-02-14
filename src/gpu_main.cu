@@ -47,37 +47,49 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
         initpos_xbuffer_dbg.at(i).w = xbuffer[i].w; // energy
     }
 
-    gpu_raytrace (pat, endpoints, parser.ct_traces_file);
+    Array3<float> dummy_not_used;
+    gpu_raytrace (pat, ct, endpoints, parser.ct_traces_file, dummy_not_used);
 
     gpu_ct_to_device::removeMask();
 }
 
-void gpu_raytrace_warped (const Patient_Parameters_t &pat,
+void gpu_raytrace_warped (const Patient_Parameters_t &pat,     // pat.ct is CBCT, original_ct is CT
                           const Parser& parser,
-                          const Volume_t &ct,
-                          const Array4<float>& orig_endpoints,
-                          const Array4<float>& init_pos,
+                          const Volume_t &cbct,                // CBCT
+                          const Array4<float>& orig_endpoints, // input positions in CT space
+                          const Array4<float>& init_pos,       // input positions in CT space
                           Array4<float>& endpoints,
-                          std::vector<float>& new_energies)
+                          std::vector<float>& new_energies,
+                          Array3<float>& traces_info)
 {
     // Set geometry in GPU
-    gpu_ct_to_device::sendGeometries(ct);
+    gpu_ct_to_device::sendGeometries(cbct);
 
     // Create host buffers and initialize rays
     std::vector<float4> xbuffer;
     std::vector<float4> vxbuffer;
     std::vector<short2> ixbuffer;
-    create_treatment_plane_buffers (pat, orig_endpoints, init_pos,
-                                    xbuffer, vxbuffer, ixbuffer);
-    buffers_to_device (xbuffer, vxbuffer, ixbuffer, false);
-    correct_offsets (xbuffer.size(),
-                     make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                     make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
-    Array4<float> off_endpoints = offset_endpoints (orig_endpoints, 
-                                                    make_float3(pat.ct.offset.x, pat.ct.offset.y, pat.ct.offset.z),
-                                                    make_float3(pat.original_ct.offset.x, pat.original_ct.offset.y, pat.original_ct.offset.z));
+    set_treatment_plane_buffers_ct_space (pat, orig_endpoints, init_pos,
+                                          xbuffer, vxbuffer, ixbuffer);
+    bool need_reallocation = false;
+    buffers_to_device (xbuffer, vxbuffer, ixbuffer, need_reallocation);
 
-    gpu_raytrace (pat, endpoints, parser.cbct_traces_file, off_endpoints);
+    correct_offsets (xbuffer.size(),
+                    make_float3(cbct.origin.x, cbct.origin.y, cbct.origin.z),
+                    make_int3(cbct.n.x, cbct.n.y, cbct.n.z),
+                    make_float3(cbct.d.x, cbct.d.y, cbct.d.z),
+                    make_float3(pat.ct.origin.x, pat.ct.origin.y, pat.ct.origin.z),
+                    make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z),
+                    make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z));
+    Array4<float> off_endpoints = offset_endpoints (orig_endpoints, 
+                    make_float3(cbct.origin.x, cbct.origin.y, cbct.origin.z),
+                    make_int3(cbct.n.x, cbct.n.y, cbct.n.z),
+                    make_float3(cbct.d.x, cbct.d.y, cbct.d.z),
+                    make_float3(pat.ct.origin.x, pat.ct.origin.y, pat.ct.origin.z),
+                    make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z),
+                    make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z));
+
+    gpu_raytrace (pat, cbct, endpoints, parser.cbct_traces_file, traces_info, off_endpoints);
 
     new_energies.resize(endpoints.size());
     for (size_t i = 0; i < new_energies.size(); ++i) {
@@ -86,8 +98,10 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
 }
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
+                   const Volume_t &vol,
                    Array4<float>& endpoints,
                    std::string traces_file,
+                   Array3<float>& traces_info,
                    const Array4<float>& orig_endpoints)
 {
     // Create scorer array
@@ -96,13 +110,12 @@ void gpu_raytrace (const Patient_Parameters_t& pat,
 
     // Calculate rays
     if (traces_file.empty()) {
-        do_raytrace(pat.spots_per_field, pos_scorer, NULL, orig_endpoints);
+        do_raytrace(pat.spots_per_field, pos_scorer, NULL, orig_endpoints, traces_info);
     } else {
         float* traces_scorer = NULL;
-        allocate_scorer<float>(traces_scorer, pat.ct.total);
-        do_raytrace(pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints);
-        bool long_data = false;
-        Volume_t traces(pat.ct, long_data);
+        allocate_scorer<float>(traces_scorer, vol.nElements);
+        do_raytrace(pat.spots_per_field, pos_scorer, traces_scorer, orig_endpoints, traces_info);
+        Volume_t traces(vol.getMetadata());
         retrieve_scorer<float, float>(&traces.data[0], traces_scorer, traces.nElements);
         // traces.output("output_volume.mha");
         traces.output(traces_file);

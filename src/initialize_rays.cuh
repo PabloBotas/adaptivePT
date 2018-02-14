@@ -11,12 +11,12 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
                               std::vector<float4>& vxbuffer,
                               std::vector<short2>& ixbuffer);
 
-void create_treatment_plane_buffers(const Patient_Parameters_t& pat,
-                                    const Array4<float>& endpoints,
-                                    const Array4<float>& init_pos,
-                                    std::vector<float4>& xbuffer,
-                                    std::vector<float4>& vxbuffer,
-                                    std::vector<short2>& ixbuffer);
+void set_treatment_plane_buffers_ct_space(const Patient_Parameters_t& pat,
+                                          const Array4<float>& endpoints,
+                                          const Array4<float>& init_pos,
+                                          std::vector<float4>& xbuffer,
+                                          std::vector<float4>& vxbuffer,
+                                          std::vector<short2>& ixbuffer);
 
 float3 iso_to_virtual_src_pos(float z, float2 SAD, float2 spot);
 

@@ -6,22 +6,23 @@
 
 Gpmc_manager::~Gpmc_manager(){}
 
-Gpmc_manager::Gpmc_manager(Patient_Parameters_t pat_, std::string dosefile_,
-                           std::string scorer_, std::string outdir_,
-                           std::vector<std::string> tramp_files_, Vector3_t<float> iso_shift_)
+Gpmc_manager::Gpmc_manager(Patient_Parameters_t plan, std::string patient_,
+                           std::string dosefile_, std::string scorer_, std::string outdir_,
+                           std::string tramp_dir_, std::vector<std::string> tramp_files_,
+                           Vector3_t<float> iso_shift_)
                            : spot_factor(1.f), min_p_per_spot_dij(1e5), max_p_per_spot_dij(1e7)
                              
 {
-    pat_directory = utils::get_full_path(pat_.patient_dir);
+    patient = utils::get_full_path(patient_);
     out_directory = utils::get_full_path(outdir_);
-    trampdir = outdir_;
-    dose_file = dosefile_;
-    result_name = utils::remove_file_extension(dose_file);
-    machine = pat_.machine;
-    ct_volume = pat_.planning_ct_file;
-    range_shifters = pat_.range_shifters;
+    trampdir = tramp_dir_;
+    result_name_root = utils::remove_file_extension(dosefile_);
+    machine = plan.machine;
+    ct_volume = "./input/ctbinary/ctvolume.dat";
+    range_shifters = plan.range_shifters;
     iso_shift = iso_shift_;
     scorer = scorer_;
+    beam_names = plan.beam_names;
 
     for (auto& f: tramp_files_) {
         if (!utils::starts_with_string(f, "/"))
@@ -35,6 +36,9 @@ Gpmc_manager::Gpmc_manager(Patient_Parameters_t pat_, std::string dosefile_,
     } else if (scorer.compare("dose") == 0) {
         input_file = out_directory + "/gpmc_dose.in";
         launcher_file = out_directory + "/run_gpmc_dose.sh";
+    } else {
+        std::cerr << "Unknown scorer passed to gPMC. This should be a compilation error ";
+        std::cerr << ", but life is hard sometimes" << std::endl;
     }
 
 }
@@ -54,8 +58,8 @@ void Gpmc_manager::write_dij_files(float min_p_spot, float max_p_spot,
     min_p_per_spot_dij = min_p_spot;
     max_p_per_spot_dij = max_p_spot;
 
-    write_templates(true, false);
     rescale_tramp_weigths(min_p_per_spot_dij, max_p_per_spot_dij);
+    write_templates(masks.size() > 0, false);
 }
 
 void Gpmc_manager::launch_dij()
@@ -83,6 +87,7 @@ void Gpmc_manager::launch_dose()
 
 void Gpmc_manager::rescale_tramp_weigths(float min_p_spot, float max_p_spot)
 {
+    // If min_p_spot >= max_p_spot, then it will be set as spot factor
     if (min_p_spot < max_p_spot) {
         float min_weight = 10000000;
         float max_weight = 0.f;
@@ -103,31 +108,40 @@ void Gpmc_manager::rescale_tramp_weigths(float min_p_spot, float max_p_spot)
             tramp.set_weights(weights);
             tramp.to_file(f);
         }
+    } else {
+        spot_factor = min_p_spot;
     }
 }
 
 
 void Gpmc_manager::launch()
 {
-    std::cout << "LAUNCHING GPMC!!!" << std::endl;
-    std::string cmd("sh " + launcher_file + " 2>&1");
-    std::string temp = utils::run_command(cmd);
+    std::cout << "Launching gPMC for " << scorer << " scoring!!!" << std::endl;
+    std::string cmd("bash " + launcher_file + " 2>&1");
+    int return_code{};
+    std::string temp = utils::run_command(cmd, &return_code);
     std::cout << temp << std::endl;
-    exit(EXIT_SUCCESS);
+
+    if (return_code != 0) {
+        std::cerr << "ERROR running command:" << std::endl;
+        std::cerr << cmd << std::endl;
+        std::cerr << "Exit code != 0 detected: " << return_code << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 
 void Gpmc_manager::write_templates(bool add_mask, bool sum_beams)
 {
     std::map<std::string, std::string> replace_map {
-        {"PATIENT_DIRECTORY", pat_directory},
+        {"PATIENT_DIRECTORY", patient},
         {"SCORER", scorer},
         {"SPOT_FACTOR", std::to_string(spot_factor)},
         {"MACHINE_TO_USE", machine},
         {"CT_VOLUME_FILE", ct_volume},
         {"IF_TO_CT_GRID", std::to_string(to_ct_grid)},
         {"OUTPUT_DIR", out_directory},
-        {"RESULT_NAME", result_name},
+        {"RESULT_NAME", result_name_root},
         {"TRAMP_DIR", trampdir},
     };
     utils::copy_replace_in_file(template_input_file, input_file, replace_map);
@@ -167,9 +181,7 @@ void Gpmc_manager::write_templates(bool add_mask, bool sum_beams)
                 txt += ",";
         }
         txt += "\nScopingMask 1";
-        if (rs_adapted) {
-            utils::append_to_file(input_file, txt);
-        }
+        utils::append_to_file(input_file, txt);
     }
 
     replace_map = std::map<std::string, std::string> {
@@ -179,7 +191,7 @@ void Gpmc_manager::write_templates(bool add_mask, bool sum_beams)
 
     if (sum_beams) {
         txt = "\n";
-        txt += "fractions=30\n";
+        txt += "fractions=" + std::to_string(nfractions) + "\n";
         txt += "outdir=" + out_directory + "\n";
         txt += "spotfactor=" + std::to_string(spot_factor) + "\n";
         txt += "/opt/gpmc-tools/1.0/sumDoses ${outdir}/total.dose ${outdir}/DoseFrac*.dose\n";
@@ -189,11 +201,44 @@ void Gpmc_manager::write_templates(bool add_mask, bool sum_beams)
         txt += "nz=$(grep \"nVoxelsZ\" ${outdir}/geometry.dat | awk '{print $2}')\n";
         txt += "for f in $(ls ${outdir}/DoseFrac* ${outdir}/total.dose*); do\n";
         txt += "    name=$(basename $f)\n";
-        txt += "    /opt/gpmc-tools/1.0/gpmc2xio ${outdir}/ast_${name} ${f} ${nx} ${ny} ${nz} ${spotfactor} ${fractions}\n";
+        txt += "    /opt/gpmc-tools/1.0/gpmc2xio ";
+        txt += "${outdir}/ast_${name} ${f} ${nx} ${ny} ${nz} ${spotfactor} ${fractions}\n";
         txt += "done\n";
 
         utils::append_to_file(launcher_file, txt);
     }
 
     utils::append_to_file(launcher_file, "\nexit 0\n");
+}
+
+std::vector<std::string> Gpmc_manager::get_field_dose_files()
+{
+    std::vector<std::string> out = beam_names;
+    for (auto& str: out) {
+        str = out_directory+"/"+result_name_root+"."+str+".dose";
+    }
+    return out;
+}
+
+std::vector<std::string> Gpmc_manager::get_field_dij_files()
+{
+    std::vector<std::string> out = beam_names;
+    for (auto& str: out) {
+        str = out_directory+"/"+result_name_root+"."+str+".dij";
+    }
+    return out;
+}
+
+std::string Gpmc_manager::get_total_dose_file()
+{
+    return out_directory+"/total.dose";
+}
+
+float Gpmc_manager::get_to_Gy_factor()
+{
+    float MeVg2Gy  = 1.6022e-10;
+    float RBE       = 1.1;
+    float protonsGp = 1.0e9;
+    float protonsGpsim = protonsGp / spot_factor;
+    return nfractions * RBE * protonsGpsim * MeVg2Gy;
 }

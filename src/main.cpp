@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "command_line_parser.hpp"
+#include "cold_spots_fixer.hpp"
 #include "influence_manager.hpp"
 #include "initialize_rays.cuh"
 #include "enviroment.hpp"
@@ -29,8 +30,8 @@
 // DONE Raytrace vf_start_points in CBCT
 // DONE Get energy distance to updated endpoints
 // DONE Convert data back to tramp file
-// TODO Fix mha output's offset to visualize in Slicer
-// TODO Verify that VF probing is correctly done. How?
+// DONE Fix mha output's offset to visualize in Slicer
+// DONE Verify that VF probing is correctly done. How?
 // Done Verify CBCT offsets are correctly updated
 
 void compute_in_ct(const Patient_Parameters_t& pat,
@@ -48,7 +49,8 @@ void compute_in_cbct(Patient_Parameters_t& pat,
                      const Array4<float>& ct_warped_endpoints,
                      const Array4<float>& ct_warped_initpos,
                      std::vector<float>& new_energies,
-                     Array4<float>& cbct_endpoints);
+                     Array4<float>& cbct_endpoints,
+                     Array3<float>& traces_data);
 
 // void process_influences (Array4<float> influence_ct,
 //                          Array4<float> influence_cbct);
@@ -135,12 +137,12 @@ int main(int argc, char** argv)
 
     // 5: Load CBCT
     Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
-    cbct.ext_to_int_coordinates();
-    pat.update_geometry_with_external(cbct);
+    // pat.update_geometry(cbct);
     // 6: Get endpoints and corrections in CBCT
+    Array3<float> traces_data;
     compute_in_cbct (pat, parser, cbct,                // inputs
                      warped_endpoints, warped_initpos, // inputs
-                     new_energies, cbct_endpoints);    // outputs
+                     new_energies, cbct_endpoints, traces_data); // outputs
     // 7: constrain energy shifts and export geometric adaptation (weight_scaling = [1 .. 1])
     calculate_range_shifter(parser.rshifter_steps, parser.adapt_constraints, new_energies,
                             pat.range_shifters, pat.machine, pat.isocenter_to_beam_distance,
@@ -158,12 +160,70 @@ int main(int argc, char** argv)
     freeCTMemory();
 
     // 10: Correct weights
-    if (parser.launch_opt4D) {
-        Opt4D_manager opt4d(parser.out_dir);
-        opt4d.populate_directory(influences.n_spots, influences.n_voxels,
-                                 influences.matrix_at_plan, influences.matrix_at_frac);
-        opt4d.launch_optimization();
-        weight_scaling = opt4d.get_weight_scaling();
+    // if (parser.launch_opt4D) {
+    //     Opt4D_manager opt4d(parser.out_dir);
+    //     opt4d.populate_directory(influences.n_spots, influences.n_voxels,
+    //                              influences.matrix_at_plan, influences.matrix_at_frac);
+    //     opt4d.launch_optimization();
+    //     weight_scaling = opt4d.get_weight_scaling();
+    // }
+
+    // 10: Output files for gPMC simulation
+    if (parser.adapt_method == Adapt_methods_t::GEOMETRIC){
+        Gpmc_manager gpmc(pat, parser.new_patient, parser.dose_frac_file, "dose",
+                          parser.out_plan, parser.out_dir, pat.adapted_tramp_names, warper.vf_ave);
+        gpmc.write_dose_files(1000000);
+        if (parser.launch_adapt_simulation) {
+            gpmc.launch();
+        }
+        Volume_t target_mask = utils::read_masks (parser.target_mask_files);
+        Volume_t oars_mask = utils::read_masks (parser.oars_files);
+        check_adaptation_from_dose(gpmc.get_total_dose_file(), target_mask, oars_mask,
+                                   parser.dose_prescription, gpmc.get_to_Gy_factor());
+    } else if (parser.adapt_method == Adapt_methods_t::GPMC_DOSE) {
+        Gpmc_manager gpmc(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
+                          parser.out_plan, parser.out_dir, pat.adapted_tramp_names, warper.vf_ave);
+        gpmc.write_dij_files(1000000, 0, true,
+                             utils::join_vectors(parser.target_mask_files, parser.oars_files,
+                                                 parser.target_rim_files));
+        gpmc.launch();
+
+        std::valarray<float> adapt_dose;
+        std::valarray<float> adapt_dose_in_mask;
+        std::valarray<float> adapt_dose_in_target;
+        std::vector<std::valarray<float>> adapt_field_dose;
+        std::vector<std::valarray<float>> adapt_field_dij;
+        std::valarray<float> underdose_mask;
+        Volume_t target_mask = utils::read_masks (parser.target_mask_files);
+        Volume_t target_rim_mask = utils::read_masks (parser.target_rim_files);
+        Volume_t oars_mask = utils::read_masks (parser.oars_files);
+        check_adaptation(gpmc.get_field_dij_files(),
+                         parser.dose_prescription, gpmc.get_to_Gy_factor(),
+                         pat.spots_per_field, adapt_field_dij,
+                         adapt_dose, adapt_field_dose, underdose_mask,
+                         target_mask, target_rim_mask, oars_mask,
+                         adapt_dose_in_mask, adapt_dose_in_target);
+        output_debug_doses (parser.out_dir, underdose_mask, target_mask,
+                            parser.field_dose_plan_files,
+                            adapt_dose, adapt_field_dose,
+                            adapt_dose_in_target,
+                            parser.dose_prescription);
+        cold_spots_fixer (adapt_dose_in_mask,
+                          adapt_field_dij, target_mask,
+                          target_rim_mask, oars_mask,
+                          parser.dose_prescription,
+                          parser.out_dir, pat.spots_per_field,
+                          pat.source_weights,
+                          weight_scaling);
+
+        // Check adaptation!!
+        Gpmc_manager gpmc_check(pat, parser.new_patient, parser.dose_frac_file, "dose",
+                                parser.out_plan, parser.out_plan, pat.adapted_tramp_names,
+                                warper.vf_ave);
+        gpmc_check.write_dose_files(1000000);
+        if (parser.launch_adapt_simulation) {
+            gpmc.launch();
+        }
     }
 
     // 11: Export results and report
@@ -175,14 +235,6 @@ int main(int argc, char** argv)
     if (!parser.vf_report_file.empty()) {
         generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
                         parser.out_plan, pat.tramp_files);
-    }
-
-    // 10: Output files for gPMC simulation
-    Gpmc_manager gpmc(pat, parser.dose_frac_file, "dose", parser.out_plan,
-                      pat.adapted_tramp_names, warper.vf_ave);
-    gpmc.write_dose_files(5000);
-    if (parser.launch_adapt_simulation) {
-        gpmc.launch();
     }
 
     // Stop device
@@ -228,12 +280,14 @@ void compute_in_cbct(Patient_Parameters_t& pat,
                      const Array4<float>& warped_endpoints,
                      const Array4<float>& warped_initpos,
                      std::vector<float>& new_energy,
-                     Array4<float>& cbct_endpoints)
+                     Array4<float>& cbct_endpoints,
+                     Array3<float>& traces_info)
 {
     // Get endpoints in CBCT --------------------
     cbct_endpoints.resize(pat.total_spots);
     gpu_raytrace_warped (pat, parser, cbct, warped_endpoints,
-                         warped_initpos, cbct_endpoints, new_energy);
+                         warped_initpos, cbct_endpoints, new_energy,
+                         traces_info);
 }
 
 void export_adapted(Patient_Parameters_t& pat,
@@ -287,10 +341,11 @@ void export_shifts(const std::vector<float> e,
                    const Vector3_t<float>& isocenter_shift)
 {
     std::ofstream ofs;
-    if (beamid != 0)
+    if (beamid != 0) {
         ofs.open (file, std::ios::out | std::ios::app);
-    else
+    } else {
         ofs.open (file, std::ios::out);
+    }
 
     utils::check_fs(ofs, file, "to write adaptation shifts.");
 

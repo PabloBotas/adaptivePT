@@ -20,7 +20,6 @@ void structure_sampler (const std::string& file, const float& percentage,
 {
     // Read structure volume
     Volume_t vol(file, Volume_t::Source_type::MHA);
-    vol.ext_to_int_coordinates();
 
     // Store active voxel positions in array
     Array3<float> positions;

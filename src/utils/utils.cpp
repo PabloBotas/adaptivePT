@@ -16,21 +16,110 @@
 #include <regex>
 #include <cerrno>
 
+template <class T>
+std::vector<T> utils::join_vectors (const std::vector<T>& a, const std::vector<T>& b)
+{
+    std::vector<T> out(a.size() + b.size());
+    std::copy(a.begin(), a.end(), out.begin());
+    std::copy(b.begin(), b.end(), out.begin()+a.size());
+    return out;
+}
+template std::vector<std::string> utils::join_vectors<std::string>(const std::vector<std::string>&,
+                                                                   const std::vector<std::string>&);
+
+
+template <class T>
+std::vector<T> utils::join_vectors (const std::vector<T>& a, const std::vector<T>& b,
+                                    const std::vector<T>& c)
+{
+    std::vector<T> out(a.size() + b.size() + c.size());
+    std::copy(a.begin(), a.end(), out.begin());
+    std::copy(b.begin(), b.end(), out.begin()+a.size());
+    std::copy(c.begin(), c.end(), out.begin()+a.size()+b.size());
+    return out;
+}
+template std::vector<std::string> utils::join_vectors<std::string>(const std::vector<std::string>&,
+                                                                   const std::vector<std::string>&,
+                                                                   const std::vector<std::string>&);
+
+
+template <class T>
+std::vector<T> utils::or_vectors (const std::vector<T>& a, const std::vector<T>& b)
+{
+    if (a.size() != b.size()) {
+        std::cerr << "ERROR! Vector sizes passed to or_vectors are not consistent!" << std::endl;
+        std::cerr << a.size() << " != " << b.size() << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    std::vector<T> out = a;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (out[i] > 0.5)
+            continue;
+        out[i] = b[i];
+    }
+    return out;
+}
+template std::vector<float> utils::or_vectors<float>(const std::vector<float>&,
+                                                     const std::vector<float>&);
+
+
+template <class T>
+std::vector<T> utils::or_vectors (const std::vector<T>& a, const std::vector<T>& b,
+                                  const std::vector<T>& c)
+{
+    if ((a.size() != b.size()) || (a.size() != c.size()) || (b.size() != c.size()))  {
+        std::cerr << "ERROR! Vector sizes passed to or_vectors are not consistent!" << std::endl;
+        std::cerr << a.size() << ", " << b.size() << ", " << c.size() << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    std::vector<T> out = a;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (out[i] > 0.5)
+            continue;
+        out[i] = b[i] + c[i] > 0.5 ? 1 : 0;
+    }    
+    return out;
+}
+template std::vector<float> utils::or_vectors<float>(const std::vector<float>&,
+                                                     const std::vector<float>&,
+                                                     const std::vector<float>&);
+
+
 void utils::check_fs(const std::ofstream& fs, std::string f, std::string msg)
 {
     if (fs.fail()) {
-        std::cerr << "Can not open file " << f << " " << msg << std::endl;
+        std::cerr << "Can not open file \"" << f << "\" " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 void utils::check_fs(const std::ifstream& fs, std::string f, std::string msg)
 {
     if (fs.fail()) {
-        std::cerr << "Can not open file " << f << " " << msg << std::endl;
+        std::cerr << "Can not open file \"" << f << "\" " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 
+template <class T>
+int utils::sgn(T& v)
+{
+    return (v > T(0)) - (v < T(0));
+}
+template int utils::sgn<float>(float&);
+
+template <class T>
+int utils::sgn_plus(T& v)
+{
+    return (v >= T(0)) - (v < T(0));
+}
+template int utils::sgn_plus<float>(float&);
+
+template <class T>
+int utils::sgn_minus(T& v)
+{
+    return (v > T(0)) - (v <= T(0));
+}
+template int utils::sgn_minus<float>(float&);
 
 std::string utils::toLower(std::string s)
 {
@@ -125,12 +214,12 @@ void utils::copy_file(const std::string& in,
 {
     std::ifstream src(in);
     if (!src) {
-        std::cerr << "Can't open " + in + " file" << std::endl;
+        std::cerr << "Can't open \"" + in + "\" file to copy" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::ofstream dst(out);
     if (!dst) {
-        std::cerr << "Can't open " + out + " file" << std::endl;
+        std::cerr << "Can't open \"" + out + "\" file to copy" << std::endl;
         exit(EXIT_FAILURE);
     }
     dst << src.rdbuf();
@@ -143,12 +232,12 @@ void utils::copy_replace_in_file(const std::string& in,
 {
     std::ifstream src(in);
     if (!src) {
-        std::cerr << "Can't open " + in + " file" << std::endl;
+        std::cerr << "Can't open \"" + in + "\" file to copy" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::ofstream dst(out);
     if (!dst) {
-        std::cerr << "Can't open " + out + " file" << std::endl;
+        std::cerr << "Can't open \"" + out + "\" file to copy" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::string text;
@@ -164,10 +253,8 @@ void utils::copy_replace_in_file(const std::string& in,
 Volume_t utils::read_masks (const std::vector<std::string>& v, const float threshold) {
     // Read structure volume
     Volume_t vol(v.front(), Volume_t::Source_type::MHA);
-    vol.ext_to_int_coordinates();
     for (size_t f=1; f < v.size(); ++f) {
         Volume_t temp(v.at(f), Volume_t::Source_type::MHA);
-        temp.ext_to_int_coordinates();
         if (temp.nElements != vol.nElements ||
             temp.n.x != vol.n.x || temp.n.y != vol.n.y || temp.n.z != vol.n.z ||
             temp.d.x != vol.d.x || temp.d.y != vol.d.y || temp.d.z != vol.d.z) {
@@ -206,7 +293,7 @@ void utils::append_to_file(const std::string& f,
 }
 
 
-std::string utils::run_command(const std::string cmd)
+std::string utils::run_command(const std::string cmd, int* return_code)
 {
     std::cout << std::endl << "Running command";
 
@@ -220,10 +307,15 @@ std::string utils::run_command(const std::string cmd)
 
     std::cout << ": " << std::endl << *to_output << std::endl;
 
-
     std::array<char, 512> buffer;
     std::string stdout;
-    std::shared_ptr<std::FILE> pipe(popen(cmd.c_str(), "r"), pclose);
+    auto deleter = [return_code] (std::FILE* p) {
+        if (return_code)
+            *return_code = pclose(p)/256;
+        else
+            pclose(p);
+    };
+    std::shared_ptr<std::FILE> pipe(popen(cmd.c_str(), "r"), deleter);
     if (!pipe) {
         std::cerr << std::endl << "Could not launch command:" << std::endl;
         std::cerr << *to_output << std::endl;
@@ -235,6 +327,7 @@ std::string utils::run_command(const std::string cmd)
         if (std::fgets(buffer.data(), 512, pipe.get()) != NULL)
             stdout += buffer.data();
     }
+
     return stdout;
 }
 
@@ -268,8 +361,34 @@ void utils::subset_vector(std::vector<T>& vout, const std::vector<T>& v,
 }
 template void
 utils::subset_vector<float>(std::vector<float>&, const std::vector<float>&,
-                             const size_t, const size_t);
+                            const size_t, const size_t);
 template void
 utils::subset_vector< Vector4_t<float>>(std::vector< Vector4_t<float>>&,
-                                          const std::vector< Vector4_t<float>>&,
-                                          const size_t, const size_t);
+                                        const std::vector< Vector4_t<float>>&,
+                                        const size_t, const size_t);
+
+double utils::range_from_energy(const double& e, bool conv)
+{
+    // energy in MeV range in cm of water
+    double E = e;
+    if (conv)
+        E /= 1e6;
+    double r_e[6] = {1.53073818e-12, -4.52094359e-10, -5.83436734e-07, 6.95245227e-04,
+                     1.61622821e-02, -3.55845392e-01};
+    double R = r_e[5] + r_e[4]*E + r_e[3]*std::pow(E, 2) + r_e[2]*std::pow(E, 3) +
+               r_e[1]*std::pow(E, 4) + r_e[0]*std::pow(E, 5);
+    return R;
+}
+
+double utils::energy_from_range(const double& r)
+{
+    // energy in MeV range in cm of water
+    double e_r[8] = {6.10690676e-09, -1.02370849e-06, 7.18732504e-05, -2.76315988e-03,
+                     6.43961648e-02, -9.85218453e-01, 1.49352594e+01, 2.27490185e+01};
+    double E = e_r[7] + e_r[6]*r + e_r[5]*std::pow(r, 2) + e_r[4]*std::pow(r, 3) +
+               e_r[3]*std::pow(r, 4) + e_r[2]*std::pow(r, 5) + e_r[1]*std::pow(r, 6) +
+               e_r[0]*std::pow(r, 7);
+    // std::cerr << "energy_from_range " << r << " " << E << std::endl;
+    return E*1e6;
+}
+

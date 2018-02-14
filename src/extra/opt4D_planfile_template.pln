@@ -1,14 +1,16 @@
 pln_file_version 0.2
 
 ## We start with the plan title:
-title patient
+title Patient replan
 
 ## A short description of the plan.  
-description Automatic influence reoptimization
+description Automatic plan reoptimization
 
 ## The plan file root is used to derive the names of files
 plan_file_root beam
+vv_file_root ./
 vv_file_name structures.vv
+dif_file_root ./
 dif_file_name dimensions.dif
 
 # The number of beams and instances of the plan
@@ -20,23 +22,32 @@ Dose_Delivery_Model standard
 
 ## Parameter Vector type
 parameter_type squarerootbixel
-# parameter_type bixel
 
 ### DEFINE PLAN OBJECTIVES ##########################
 OBJ 1  type voxeldose
 OBJ 1  VOI 1
-OBJ 1  dose_file_name reference_influence.dat
+OBJ 1  dose_file_name missing_target_dose.dat
 OBJ 1  min_dose 20000
-# OBJ 1  scale_factor 1.05
-# OBJ 1  scale_factor 1.025
-OBJ 1  weight 20
+OBJ 1  weight 30
 
-OBJ 2  type squaredmeanerror
+OBJ 2  type voxeldose
 OBJ 2  VOI 1
-OBJ 2  min_mean_dose MINAVERAGECONS
-OBJ 2  weight_under 10
-OBJ 2  max_mean_dose MINAVERAGECONS
-OBJ 2  weight_over 0.0001
+OBJ 2  dose_file_name missing_target_dose.dat
+OBJ 2  max_dose 20000
+OBJ 2  scale_factor 1.025
+OBJ 2  weight 10
+
+VOI 2 name falloff
+VOI 2 EUD_p 5
+OBJ 3 type geud
+OBJ 3 VOI 2
+OBJ 3 weight 1
+
+VOI 3 name oars
+VOI 3 EUD_p 5
+OBJ 4 type geud
+OBJ 4 VOI 3
+OBJ 4 weight 5
 
 
 # CONS 1  type constrainedobjective

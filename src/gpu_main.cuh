@@ -17,8 +17,10 @@ void initialize_device (cudaEvent_t& start);
 void stop_device (cudaEvent_t& start);
 
 void gpu_raytrace (const Patient_Parameters_t& pat,
+                   const Volume_t &vol,
                    Array4<float>& endpoints,
                    std::string output_file,
+                   Array3<float>& traces_data,
                    const Array4<float>& orig_endpoints = Array4<float>());
 
 void gpu_raytrace_original (const Patient_Parameters_t& pat,
@@ -34,7 +36,8 @@ void gpu_raytrace_warped (const Patient_Parameters_t &pat,
                           const Array4<float>& orig_endpoints,
                           const Array4<float>& init_pos,
                           Array4<float>& endpoints,
-                          std::vector<float>& new_energies);
+                          std::vector<float>& new_energies,
+                          Array3<float>& traces_data);
 
 void gpu_calculate_influence (const Patient_Parameters_t& pat,
                               const Parser& parser,

@@ -18,6 +18,7 @@ public:
     bool skip_cbct = false;
     // Common parameters
     std::string patient;
+    std::string new_patient;
     std::string cbct_file;
     std::string vf_file;
     std::string machine = "topasmediumspots";
@@ -33,7 +34,10 @@ public:
     bool launch_opt4D = false;
     bool launch_adapt_simulation = false;
     // std::string ct_mask_file;
-    std::vector<std::string> scoring_mask_files;
+    std::vector<std::string> target_mask_files;
+    std::vector<std::string> target_rim_files;
+    std::vector<std::string> target_expanded_files;
+    std::vector<std::string> oars_files;
     std::vector<std::string> v_field_mask_files;
     // Adaptation method
     Adapt_methods_t adapt_method;
@@ -41,9 +45,12 @@ public:
     RShifter_steps_t rshifter_steps;
     // Adaptation data files
     std::string dose_plan_file;
+    std::vector<std::string> field_dose_plan_files;
     std::string dose_frac_file;
     std::string dij_plan_file;
     std::string dij_frac_file;
+    // Cold spots correction
+    float dose_prescription = 60; // Gy
 
     void print_inputs();
 
@@ -64,9 +71,6 @@ private:
     std::string rshifter_steps_half_cm = "half_cm";
     std::string rshifter_steps_cm      = "cm";
     std::string rshifter_steps_mgh     = "mgh";
-
-    // std::string scoring_mask_files_str;
-    // std::string v_field_mask_files_str;
 
     // Influence engines variables
     bool influence_engine_beam_model = false;

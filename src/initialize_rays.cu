@@ -56,12 +56,12 @@ void create_virtual_source_buffers(const Patient_Parameters_t& pat,
     }
 }
 
-void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
-                                     const Array4<float>& endpoints,
-                                     const Array4<float>& init_pos,
-                                     std::vector<float4>& xbuffer,
-                                     std::vector<float4>& vxbuffer,
-                                     std::vector<short2>& ixbuffer)
+void set_treatment_plane_buffers_ct_space (const Patient_Parameters_t& pat,
+                                           const Array4<float>& endpoints,
+                                           const Array4<float>& init_pos,
+                                           std::vector<float4>& xbuffer,
+                                           std::vector<float4>& vxbuffer,
+                                           std::vector<short2>& ixbuffer)
 {
     size_t s = endpoints.size();
     xbuffer.resize(s);
@@ -76,11 +76,11 @@ void create_treatment_plane_buffers (const Patient_Parameters_t& pat,
         float energy = init_pos.at(i).w;
         short2 meta  = get_beam_spot_id(i, pat.spots_per_field);
 
-        int3 nvox   = make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z);
-        float3 dvox = make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
-        float3 start2 = ray_trace_to_CT_volume(start, dCos, nvox, dvox);
+        // int3 nvox   = make_int3(pat.ct.n.x, pat.ct.n.y, pat.ct.n.z);
+        // float3 dvox = make_float3(pat.ct.d.x, pat.ct.d.y, pat.ct.d.z);
+        // float3 start2 = ray_trace_to_CT_volume(start, dCos, nvox, dvox);
 
-        xbuffer.at(i)  = make_float4(start2, energy);
+        xbuffer.at(i)  = make_float4(start, energy);
         vxbuffer.at(i) = make_float4(dCos, wepl);
         ixbuffer.at(i) = meta;
 

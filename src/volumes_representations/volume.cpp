@@ -20,26 +20,31 @@ Volume_t::Volume_t(const std::string& f,
     source_type = s;
 
     read_volume();
-    imgCenter.x = (origin.x - d.x/2) + 1/2*d.x*n.x;
-    imgCenter.y = (origin.y - d.y/2) + 1/2*d.y*n.y;
-    imgCenter.z = (origin.z - d.z/2) + 1/2*d.z*n.z;
+    imgCenter.x = origin.x - d.x/2 + 1/2*d.x*n.x;
+    imgCenter.y = origin.y - d.y/2 + 1/2*d.y*n.y;
+    imgCenter.z = origin.z - d.z/2 + 1/2*d.z*n.z;
     consolidate_originals();
+    setInternalFlag();
 }
 
-Volume_t::Volume_t(const std::string& f,
-                   const Volume_t::Source_type& s,
-                   const unsigned int& nx,
-                   const unsigned int& ny,
-                   const unsigned int& nz,
-                   const float& dx, const float& dy, const float& dz)
+Volume_t::Volume_t(const Volume_metadata_t& meta, bool long_data_)
 {
-    file = f;
-    source_type = s;
-
-    read_volume();
-    setVoxels(nx, ny, nz);
-    setSpacing(dx, dy, dz);
+    // meta.print();
+    nElements = meta.nElements;
+    if (long_data_) {
+        long_data.resize(nElements);
+        high_precision = true;
+    } else {
+        data.resize(nElements);
+    }
+    setDims(meta);
     consolidate_originals();
+    setInternalFlag();
+    imgCenter.x = origin.x - d.x/2 + 1/2*d.x*n.x;
+    imgCenter.y = origin.y - d.y/2 + 1/2*d.y*n.y;
+    imgCenter.z = origin.z - d.z/2 + 1/2*d.z*n.z;
+    // Volume_metadata_t temp = getMetadata();
+    // temp.print();
 }
 
 Volume_t::Volume_t(const CT_Dims_t& dims, bool long_data_)
@@ -48,18 +53,12 @@ Volume_t::Volume_t(const CT_Dims_t& dims, bool long_data_)
     if (long_data_) {
         long_data.resize(nElements);
         high_precision = true;
-    }
-    else
+    } else {
         data.resize(nElements);
+    }
     setDims(dims);
     consolidate_originals();
-}
-
-Volume_t::Volume_t(const float* src,
-                   const CT_Dims_t& dims) :
-                   Volume_t(dims)
-{
-    std::copy( src, src+nElements, data.begin() );
+    setInternalFlag();
 }
 
 void Volume_t::consolidate_originals()
@@ -123,6 +122,7 @@ void Volume_t::read_volume()
             original_mha_origin = reader.origin;
             data.resize(nElements);
             import_from_metaimage<short>(reader.data);
+            mha_to_int_coordinates();
             #if defined __DEBUG_OUTPUT_READ_CT__
             debug_ct("cbctvol_as_read.dat", &data[0], nElements);
             #endif
@@ -145,6 +145,9 @@ Volume_metadata_t Volume_t::getMetadata() const
 template <class T>
 void Volume_t::import_from_metaimage(const std::vector<T>& vec)
 {
+    /* TODO: This routine already implements the flipping of one axis to adapt to internal geometry
+     * this saves time, but can be misleading because it should be done in another step in a more
+     * explicit manner */
     if (data.size() != vec.size()) {
         std::cerr << "ERROR! in file " << __FILE__ << ", line " << __LINE__;
         std::cerr << "\nSizes are incompatible: " << data.size() << " != " << vec.size();
@@ -154,7 +157,7 @@ void Volume_t::import_from_metaimage(const std::vector<T>& vec)
     for (size_t k = 0; k < n.z; k++) {
         for (size_t j = 0; j < n.y; j++) {
             for (size_t i = 0; i < n.x; i++) {
-                size_t in  = i + j*n.x +         k*n.x*n.y;
+                size_t in = i + j*n.x + k*n.x*n.y;
                 size_t out = i + j*n.x + (n.z-k-1)*n.x*n.y;
                 data.at(out) = (float)vec.at(in);
             }
@@ -166,23 +169,36 @@ template void Volume_t::import_from_metaimage<short>(const std::vector<short>& d
 void Volume_t::export_binary_metaimage(std::string f,
                                        std::ios::openmode other)
 {
+    /* TODO: This routine already implements the flipping of one axis to adapt to internal geometry
+     * this saves time, but can be misleading because it should be done in another step in a more
+     * explicit manner */
     std::ios::openmode mode = std::ios::out | std::ios::binary | other;
 
     std::ofstream ofs;
     ofs.open (f, mode);
     utils::check_fs(ofs, f, "to write results.");
     std::vector<float> temp(nElements);
-    for (size_t k = 0; k < n.x; k++) {
+    for (size_t k = 0; k < n.z; k++) {
         for (size_t j = 0; j < n.y; j++) {
-            for (size_t i = 0; i < n.z; i++) {
-                size_t in  = i + j*n.z +         k*n.z*n.y;
-                size_t out = i + j*n.z + (n.x-k-1)*n.z*n.y;
-                temp[out] = data[in];
+            for (size_t i = 0; i < n.x; i++) {
+                size_t in = i + j*n.x + (n.z-k-1)*n.x*n.y;
+                size_t out = i + j*n.x + k*n.x*n.y;
+                temp.at(out) = data.at(in);
             }
         }
     }
+
+
+    // for (size_t k = 0; k < n.z; k++) {
+    //     for (size_t j = 0; j < n.y; j++) {
+    //         for (size_t i = 0; i < n.x; i++) {
+    //             size_t in  = i + j*n.x +         k*n.x*n.y;
+    //             size_t out = i + j*n.x + (n.z-k-1)*n.x*n.y;
+    //             temp[out] = data[in];
+    //         }
+    //     }
+    // }
     ofs.write (reinterpret_cast<char*>(temp.data()), nElements*sizeof(float));
-    ofs.close();
 }
 
 void Volume_t::export_binary(std::string f)
@@ -198,15 +214,24 @@ void Volume_t::export_binary(std::string f)
     ofs.close();
 }
 
-void Volume_t::ext_to_int_coordinates()
+void Volume_t::mha_to_int_coordinates()
 {
     std::swap(d.x, d.z);
     std::swap(n.x, n.z);
-    // Not implemented!!
-    // std::swap(origin.x, origin.z);
+    std::swap(origin.x, origin.z);
+    origin.x *= -1;
     // std::swap(imgCenter.x, imgCenter.z);
-    // origin.x *= -1;
     // imgCenter.x *= -1;
+}
+
+void Volume_t::int_to_mha_coordinates()
+{
+    std::swap(d.x, d.z);
+    std::swap(n.x, n.z);
+    origin.x *= -1;
+    std::swap(origin.x, origin.z);
+    // imgCenter.x *= -1;
+    // std::swap(imgCenter.x, imgCenter.z);
 }
 
 void Volume_t::normalize(float ref)
@@ -219,16 +244,38 @@ void Volume_t::normalize(float ref)
             data.at(i) /= ref;
 }
 
+void Volume_t::scale(float ref)
+{
+    if (high_precision)
+        for (size_t i = 0; i < nElements; i++)
+            long_data.at(i) *= ref;
+    else
+        for (size_t i = 0; i < nElements; i++)
+            data.at(i) *= ref;
+}
+
+void Volume_t::setInternalFlag()
+{
+    internal_coords = true;
+}
+
+void Volume_t::setExternalFlag()
+{
+    internal_coords = false;
+}
+
+
 void Volume_t::output(std::string outfile)
 {
-    std::string out_type = outfile.substr(outfile.find_last_of(".")+1);
+    if (internal_coords)
+        int_to_mha_coordinates();
+    std::string out_type = utils::toLower(utils::get_file_extension(outfile));
     std::cout << "Writting file: " << outfile << std::endl;
     if (out_type == "mhd") {
-        std::string file_basename = outfile.substr(0, outfile.find_last_of("/"));
-        std::string file_noext = outfile.substr(0, outfile.find_last_of("."));
+        std::string file_noext = utils::remove_file_extension(outfile);
         std::string mhd_header_file = file_noext + ".mhd";
         std::string mhd_binary_file = file_noext + ".bin";
-        std::string mhd_binary_filename = mhd_binary_file.substr(mhd_binary_file.find_last_of("/")+1);
+        std::string mhd_binary_filename = utils::get_file_name(mhd_binary_file);
         std::cout << "Writting file: " << mhd_binary_file << std::endl;
         export_header_metaimage(mhd_header_file, mhd_binary_filename);
         export_binary_metaimage(mhd_binary_file);
@@ -237,8 +284,9 @@ void Volume_t::output(std::string outfile)
         export_binary_metaimage(outfile, std::ios::app);
     } else if(out_type == "bin" || out_type == "dat") {
         export_binary(outfile);
-    } else
-        std::cerr << "Output type not supported, supported type: mhd" << std::endl;
+    } else {
+        std::cerr << "Output type not supported. Types: mhd, mha or raw (bin/dat)" << std::endl;
+    }
 }
 
 void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file)
@@ -251,19 +299,19 @@ void Volume_t::export_header_metaimage(std::string outfile, std::string ref_file
     header << "BinaryData = True\n";
     header << "BinaryDataByteOrderMSB = False\n";
     header << "TransformMatrix = 1 0 0 0 1 0 0 0 1\n";
-    header << "Offset = " << CM2MM*origin.z << " " << CM2MM*origin.y << " ";
-    header << CM2MM*origin.x << "\n";
+    header << "Offset = " << CM2MM*origin.x << " " << CM2MM*origin.y << " ";
+    header << CM2MM*origin.z << "\n";
     header << "CenterOfRotation = 0 0 0\n";
-    header << "ElementSpacing = " << CM2MM*d.z << " " << CM2MM*d.y << " " << CM2MM*d.x << "\n";
-    header << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";
+    header << "ElementSpacing = " << CM2MM*d.x << " " << CM2MM*d.y << " " << CM2MM*d.z << "\n";
+    header << "DimSize = " << n.x << " " << n.y << " " << n.z << "\n";
     header << "AnatomicalOrientation = RAI\n";
     header << "ElementType = MET_FLOAT\n";
     header << "ElementDataFile = " << ref_file << "\n";
     header.close();
 
-    std::cout << "Offset = " << CM2MM*origin.z << " " << CM2MM*origin.y << " " << CM2MM*origin.x << "\n";
-    std::cout << "ElementSpacing = " << CM2MM*d.z << " " << CM2MM*d.y << " " << CM2MM*d.x << "\n";
-    std::cout << "DimSize = " << n.z << " " << n.y << " " << n.x << "\n";
+    std::cout << "Offset = " << CM2MM*origin.x << " " << CM2MM*origin.y << " " << CM2MM*origin.z << "\n";
+    std::cout << "ElementSpacing = " << CM2MM*d.x << " " << CM2MM*d.y << " " << CM2MM*d.z << "\n";
+    std::cout << "DimSize = " << n.x << " " << n.y << " " << n.z << "\n";
 }
 
 void Volume_t::output(std::string outfile, const CT_Dims_t& dims)
@@ -273,13 +321,22 @@ void Volume_t::output(std::string outfile, const CT_Dims_t& dims)
     temp.output(outfile);
 }
 
+void Volume_t::setDims(const Volume_metadata_t& dims)
+{
+    setVoxels(dims.n.x, dims.n.y, dims.n.z);
+    setSpacing(dims.d.x, dims.d.y, dims.d.z);
+    origin.x = dims.origin.x;
+    origin.y = dims.origin.y;
+    origin.z = dims.origin.z;
+}
+
 void Volume_t::setDims(const CT_Dims_t& pat_ct, const bool interpolate)
 {
     setVoxels(pat_ct.n.x, pat_ct.n.y, pat_ct.n.z);
     setSpacing(pat_ct.d.x, pat_ct.d.y, pat_ct.d.z);
-    origin.x = pat_ct.offset.x + 0.5*pat_ct.d.x + pat_ct.isocenter.x;
-    origin.y = pat_ct.offset.y + 0.5*pat_ct.d.y + pat_ct.isocenter.y;
-    origin.z = pat_ct.offset.z + 0.5*pat_ct.d.z + pat_ct.isocenter.z;
+    origin.x = pat_ct.origin.x;
+    origin.y = pat_ct.origin.y;
+    origin.z = pat_ct.origin.z;
 
     if (interpolate)
         interpolate_to_geometry(pat_ct);
@@ -290,6 +347,7 @@ void Volume_t::setVoxels(unsigned int x, unsigned int y, unsigned int z)
     n.x = x;
     n.y = y;
     n.z = z;
+    nElements = x*y*z;
 }
 
 void Volume_t::setSpacing(float x, float y, float z)
@@ -313,8 +371,8 @@ void Volume_t::interpolate_to_geometry(Volume_t& pat,
 }
 
 void Volume_t::do_interpolate(std::vector<float>& dest,
-                                      const CT_Dims_t& pat_ct,
-                                      const float extrapolationValue)
+                              const CT_Dims_t& pat_ct,
+                              const float extrapolationValue)
 {
     for (size_t tid = 0; tid < pat_ct.total; tid++)  {
         size_t zInd = tid%pat_ct.n.z;
