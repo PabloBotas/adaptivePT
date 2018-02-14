@@ -25,6 +25,10 @@ __device__ void get_step(float& step,
     step = max_step;
     step_water = mass_stp_ratio*density*max_step;
     de = get_energy_loss (step_water, energy_in);
+    // const int thread = blockIdx.x*blockDim.x + threadIdx.x;
+    // if (thread == 0) {
+    //     printf("%f %f ", density, mass_stp_ratio);
+    // }
 
     if (de > energy_in) {
         step_water = get_residual_range (energy_in);

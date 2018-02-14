@@ -26,7 +26,7 @@ void gpu_ct_to_device::sendGeometries(const Volume_t& ct)
 void gpu_ct_to_device::sendDimensions(const Volume_t& ct)
 //  convert external to internal geometry
 {
-    std::cout << "Setting CT dimensions in device..." << std::endl;
+    std::cout << "sendDimensions: Setting volume dimensions in device..." << std::endl;
     int3   ct_n = make_int3(ct.n.x, ct.n.y, ct.n.z);
     float3 ct_d = make_float3(ct.d.x, ct.d.y, ct.d.z);
 

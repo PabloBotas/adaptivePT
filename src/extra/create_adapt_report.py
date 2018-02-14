@@ -7,6 +7,7 @@ import delivery_timing
 import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+plt.ioff()
 import matplotlib.patches as patches
 import pandas as pd
 # plt.style.use('ggplot')
@@ -17,7 +18,7 @@ mpl.rcParams['figure.titlesize'] = 14
 mpl.rcParams['figure.dpi'] = 250
 mpl.rc('text', usetex=True)
 
-def find_range(a, margin=5., va=None):
+def find_range(a, margin=0., va=None):
     if va is not None:
         a += va
     a_min = a.min()
@@ -83,9 +84,12 @@ def add_axis_frame(fig, ax, color, alpha=1):
 def freedman_diaconis_bins(x):
     r = [x.min(), x.max()]
     perc = np.percentile(x, [75, 25])
-    if r[0] - r[1] < 1e-10 or perc[0] - perc[1] < 1e-10:
+    if r[1]-r[0] < 1e-14:
         return 5
-    return int((r[1] - r[0])/(2*np.subtract(*perc)/np.power(len(x), 1/3)) + 1)
+    nbins = (r[1] - r[0])/(2*np.subtract(*perc)/np.power(len(x), 1/3)) + 1
+    if nbins > 100:
+        return 100
+    return int(nbins)
 
 
 def shimazaki_bins(x):
@@ -348,7 +352,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
 
         # FIGURE 1, PLOT 2 --------------------------------
         ax = fig.add_subplot(4, 2, 2)
-        color_range = find_range(de, 0.)
+        color_range = find_range(de)
         if np.abs(color_range[0]) > np.abs(color_range[1]):
             color_range = (-np.abs(color_range[0]), np.abs(color_range[0]))
         else:
@@ -361,13 +365,13 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         hist_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in bins_x]
         ax.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1] - bins_x[0], alpha=0.75, linewidth=0)
         ax.axvline(x=0, color='k', linewidth=1)
-        ax.set_xlim(find_range(de))
+        ax.set_xlim(find_range(de, 5.))
         ax.set_xlabel('Energy shift (MeV)', fontsize=7)
 
         # FIGURE 1, PLOT 3 --------------------------------
         ax = fig.add_subplot(4, 2, 3)
         cmap = plt.cm.get_cmap('rainbow')
-        color_range = find_range(de, 0.)
+        color_range = find_range(de)
         if np.abs(color_range[0]) > np.abs(color_range[1]):
             color_range = (-np.abs(color_range[0]), np.abs(color_range[0]))
         else:
@@ -445,8 +449,8 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
 
         # FIGURE 1, PLOT 7 --------------------------------
         ax = fig.add_subplot(4, 2, 7)
-        ax.hist(dw, 50, facecolor='green', normed=True, alpha=0.75)
-        ax.set_xlabel("Weight change")
+        ax.hist(dw, optimal_n_bins(dw), facecolor='green', normed=True, alpha=0.75, log=True)
+        ax.set_xlabel(r'$w/w_{0}$')
         ax.set_ylabel("Frequency")
 
         # FIGURE 1, PLOT 8 --------------------------------
@@ -472,7 +476,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax = fig.add_subplot(4, 2, 8)
         bp = df.boxplot(ax=ax, meanprops=meanprops, **box_kwargs)
         ax.set_xlabel("Energy layer", fontsize=7)
-        ax.set_ylabel(r'$\Delta w$', fontsize=7)
+        ax.set_ylabel(r'$w/w_{0}$', fontsize=7)
         ax.grid(False)
         ax.grid(color='k', linestyle=':', linewidth=0.5, alpha=0.25, axis='y', zorder=1)
         ax.set_xticklabels(labels=ax.get_xticklabels(), rotation=30, horizontalalignment='center')
