@@ -3,8 +3,6 @@
 GPUID 0
 RandomSeed 0 # (integer, use 0 if use current time)
 
-gpmcroot /opt/gpromptmc
-
 PatientDir PATIENT_DIRECTORY
 
 ## Quantity to score

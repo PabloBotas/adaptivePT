@@ -42,7 +42,8 @@ endif()
 # set (CUDA_SDK_ROOT_DIR "/home/gmoc/NVIDIA_GPU_Computing_SDK")
 # include_directories ("${CUDA_SDK_ROOT_DIR}")
 
-# Definitions------------------------------------------------
+### Definitions------------------------------------------------
+# Debug outputs
 option(DEBUG_READ_CT "Output a 32bit-float binary file with raw ct values" OFF)
 if(DEBUG_READ_CT)
     add_definitions(-D__DEBUG_OUTPUT_READ_CT__)
@@ -122,8 +123,6 @@ add_definitions(-D__RANGE_SHIFTER_DISCRETE_MGH__)
 
 add_subdirectory(src)
 # add_subdirectory(src/extra)
-
-
 
 # Opt4D ------------------------------------------------------
 find_program (OPT4D_PATH_BINARY opt4D "/opt/opt4D-build")
