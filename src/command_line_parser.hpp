@@ -24,7 +24,7 @@ public:
     std::string machine = "topasmediumspots";
     // Output files
     std::string out_plan;
-    std::string out_dir;
+    std::string work_dir;
     std::string data_shifts_file;
     std::string data_vf_file;
     std::string ct_traces_file;

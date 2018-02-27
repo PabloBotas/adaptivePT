@@ -26,7 +26,7 @@ Influence_manager::Influence_manager(const Parser& parser_, const Patient_Parame
     patient_parameters(&pat),
     ctdims(&pat.ct),
     ct_metadata(ct_metadata_),
-    outputdir(parser_.out_dir),
+    outputdir(parser_.work_dir),
     scoring_mask_files(parser_.target_expanded_files),
     // Needed for structure sampling
     warper(warper_)
@@ -34,14 +34,14 @@ Influence_manager::Influence_manager(const Parser& parser_, const Patient_Parame
     n_spots = patient_parameters->total_spots;
 
     // engine = parser_.adapt_method;
-    // outputdir = parser_.out_dir;
+    // outputdir = parser_.work_dir;
     // dose_plan_file = parser_.dose_plan_file;
     // dose_frac_file = parser_.dose_frac_file;
     // // gpmc_dij_plan_file = parser_.gpmc_dij_plan_file;
     // gpmc_dij_frac_file = parser_.gpmc_dij_frac_file;
     // beam_model_dij_plan_file = parser_.beam_model_dij_plan_file;
     // beam_model_dij_frac_file = parser_.beam_model_dij_frac_file;
-    // gpmc_dij_file = parser_.out_dir
+    // gpmc_dij_file = parser_.work_dir
     // n_spots = patient_parameters->total_spots;
 
     // // Needed for structure sampling

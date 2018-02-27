@@ -73,7 +73,7 @@ void Parser::process_command_line(int argc, char** argv)
         ("outplan",     po::value<std::string>(&out_plan)->
                             required(),
                             "Directory to write adapted gPMC inputs and final results.")
-        ("optdir",      po::value<std::string>(&out_dir)->
+        ("optdir",      po::value<std::string>(&work_dir)->
                             required(),
                             "Directory to store optimization and plan evaluation files. "
                             "Will be prepended to any output if they don't contain \'/\'. This is "
@@ -458,22 +458,22 @@ void Parser::process_command_line(int argc, char** argv)
 
         // CORRECT PATHS
         new_patient = utils::get_full_path(new_patient);
-        if (!out_dir.empty() &&
+        if (!work_dir.empty() &&
             !data_shifts_file.empty() && data_shifts_file.find('/') == std::string::npos)
-            data_shifts_file = out_dir + '/' + data_shifts_file;
-        if (!out_dir.empty() &&
+            data_shifts_file = work_dir + '/' + data_shifts_file;
+        if (!work_dir.empty() &&
             !data_vf_file.empty() && data_vf_file.find('/') == std::string::npos)
-            data_vf_file = out_dir + '/' + data_vf_file;
-        if (!out_dir.empty() &&
+            data_vf_file = work_dir + '/' + data_vf_file;
+        if (!work_dir.empty() &&
             !ct_traces_file.empty() && ct_traces_file.find('/') == std::string::npos)
-            ct_traces_file = out_dir + '/' + ct_traces_file;
-        if (!out_dir.empty() &&
+            ct_traces_file = work_dir + '/' + ct_traces_file;
+        if (!work_dir.empty() &&
             !cbct_traces_file.empty() && cbct_traces_file.find('/') == std::string::npos)
-            cbct_traces_file = out_dir + '/' + cbct_traces_file;
+            cbct_traces_file = work_dir + '/' + cbct_traces_file;
 
         // CREATE OUTPUT DIRECTORIES
         mkdir(out_plan.c_str(), 0774);
-        mkdir(out_dir.c_str(), 0774);
+        mkdir(work_dir.c_str(), 0774);
         
         // NORMALIZE INPUTS
         machine = utils::toLower(machine);
@@ -530,7 +530,7 @@ void Parser::print_inputs () {
             } else {
                 std::cout << "true" << std::endl;
             }
-        } else { // Assumes that the only remainder is vector<string>
+        } else { // Assumes that the only remainder type is vector<string>
             try {
                 std::vector<std::string> vect = vm[it->first].as<std::vector<std::string>>();
                 uint i = 0;
@@ -539,7 +539,8 @@ void Parser::print_inputs () {
                     std::cout << "\r> " << it->first << "[" << i << "] = " << (*oit) << std::endl;
                 }
             } catch (const boost::bad_any_cast &) {
-                std::cout << "UnknownType(" << ((boost::any)it->second.value()).type().name() << ")" << std::endl;
+                std::cout << "UnknownType(" << ((boost::any)it->second.value()).type().name();
+                std::cout << ")" << std::endl;
             }
         }
     }

@@ -263,7 +263,8 @@ void check_adaptation(const std::vector<Array>& adapt_field_dij,
                       uint target_nvox, uint oars_nvox, uint dij_nvox,
                       const std::vector<float>& total_mask,
                       const Volume_t& target_mask,
-                      const Volume_t& oars_mask)
+                      const Volume_t& oars_mask,
+                      std::string out_directory)
 {
     // Get total dose from new Dij
     Array adapt_dose_mask(dij_nvox);
@@ -294,7 +295,7 @@ void check_adaptation(const std::vector<Array>& adapt_field_dij,
         }
     }
 
-    std::ofstream ofs("FINAL_DOSE.dat", std::ios::binary);
+    std::ofstream ofs(out_directory+"/opt4D_optimized_dose.dat", std::ios::binary);
     ofs.write((char*)&out[0], out.size()*sizeof(float));
     ofs.close();
 
@@ -461,7 +462,8 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
 
     // 7: Check new plan dose
     check_adaptation(adapt_field_dij, dose_prescription, spots_per_field,
-                     target_nvox, oars_nvox, dij_nvox, total_mask, target_mask, oars_mask);
+                     target_nvox, oars_nvox, dij_nvox, total_mask, target_mask, oars_mask,
+                     out_directory);
 }
 
 

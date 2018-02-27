@@ -126,8 +126,8 @@ int main(int argc, char** argv)
                    endpoints, initpos,                // outputs
                    warped_endpoints, warped_initpos); // outputs
     // 3: Get influence in CT: I need the vf average and that is calculated in compute_in_ct
-    Influence_manager influences(parser, pat, warper, ct.getMetadata());
-    influences.get_dose_at_plan();
+    // Influence_manager influences(parser, pat, warper, ct.getMetadata());
+    // influences.get_dose_at_plan();
     // 4: Unload CT (I could destroy the object, but that could raise problems)
     ct.freeMemory();
 
@@ -147,12 +147,12 @@ int main(int argc, char** argv)
     calculate_range_shifter(parser.rshifter_steps, parser.adapt_constraints, new_energies,
                             pat.range_shifters, pat.machine, pat.isocenter_to_beam_distance,
                             pat.source_energies, pat.spots_per_field);
-    export_adapted (pat, parser.out_dir, parser.data_shifts_file,
+    export_adapted (pat, parser.work_dir, parser.data_shifts_file,
                     new_energies, weight_scaling,
                     warped_initpos, warped_endpoints, warper,
                     pat.geometric_tramp_names);
     // 7: Get influence in CBCT
-    influences.get_dij_at_frac (new_energies);
+    // influences.get_dij_at_frac (new_energies);
     // 8: Unload CBCT (I could destroy the object, but that could raise problems)
     cbct.freeMemory();
 
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 
     // 10: Correct weights
     // if (parser.launch_opt4D) {
-    //     Opt4D_manager opt4d(parser.out_dir);
+    //     Opt4D_manager opt4d(parser.work_dir);
     //     opt4d.populate_directory(influences.n_spots, influences.n_voxels,
     //                              influences.matrix_at_plan, influences.matrix_at_frac);
     //     opt4d.launch_optimization();
@@ -171,7 +171,7 @@ int main(int argc, char** argv)
     // 10: Output files for gPMC simulation
     if (parser.adapt_method == Adapt_methods_t::GEOMETRIC){
         Gpmc_manager gpmc(pat, parser.new_patient, parser.dose_frac_file, "dose",
-                          parser.out_plan, parser.out_dir, pat.adapted_tramp_names, warper.vf_ave);
+                          parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
         gpmc.write_dose_files(1000000);
         if (parser.launch_adapt_simulation) {
             gpmc.launch();
@@ -181,12 +181,12 @@ int main(int argc, char** argv)
         check_adaptation_from_dose(gpmc.get_total_dose_file(), target_mask, oars_mask,
                                    parser.dose_prescription, gpmc.get_to_Gy_factor());
     } else if (parser.adapt_method == Adapt_methods_t::GPMC_DOSE) {
-        Gpmc_manager gpmc(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
-                          parser.out_plan, parser.out_dir, pat.adapted_tramp_names, warper.vf_ave);
-        gpmc.write_dij_files(1000000, 0, true,
+        Gpmc_manager gpmc_dij(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
+                              parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
+        gpmc_dij.write_dij_files(1000000, 0, true,
                              utils::join_vectors(parser.target_mask_files, parser.oars_files,
                                                  parser.target_rim_files));
-        gpmc.launch();
+        gpmc_dij.launch();
 
         std::valarray<float> adapt_dose;
         std::valarray<float> adapt_dose_in_mask;
@@ -197,13 +197,13 @@ int main(int argc, char** argv)
         Volume_t target_mask = utils::read_masks (parser.target_mask_files);
         Volume_t target_rim_mask = utils::read_masks (parser.target_rim_files);
         Volume_t oars_mask = utils::read_masks (parser.oars_files);
-        check_adaptation(gpmc.get_field_dij_files(),
-                         parser.dose_prescription, gpmc.get_to_Gy_factor(),
+        check_adaptation(gpmc_dij.get_field_dij_files(),
+                         parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
                          pat.spots_per_field, adapt_field_dij,
                          adapt_dose, adapt_field_dose, underdose_mask,
                          target_mask, target_rim_mask, oars_mask,
                          adapt_dose_in_mask, adapt_dose_in_target);
-        output_debug_doses (parser.out_dir, underdose_mask, target_mask,
+        output_debug_doses (parser.work_dir, underdose_mask, target_mask,
                             parser.field_dose_plan_files,
                             adapt_dose, adapt_field_dose,
                             adapt_dose_in_target,
@@ -212,17 +212,17 @@ int main(int argc, char** argv)
                           adapt_field_dij, target_mask,
                           target_rim_mask, oars_mask,
                           parser.dose_prescription,
-                          parser.out_dir, pat.spots_per_field,
+                          parser.work_dir, pat.spots_per_field,
                           pat.source_weights,
                           weight_scaling);
 
         // Check adaptation!!
-        Gpmc_manager gpmc_check(pat, parser.new_patient, parser.dose_frac_file, "dose",
-                                parser.out_plan, parser.out_plan, pat.adapted_tramp_names,
-                                warper.vf_ave);
-        gpmc_check.write_dose_files(1000000);
+        Gpmc_manager gpmc_dose(pat, parser.new_patient, parser.dose_frac_file, "dose",
+                               parser.out_plan, parser.out_plan, pat.adapted_tramp_names,
+                               warper.vf_ave);
+        gpmc_dose.write_dose_files(1000000);
         if (parser.launch_adapt_simulation) {
-            gpmc.launch();
+            gpmc_dose.launch();
         }
     }
 
