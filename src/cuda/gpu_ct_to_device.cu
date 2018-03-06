@@ -105,6 +105,7 @@ void freeCTMemory()
 
 
 void gpu_ct_to_device::sendMask(const std::vector<std::string>& mask_files,
+                                const std::vector<int>& mask_importances,
                                 const CT_Dims_t& ct_dims)
 //  generate phantom data based on CT volume
 {
@@ -113,7 +114,7 @@ void gpu_ct_to_device::sendMask(const std::vector<std::string>& mask_files,
 
     if (ifmasks) {
         const float mask_threshold = 0.5;
-        Volume_t vol = utils::read_masks (mask_files, mask_threshold);
+        Volume_t vol = utils::read_masks (mask_files, mask_threshold, mask_importances);
         if (vol.nElements != ct_dims.total) {
             std::cerr << "ERROR! The number of elements found in the VF mask differs from ";
             std::cerr << "the number of elements in the CT!!" << std::endl;
@@ -122,11 +123,11 @@ void gpu_ct_to_device::sendMask(const std::vector<std::string>& mask_files,
 
         std::vector<int> vec(vol.nElements);
         std::transform (vol.data.begin(), vol.data.end(), vec.begin(),
-            [mask_threshold](const float& d) {return d < mask_threshold ? 0 : 1;});
+            [mask_threshold](const float& d) {return d > mask_threshold ? int(d+0.5) : 0;});
 
-        // std::ofstream ofs("mask_map.dat", std::ios::binary);
-        // ofs.write((char*)vec.data(), vec.size()*sizeof(int));
-        // ofs.close();
+        std::ofstream ofs("vf_mask_map.dat", std::ios::binary);
+        ofs.write((char*)vec.data(), vec.size()*sizeof(int));
+        ofs.close();
 
         std::cout << "sendMask: Sending VF mask to device ..." << std::endl;
         sendVectorToTexture(ct_dims.n.z, ct_dims.n.y, ct_dims.n.x, vec, vf_mask, vf_mask_tex);

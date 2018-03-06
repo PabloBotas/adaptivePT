@@ -39,6 +39,8 @@ public:
     std::vector<std::string> target_expanded_files;
     std::vector<std::string> oars_files;
     std::vector<std::string> v_field_mask_files;
+    std::vector<int> v_field_mask_importances;
+    std::vector<std::string> skin_mask_files;
     // Adaptation method
     Adapt_methods_t adapt_method;
     Adapt_constraints_t adapt_constraints;
@@ -51,6 +53,8 @@ public:
     std::string dij_frac_file;
     // Cold spots correction
     float dose_prescription = 60; // Gy
+    float spot_factor_dij = 1e6;
+    float spot_factor_dose = 1e6;
 
     void print_inputs();
 

@@ -46,7 +46,8 @@ namespace utils
     template <class T> int sgn(T& v);
     template <class T> int sgn_plus(T& v);
     template <class T> int sgn_minus(T& v);
-    Volume_t read_masks (const std::vector<std::string>& v, const float threshold = 0.5);
+    Volume_t read_masks (const std::vector<std::string>& v, const float threshold = 0.5,
+                         const std::vector<int> mask_importances = std::vector<int>());
     std::string run_command(const std::string cmd, int* return_code = NULL);
     void cm_to_mm(Array4<float>& v);
     Vector3_t<float> closest_point(const Vector3_t<float>& vec,

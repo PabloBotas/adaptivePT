@@ -28,7 +28,7 @@ void gpu_raytrace_original (const Patient_Parameters_t& pat,
 {
     // Set geometry in GPU
     gpu_ct_to_device::sendGeometries(ct);
-    gpu_ct_to_device::sendMask(parser.v_field_mask_files, pat.ct);
+    gpu_ct_to_device::sendMask(parser.v_field_mask_files, parser.v_field_mask_importances, pat.ct);
 
     // Create host buffers and initialize rays
     std::vector<float4> xbuffer, vxbuffer;

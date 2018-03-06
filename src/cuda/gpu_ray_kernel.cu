@@ -23,37 +23,50 @@ __global__ void raytrace_plan_kernel(const ushort num,
         int4 vox = get_voxel(ray.get_position());
 
         bool if_correct_energy = orig_endpoints ? true : false;
-        bool entered_mask = false;
-        bool vox_in_mask = false;
+        int reference_mask = 0;
+        int vox_in_mask = 0;
         float3 sample_pos = ray.get_position();
         float3 initial_pos = ray.get_position();
         int sample_vox = vox.w;
         float sample_wepl = 0;
+        int4 next_vox;
 
         VoxelUpdater voxUpdater;
         VoxelStepper voxStepper;
         const float initial_energy = ray.get_energy();
 
-        while (ray.is_alive() && vox.w >= -1) {
+        while (ray.is_alive()) {
             float step_water = 0, step = 0, de = 0;
             float max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                          vox, voxUpdater, voxStepper);
-#if defined(__STEP_CENTRAL_AXIS__)
-            get_step(step, step_water, de, max_step, ray.get_energy(), vox);
-#elif defined(__STEP_Q50__)
-            get_q50_blur_step(step, step_water, de, max_step, ray, vox);
-#else
-            get_average_blur_step(step, step_water, de, max_step, ray, vox);
-#endif
+            get_step(step, step_water, de, max_step, ray, vox);
+            if (step == max_step) {
+                next_vox = vox;
+                changeVoxel(next_vox, voxUpdater, voxStepper);
+                if (next_vox.w == -1) {
+                    break;
+                }
+            }
             ray.move(step, step_water, de);
             if (masking_vf) {
-                if (vox_in_mask || (!vox_in_mask && !entered_mask)) {
+                if (vox.w != -1) {
+                    vox_in_mask = tex3D(vf_mask_tex, vox.z, vox.y, vox.x);
+                }
+                if (vox_in_mask != 0) {
+                    if ((reference_mask == 0) || (vox_in_mask < reference_mask)) {
+                        reference_mask = vox_in_mask;
+                        sample_pos = ray.get_position();
+                        sample_vox = vox.w;
+                        sample_wepl = ray.get_wepl();
+                    } else if (vox_in_mask == reference_mask) {
+                        sample_pos = ray.get_position();
+                        sample_vox = vox.w;
+                        sample_wepl = ray.get_wepl();
+                    }
+                } else if (reference_mask == 0) {
                     sample_pos = ray.get_position();
                     sample_vox = vox.w;
                     sample_wepl = ray.get_wepl();
-                }
-                if (vox_in_mask && !entered_mask) {
-                    entered_mask = true;
                 }
             }
 
@@ -65,12 +78,8 @@ __global__ void raytrace_plan_kernel(const ushort num,
             if (traces && (!masking_vf || length(sample_pos - ray.get_position()) < 0.001)) {
                 score_traces(thread, traces, vox.w, !ray.is_alive());
             }
-            if (step == max_step) {
-                changeVoxel(vox, voxUpdater, voxStepper);
-                if (masking_vf && vox.w != -1) {
-                    vox_in_mask = tex3D(vf_mask_tex, vox.z, vox.y, vox.x) > 0.5;
-                }
-            }
+
+            vox = next_vox;
         }
 
         // Save scorer
@@ -99,17 +108,18 @@ __global__ void raytrace_plan_kernel(const ushort num,
             int sign = ahead_or_behind(ray.dir, stop_pos, ray.pos);
             ray.dir *= sign;
 
-            while (ray.is_alive() && vox.w != -1) {
+            while (ray.is_alive()) {
                 float step_water = 0, step = 0, de = 0;
                 float max_step = to_boundary(ray.get_position(), ray.get_direction(),
                                              vox, voxUpdater, voxStepper, stop_pos);
-#if defined(__STEP_CENTRAL_AXIS__)
-                get_step(step, step_water, de, max_step, ray.get_energy(), vox);
-#elif defined(__STEP_Q50__)
-                get_q50_blur_step(step, step_water, de, max_step, ray, vox);
-#else
-                get_average_blur_step(step, step_water, de, max_step, ray, vox);
-#endif
+                get_step(step, step_water, de, max_step, ray, vox);
+                if (step == max_step) {
+                    next_vox = vox;
+                    changeVoxel(next_vox, voxUpdater, voxStepper);
+                    if (next_vox.w == -1) {
+                        break;
+                    }
+                }
                 ray.move(step, step_water, de);
 
                 if (voxUpdater != NONE) {
@@ -117,12 +127,12 @@ __global__ void raytrace_plan_kernel(const ushort num,
                         int tempvox = sign < 0 ? -vox.w : vox.w;
                         score_traces(thread, traces, tempvox, false);
                     }
-                    changeVoxel(vox, voxUpdater, voxStepper);
                 } else {
                     if (traces)
                         score_traces(thread, traces, vox.w, true);
                     break;
                 }
+                vox = next_vox;
             }
 
             float wepl_stop = accu_wepl + sign*ray.get_wepl();
@@ -162,7 +172,8 @@ __device__ void score_traces(int thread, float *traces, int voxnum, bool last)
 {
     bool del_content = voxnum < 0;
     if (del_content) {
-        atomicExch(&traces[abs(voxnum)], 0.0f);
+        atomicCAS((int*)&traces[abs(voxnum)],
+                  __float_as_int(float(thread+1)), __float_as_int(0.0f));
     } else {
         float val = last ? 100000.f : float(thread+1);
         atomicExch(&traces[voxnum], val);
@@ -180,3 +191,5 @@ __device__ size_t get_endpoints_index(const short beam_id,
     size_t index = accu_spots + spot_id;
     return index;
 }
+
+

@@ -129,6 +129,10 @@ void Parser::process_command_line(int argc, char** argv)
                             "  -\"cold_spots\": gPMC is called on the geometrically adaptated "
                             "plan and the cold/hot areas are iteratively corrected.")
         // Weight adjustment files
+        ("sf_dij",      po::value<float>(&spot_factor_dij),
+                            "Spot factor for Dij calculation wiht gPMC.")
+        ("sf_dose",     po::value<float>(&spot_factor_dose),
+                            "Spot factor for dose calculation wiht gPMC.")
         ("plan_dose",   po::value<std::string>(&dose_plan_file),
                             "Plan dose distribution, usually from gPMC.")
         ("field_plan_doses", po::value<std::vector<std::string>>()->
@@ -154,20 +158,40 @@ void Parser::process_command_line(int argc, char** argv)
                             "calculated in the daily geometry and after applying the vector field "
                             "to the initial plan. Can be an output from the \"beam_model\" or the "
                             "\"gpmc_dij\" mode. Not necessary for geometric mode.")
-        ("vf_mask",     po::value<std::vector<std::string>>()->
+        ("vf_masks",     po::value<std::vector<std::string>>()->
                             multitoken()->
                             implicit_value(std::vector<std::string>{""}, ""),
-                            "Binary image of a mask in CT space. It represents the volume in which "
-                            "the vector field is probed. Spots are raytraced in CT space and the "
-                            "vector field is probed at the distal position along the beamlet "
-                            "central axis (endpoint). If the beamlet enters the mask volume, the "
-                            "enpoint will be taken as the last position along the central axis in "
-                            "the mask. If it doesn't, the endpoint will simply be the last "
-                            "position along the central axis. The spot will be moved according to "
-                            "the vector field value at this position. It is recommended to pass an "
-                            "expansion of the target volume. If more than one file are provided, "
-                            "the mask will be the union of all the files. If the command is not "
-                            "provided, the vector field will not be masked.")
+                            "List of binary images of a masks in CT space. They represent the "
+                            "volume in which the vector field is probed. The order in which the "
+                            "masks are passed represents their importance. Spots are raytraced in "
+                            "CT space and the vector field is probed at the distal position along "
+                            "the beamlet central axis (endpoint). If the beamlet enters any of the "
+                            "masked regions, the enpoint will be defined as the last position "
+                            "along the ray in the mask. If it doesn't, the endpoint will simply be "
+                            "the last position along the central axis. If the ray enters a mask of "
+                            "higher importance, then the endpoint will be defined w.r.t. that "
+                            "region and other masks will be ignored. A usual example would be to "
+                            "pass the target volume and 0.5, 1.0, 1.5 and 2.0 cm rings around it. "
+                            "If they ray enters the target volume then the endpoint will be "
+                            "w.r.t. to it. If it doesn't, but it enters the 0.5 cm, then that will "
+                            "be the reference region. This all is important because the spots are "
+                            "moved according to the vector field value at the endpoints. If the "
+                            "command is not provided, the vector field will not be masked. An "
+                            "additional explicit syntaxes to set the importance levels are given "
+                            "at examples 2, 3, 4 and 5. 1 and 2 and 4 and 5 are equivalent.\n"
+                            "Example:\n"
+                            "   1) target.mha target+1cm.mha target+2cm.mha\n"
+                            "   2) 1 target.mha 2 target+1cm.mha 3 target+2cm.mha\n"
+                            "   3) 1 target.mha 1 target+1cm.mha 2 target+2cm.mha\n"
+                            "   4) target.mha target+1cm.mha target+2cm.mha 3 target+3cm.mha\n"
+                            "   5) 1 target.mha 2 target+1cm.mha 3 target+2cm.mha 3 target+3cm.mha")
+        ("skin_mask",   po::value<std::vector<std::string>>()->
+                            multitoken()->
+                            implicit_value(std::vector<std::string>{""}, ""),
+                            "Binary image of one or more masks in CT to be used during VF probing. "
+                            "It is used as secondary criteria to limit the VF probing volume. If a "
+                            "ray has been trace through the target mask passed to \"vf_mask\", "
+                            "this is mask is ignored.")
         ("target_mask", po::value<std::vector<std::string>>()->
                             multitoken(),
                             "Binary image of one or more masks in CBCT to be used during Dij "
@@ -270,8 +294,11 @@ void Parser::process_command_line(int argc, char** argv)
             target_rim_files = vm["target_rim"].as<std::vector<std::string>>();
         if (!vm["oars"].empty())
             oars_files = vm["oars"].as<std::vector<std::string>>();
-        if (!vm["vf_mask"].empty())
-            v_field_mask_files = vm["vf_mask"].as<std::vector<std::string>>();
+        std::vector<std::string> masks_command;
+        if (!vm["vf_masks"].empty())
+            masks_command = vm["vf_masks"].as<std::vector<std::string>>();
+        if (!vm["skin_mask"].empty())
+            skin_mask_files = vm["skin_mask"].as<std::vector<std::string>>();
         if (!vm["constraint"].empty()) {
             constraint_vec = vm["constraint"].as<std::vector<std::string>>();
             for (size_t i=0; i<constraint_vec.size(); ++i) {
@@ -300,6 +327,20 @@ void Parser::process_command_line(int argc, char** argv)
         if (!vm["field_plan_doses"].empty())
             field_dose_plan_files = vm["field_plan_doses"].as<std::vector<std::string>>();
 
+        // PARSE INPUT MASKS FOR VF
+        if (masks_command.size()) {
+            std::regex rgx("[0-9]+");
+            for (size_t i = 0; i < masks_command.size(); ++i) {
+                if (std::regex_match(masks_command.at(i), rgx)) {
+                    v_field_mask_importances.push_back(std::stoi(masks_command.at(i)));
+                } else {
+                    v_field_mask_files.push_back(masks_command.at(i));
+                    if (v_field_mask_importances.size() < v_field_mask_files.size()) {
+                        v_field_mask_importances.push_back(i+1);
+                    }
+                }
+            }
+        }
 
         // ADAPT METHOD OPTIONS
         adapt_method_str = utils::toLower(adapt_method_str);
@@ -447,7 +488,16 @@ void Parser::process_command_line(int argc, char** argv)
                 if (std::ifstream(str)) {
                     str = utils::get_full_path(str);
                 } else {
-                    std::cerr << "Vf mask file not accessible: \""+str+"\"!" << std::endl;
+                    std::cerr << "VF mask file not accessible: \""+str+"\"!" << std::endl;
+                }
+            }
+        }
+        if (skin_mask_files.size() != 0) {
+            for (auto& str: skin_mask_files) {
+                if (std::ifstream(str)) {
+                    str = utils::get_full_path(str);
+                } else {
+                    std::cerr << "Skin mask file not accessible: \""+str+"\"!" << std::endl;
                 }
             }
         }

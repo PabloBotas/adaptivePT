@@ -172,7 +172,7 @@ int main(int argc, char** argv)
     if (parser.adapt_method == Adapt_methods_t::GEOMETRIC){
         Gpmc_manager gpmc(pat, parser.new_patient, parser.dose_frac_file, "dose",
                           parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
-        gpmc.write_dose_files(1000000);
+        gpmc.write_dose_files(parser.spot_factor_dose);
         if (parser.launch_adapt_simulation) {
             gpmc.launch();
         }
@@ -183,9 +183,9 @@ int main(int argc, char** argv)
     } else if (parser.adapt_method == Adapt_methods_t::GPMC_DOSE) {
         Gpmc_manager gpmc_dij(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
                               parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
-        gpmc_dij.write_dij_files(1000000, 0, true,
-                             utils::join_vectors(parser.target_mask_files, parser.oars_files,
-                                                 parser.target_rim_files));
+        gpmc_dij.write_dij_files(parser.spot_factor_dij, 0, true,
+                                 utils::join_vectors(parser.target_mask_files, parser.oars_files,
+                                                     parser.target_rim_files));
         gpmc_dij.launch();
 
         std::valarray<float> adapt_dose;
@@ -203,11 +203,11 @@ int main(int argc, char** argv)
                          adapt_dose, adapt_field_dose, underdose_mask,
                          target_mask, target_rim_mask, oars_mask,
                          adapt_dose_in_mask, adapt_dose_in_target);
-        output_debug_doses (parser.work_dir, underdose_mask, target_mask,
-                            parser.field_dose_plan_files,
-                            adapt_dose, adapt_field_dose,
-                            adapt_dose_in_target,
-                            parser.dose_prescription);
+        // output_debug_doses (parser.work_dir, underdose_mask, target_mask,
+        //                     parser.field_dose_plan_files,
+        //                     adapt_dose, adapt_field_dose,
+        //                     adapt_dose_in_target,
+        //                     parser.dose_prescription);
         cold_spots_fixer (adapt_dose_in_mask,
                           adapt_field_dij, target_mask,
                           target_rim_mask, oars_mask,
@@ -220,7 +220,7 @@ int main(int argc, char** argv)
         Gpmc_manager gpmc_dose(pat, parser.new_patient, parser.dose_frac_file, "dose",
                                parser.out_plan, parser.out_plan, pat.adapted_tramp_names,
                                warper.vf_ave);
-        gpmc_dose.write_dose_files(1000000);
+        gpmc_dose.write_dose_files(parser.spot_factor_dose);
         if (parser.launch_adapt_simulation) {
             gpmc_dose.launch();
         }

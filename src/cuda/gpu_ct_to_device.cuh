@@ -12,7 +12,8 @@ namespace gpu_ct_to_device
     void sendGeometries(const Volume_t& ct);
     void sendDimensions(const Volume_t& ct);
     void sendDensities(const Volume_t& ct);
-    void sendMask(const std::vector<std::string>& mask_files, const CT_Dims_t& ct_dims);
+    void sendMask(const std::vector<std::string>& mask_files,
+                  const std::vector<int>& mask_importances, const CT_Dims_t& ct_dims);
     void removeMask();
     void sendMaterialId(const Volume_t &ct);
     void sendMaterialId(const Volume_t &ct, const std::vector<int>& hu_indexes);

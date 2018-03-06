@@ -14,6 +14,23 @@ __device__ void get_step(float& step,
                          float& step_water,
                          float& de,
                          const float max_step,
+                         const Ray& ray,
+                         const int4& vox)
+{
+#if defined(__STEP_CENTRAL_AXIS__)
+    get_step(step, step_water, de, max_step, ray.get_energy(), vox);
+#elif defined(__STEP_Q50__)
+    get_q50_blur_step(step, step_water, de, max_step, ray, vox);
+#else
+    get_average_blur_step(step, step_water, de, max_step, ray, vox);
+#endif
+}
+
+
+__device__ void get_step(float& step,
+                         float& step_water,
+                         float& de,
+                         const float max_step,
                          const float energy_in,
                          const int4& vox)
 {

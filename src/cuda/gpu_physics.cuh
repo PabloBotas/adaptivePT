@@ -7,6 +7,13 @@ __device__ void get_step(float& step,
                          float& step_water,
                          float& de,
                          const float max_step,
+                         const Ray& ray,
+                         const int4& vox);
+
+__device__ void get_step(float& step,
+                         float& step_water,
+                         float& de,
+                         const float max_step,
                          const float energy_in,
                          const int4& vox);
 

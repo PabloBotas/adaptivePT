@@ -250,7 +250,8 @@ void utils::copy_replace_in_file(const std::string& in,
 }
 
 
-Volume_t utils::read_masks (const std::vector<std::string>& v, const float threshold) {
+Volume_t utils::read_masks (const std::vector<std::string>& v, const float threshold,
+                            const std::vector<int> mask_importances) {
     // Read structure volume
     Volume_t vol(v.front(), Volume_t::Source_type::MHA);
     for (size_t f=1; f < v.size(); ++f) {
@@ -270,9 +271,12 @@ Volume_t utils::read_masks (const std::vector<std::string>& v, const float thres
             std::cerr << temp << std::endl;
             exit(EXIT_FAILURE);
         }
+        // The masks will be passed as int to the device. To prevent unwanted flooring due to
+        // precision, I add 0.5.
+        float val = mask_importances.size() ? mask_importances.at(f) : 2*threshold;
         for (uint i = 0; i < temp.nElements; ++i) {
             if (temp.data.at(i) > threshold && vol.data.at(i) <= threshold) {
-                vol.data.at(i) = 2*threshold;
+                vol.data.at(i) = val;
             }
         }
     }
