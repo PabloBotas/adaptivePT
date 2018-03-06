@@ -24,7 +24,6 @@ void Mha_reader_t::read_file()
     utils::check_fs(stream, file, std::string());
     read_header(stream);
     read_body(stream);
-    std::cout << "Bytes read: " << nElements*nb*ElementNumberOfChannels << std::endl;
 }
 
 
@@ -41,6 +40,7 @@ void Mha_reader_t::read_header(std::ifstream& stream)
     CenterOfRotation        = getHeaderVector<int>(stream, "CenterOfRotation", 9);
     AnatomicalOrientation   = getHeaderValue<std::string>(stream, "AnatomicalOrientation");
     spacing                 = getHeaderVector<float>(stream, "ElementSpacing", 3);
+    std::string ITK_Input   = getHeaderValue<std::string>(stream, "ITK_InputFilterName", "");
     dim                     = getHeaderVector<unsigned int>(stream, "DimSize", 3);
     ElementNumberOfChannels = getHeaderValue<unsigned int>(stream, "ElementNumberOfChannels",
                                                            default_ElementNumberOfChannels);
@@ -149,15 +149,15 @@ T Mha_reader_t::getHeaderValue(std::ifstream &stream, std::string key, T default
 
     std::string line;
     std::getline(stream, line);
-    std::string field, dummy;
+    std::string field, equal_sign;
     T out;
     if (typeid(T) == typeid(bool)) {
         std::transform(line.begin(), line.end(), line.begin(), ::tolower);
         std::istringstream ss(line);
-        ss >> field >> dummy >> std::boolalpha >> out;
+        ss >> field >> equal_sign >> std::boolalpha >> out;
     } else {
         std::istringstream ss(line);
-        ss >> field >> dummy >> out;
+        ss >> field >> equal_sign >> out;
     }
 
     std::transform(key.begin(), key.end(), key.begin(), ::tolower);
