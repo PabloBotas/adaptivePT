@@ -159,6 +159,11 @@ int main(int argc, char** argv)
     // 9: Free memory in device
     freeCTMemory();
 
+    if (!parser.vf_report_file.empty()) {
+        generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
+                        parser.out_plan, pat.tramp_files);
+    }
+
     // 10: Correct weights
     // if (parser.launch_opt4D) {
     //     Opt4D_manager opt4d(parser.work_dir);
@@ -188,33 +193,43 @@ int main(int argc, char** argv)
                                                      parser.target_rim_files));
         gpmc_dij.launch();
 
-        std::valarray<float> adapt_dose;
-        std::valarray<float> adapt_dose_in_mask;
-        std::valarray<float> adapt_dose_in_target;
-        std::vector<std::valarray<float>> adapt_field_dose;
-        std::vector<std::valarray<float>> adapt_field_dij;
-        std::valarray<float> underdose_mask;
-        Volume_t target_mask = utils::read_masks (parser.target_mask_files);
-        Volume_t target_rim_mask = utils::read_masks (parser.target_rim_files);
-        Volume_t oars_mask = utils::read_masks (parser.oars_files);
-        check_adaptation(gpmc_dij.get_field_dij_files(),
-                         parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
-                         pat.spots_per_field, adapt_field_dij,
-                         adapt_dose, adapt_field_dose, underdose_mask,
-                         target_mask, target_rim_mask, oars_mask,
-                         adapt_dose_in_mask, adapt_dose_in_target);
-        // output_debug_doses (parser.work_dir, underdose_mask, target_mask,
-        //                     parser.field_dose_plan_files,
-        //                     adapt_dose, adapt_field_dose,
-        //                     adapt_dose_in_target,
-        //                     parser.dose_prescription);
-        cold_spots_fixer (adapt_dose_in_mask,
-                          adapt_field_dij, target_mask,
-                          target_rim_mask, oars_mask,
-                          parser.dose_prescription,
-                          parser.work_dir, pat.spots_per_field,
-                          pat.source_weights,
-                          weight_scaling);
+        // Explicit control of the scope to reduce memory usage
+        {
+            std::vector<std::valarray<float>> adapt_field_dij;
+            std::valarray<float> adapt_dose_in_mask;
+            Volume_t target_mask = utils::read_masks (parser.target_mask_files);
+            Volume_t target_rim_mask = utils::read_masks (parser.target_rim_files);
+            Volume_t oars_mask = utils::read_masks (parser.oars_files);
+            {
+                std::valarray<float> adapt_dose;
+                std::valarray<float> adapt_dose_in_target;
+                std::vector<std::valarray<float>> adapt_field_dose;
+                std::valarray<float> underdose_mask;
+                check_adaptation(gpmc_dij.get_field_dij_files(),
+                                 parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
+                                 pat.spots_per_field, adapt_field_dij,
+                                 adapt_dose, adapt_field_dose, underdose_mask,
+                                 target_mask, target_rim_mask, oars_mask,
+                                 adapt_dose_in_mask, adapt_dose_in_target);
+                // output_debug_doses (parser.work_dir, underdose_mask, target_mask,
+                //                     parser.field_dose_plan_files,
+                //                     adapt_dose, adapt_field_dose,
+                //                     adapt_dose_in_target,
+                //                     parser.dose_prescription);
+            }
+            cold_spots_fixer (adapt_dose_in_mask,
+                              adapt_field_dij, target_mask,
+                              target_rim_mask, oars_mask,
+                              parser.dose_prescription,
+                              parser.work_dir, pat.spots_per_field,
+                              pat.source_weights,
+                              weight_scaling);
+
+            if (!parser.vf_report_file.empty()) {
+                generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
+                                parser.out_plan, pat.tramp_files);
+            }
+        }
 
         // Check adaptation!!
         Gpmc_manager gpmc_dose(pat, parser.new_patient, parser.dose_frac_file, "dose",
@@ -231,11 +246,6 @@ int main(int argc, char** argv)
                     new_energies, weight_scaling,
                     warped_initpos, warped_endpoints, warper,
                     pat.adapted_tramp_names);
-
-    if (!parser.vf_report_file.empty()) {
-        generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
-                        parser.out_plan, pat.tramp_files);
-    }
 
     // Stop device
     stop_device(start);
