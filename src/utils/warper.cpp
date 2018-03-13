@@ -366,7 +366,7 @@ void Warper_t::probe_plastimatch (const Array4<float>& p, const CT_Dims_t& ct)
         cmd += file + " 2>&1";
 
         // Run command
-        str = utils::run_command(cmd);
+        str += utils::run_command(cmd);
     }
 
     // Get vf from stdout
