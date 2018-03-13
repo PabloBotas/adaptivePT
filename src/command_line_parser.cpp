@@ -336,7 +336,11 @@ void Parser::process_command_line(int argc, char** argv)
                 } else {
                     v_field_mask_files.push_back(masks_command.at(i));
                     if (v_field_mask_importances.size() < v_field_mask_files.size()) {
-                        v_field_mask_importances.push_back(i+1);
+                        if (i == 0) {
+                            v_field_mask_importances.push_back(1);
+                        } else {
+                            v_field_mask_importances.push_back(v_field_mask_importances.back()+1);
+                        }
                     }
                 }
             }
