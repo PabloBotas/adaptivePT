@@ -182,7 +182,7 @@ def analize_vf(vf_file, pp):
     for i,ang in enumerate(beamangle):
         temp = ang + 270.0*np.pi/180
         # temp = np.pi
-        print((temp*180.0/np.pi) % 360.0)
+        # print((temp*180.0/np.pi) % 360.0)
         ax3.axvline(x=temp, linewidth=20, alpha=0.2, label='beam '+str(i),
                    zorder=0, color=color_list[i])
     ax3.set_rorigin(-0.4*max(b))
@@ -421,7 +421,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         time_ideal, summary_ideal = delivery_timing.get_timing(tramp_e, x, y, tramp_w, energy_switch_time=False)
         total_ideal = time_ideal[-1]
         max_layers = np.floor((max_time - total_ideal)/default_energy_switch)
-        print('Maximum theoretical energy layers in 2 minutes: {}'.format(max_layers))
+        # print('Maximum theoretical energy layers in 2 minutes: {}'.format(max_layers))
 
         summary = summary.replace('Summary (s):', 'Original (s):')
         summary_adapted = summary_adapted.replace('Summary', 'Adapted')
