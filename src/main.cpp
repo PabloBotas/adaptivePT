@@ -174,7 +174,7 @@ int main(int argc, char** argv)
     // }
 
     // 10: Output files for gPMC simulation
-    if (parser.adapt_method == Adapt_methods_t::GEOMETRIC){
+    if (parser.adapt_method == Adapt_methods_t::GEOMETRIC) {
         Gpmc_manager gpmc(pat, parser.new_patient, parser.dose_frac_file, "dose",
                           parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
         gpmc.write_dose_files(parser.spot_factor_dose);
@@ -185,6 +185,7 @@ int main(int argc, char** argv)
         Volume_t oars_mask = utils::read_masks (parser.oars_files);
         check_adaptation_from_dose(gpmc.get_total_dose_file(), target_mask, oars_mask,
                                    parser.dose_prescription, gpmc.get_to_Gy_factor());
+
     } else if (parser.adapt_method == Adapt_methods_t::GPMC_DOSE) {
         Gpmc_manager gpmc_dij(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
                               parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
@@ -231,6 +232,12 @@ int main(int argc, char** argv)
             }
         }
 
+        // 11: Export results and report
+        export_adapted (pat, parser.out_plan, parser.data_shifts_file,
+                        new_energies, weight_scaling,
+                        warped_initpos, warped_endpoints, warper,
+                        pat.adapted_tramp_names);
+
         // Check adaptation!!
         Gpmc_manager gpmc_dose(pat, parser.new_patient, parser.dose_frac_file, "dose",
                                parser.out_plan, parser.out_plan, pat.adapted_tramp_names,
@@ -240,12 +247,6 @@ int main(int argc, char** argv)
             gpmc_dose.launch();
         }
     }
-
-    // 11: Export results and report
-    export_adapted (pat, parser.out_plan, parser.data_shifts_file,
-                    new_energies, weight_scaling,
-                    warped_initpos, warped_endpoints, warper,
-                    pat.adapted_tramp_names);
 
     // Stop device
     stop_device(start);
@@ -386,7 +387,11 @@ void generate_report(const std::string& vf_report_file,
                      const std::string& out_dir,
                      const std::vector<std::string>& tramp_files)
 {
-    std::cout << "Generating report ..." << std::endl;
+    // I use std::stringstream to perform only one write (<<) to std::cout. It is guaranteed to 
+    // be atomic in C++11, but that applies to each << call. By using stringstreams, only one << 
+    // is required. I finally did not use OpenMP, but I'll still leave this implementation
+    std::stringstream stream;
+    stream << "Generating report ..." << std::endl;
     std::string interp = "python3 ";
     std::string code   = std::string(INSTALLATION_PATH) + "/src/extra/create_adapt_report.py ";
     std::string vf     = "--vf " + data_vf_file + " ";
@@ -396,12 +401,16 @@ void generate_report(const std::string& vf_report_file,
         tramps += tramp_files.at(i) + " ";
     std::string outdir = "--outdir " + out_dir + " ";
     std::string outfile = "--outfile " + vf_report_file;
-    std::string command = interp + code + vf + shifts + tramps + outdir + outfile;
-    std::cout << "Running: " << command << std::endl;
+    std::string command = interp + code + vf + shifts + tramps + outdir + outfile + " &";
+    stream << "Running: " << command << std::endl;
+    std::cout << stream.str();
     int res = system(command.c_str());
 
     if (res) {
-        std::cerr << "ERROR! Reporting failed with error code: " << res << std::endl;
+        stream.str(std::string());
+        stream.clear();
+        stream << "ERROR! Reporting failed with error code: " << res << std::endl;
+        std::cerr << stream.str();
         exit(EXIT_FAILURE);
     }
 }
