@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 #include <valarray>
+#include <omp.h>
+#include <time.h>
 using Array = std::valarray<float>;
 
 // Dose stats -----------------------------------------------
@@ -147,31 +149,47 @@ void check_adaptation (std::vector<std::string> adapt_dij_per_field_files,
     dose_in_mask.resize(dij_nvox);
 
     // Read dijs inside masked region
+    // clock_t start = clock();
     field_dij.resize(nbeams);
-    std::cout << "Read dijs inside target:" << std::endl;
+    std::cout << "Read and transpose dijs inside target:" << std::endl;
     for (size_t i = 0; i < nbeams; ++i) {
         // Read Dij file
         std::string& f = adapt_dij_per_field_files.at(i);
         std::cout << "\t- " << f << std::endl;
         std::ifstream ifs(f, std::ios::binary);
         utils::check_fs(ifs, f, " to read Dij during plan assessment");
-        field_dij.at(i).resize(spots_per_field.at(i)*dij_nvox);
-        ifs.read(reinterpret_cast<char*>(&field_dij.at(i)[0]),
+        Array temp(spots_per_field.at(i)*dij_nvox);
+        ifs.read(reinterpret_cast<char*>(&temp[0]),
                                          spots_per_field.at(i)*dij_nvox*sizeof(float));
-        field_dij.at(i) *= conv_factor;
+        temp *= conv_factor;
+        // Transpose temp Dij and store
+        field_dij.at(i).resize(spots_per_field.at(i)*dij_nvox);
+        size_t j;
+        #pragma omp parallel for \
+                num_threads(5) \
+                private(j) \
+                shared(dij_nvox, field_dij, spots_per_field, i)
+        for (j = 0; j < dij_nvox; ++j)
+            field_dij.at(i)[std::slice(j*spots_per_field.at(i), spots_per_field.at(i), 1)] =
+                                    temp[std::slice(j, spots_per_field.at(i), dij_nvox)];
     }
+    // clock_t end = clock();
+    // std::cout << "Time taken: " << ((double)(end-start)/(double)CLOCKS_PER_SEC) << " s" << std::endl;
 
     DoseStatsTarget target_stats(target_nvox, dose_prescription);
     DoseStatsOARs oar_stats(oars_nvox);
     // Iterate over volume voxels
+    std::cout << "Collecting DVH data ..." << std::endl;
+    Array d_per_spot;
+    d_per_spot.resize(dij_nvox);
     for (size_t i = 0, idij = 0, itarget = 0; i < volume_vox; ++i) {
         // Check if in a ROI
         if (total_mask.at(i) > 0.5) {
             for (size_t f = 0; f < nbeams; ++f) {
                 // Get dose in voxel per spot
-                Array d_per_spot = field_dij.at(f)[
-                        std::slice(idij, spots_per_field.at(f), dij_nvox)];
-                float d = d_per_spot.sum();
+                Array& Dij = field_dij.at(f);
+                auto p = std::begin(Dij)+idij*spots_per_field.at(f);
+                float d = std::accumulate(p, p+spots_per_field.at(f), 0.0);
                 dose[i] += d;
                 adapt_field_dose.at(f)[i] += d;
                 dose_in_mask[idij] += d;
@@ -220,7 +238,7 @@ void check_adaptation(const std::vector<Array>& adapt_field_dij,
     for (size_t f = 0; f < adapt_field_dij.size(); ++f) {
         for (size_t i = 0; i < dij_nvox; ++i) {
             Array d_to_vox_per_spot = adapt_field_dij.at(f)[
-                                    std::slice(i, spots_per_field.at(f), dij_nvox)];
+                                    std::slice(i*spots_per_field.at(f), spots_per_field.at(f), 1)];
             adapt_dose_mask[i] += d_to_vox_per_spot.sum();
         }
     }
@@ -343,7 +361,7 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
         uint ispot = ibeam > 0 ? indexes.at(i) - accu_spots.at(ibeam-1) : indexes.at(i);
         // Get start position of slice and add it!!
         subset_dij.at(ibeam)[std::slice(j_spot_beam*dij_nvox, dij_nvox, 1)] = 
-                                adapt_field_dij.at(ibeam)[std::slice(ispot*dij_nvox, dij_nvox, 1)];
+                adapt_field_dij.at(ibeam)[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))];
         j_spot_beam = j_spot_beam == selected_spots_per_field.at(ibeam)-1 ? 0 : j_spot_beam+1;
     }
 
@@ -402,9 +420,9 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
                                                     indexes.at(i)));
         uint ispot = ibeam > 0 ? indexes.at(i) - accu_spots.at(ibeam-1) : indexes.at(i);
         // Get start position of slice and add it!!
-        Array temp = adapt_field_dij.at(ibeam)[std::slice(ispot*dij_nvox, dij_nvox, 1)];
+        Array temp = adapt_field_dij.at(ibeam)[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))];
         temp *= subset_weight_scaling.at(i);
-        adapt_field_dij.at(ibeam)[std::slice(ispot*dij_nvox, dij_nvox, 1)] = temp;
+        adapt_field_dij.at(ibeam)[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))] = temp;
         // Set in referenced vector
         weight_scaling.at(indexes.at(i)) = subset_weight_scaling.at(i);
     }
