@@ -24,7 +24,7 @@ def find_range(a, margin=0., va=None):
     a_min = a.min()
     a_max = a.max()
     rng = a_max - a_min
-    return [a_min - margin/100.*rng, a_max + margin/100.*rng]
+    return list([a_min - margin/100.*rng, a_max + margin/100.*rng])
 
 
 def is_outlier(value, p0, p1):
@@ -316,6 +316,7 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         vy = y - tramp_y
         d = np.sqrt(vx*vx + vy*vy)
 
+        n_spots = len(tramp_e)
         unique_energies = np.unique(tramp_e)[::-1]
         number_layers = len(unique_energies)
         layer_id = np.array([int(np.squeeze(np.where(unique_energies == i))) for i in tramp_e])
@@ -335,14 +336,28 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
                 100*(average-layer_energy)/layer_energy), xy=(accu_len, pos_text_y), fontsize=5)
             box_x0 = accu_len-1 if i != 0 else accu_len
             box_x1 = len(layer) if i != 0 else len(layer)-1
-            add_rectangle(ax, box_x0, min(layer), box_x1, max(layer)-min(layer), 'blue', 0.1)
-            add_rectangle(ax, box_x0, 0.95*layer_energy, box_x1, 0.1*layer_energy, 'green', 0.075)
+            add_rectangle(ax, box_x0, min(layer), box_x1, max(layer)-min(layer), 'blue', 0.075)
+            # add_rectangle(ax, box_x0, 0.95*layer_energy, box_x1, 0.1*layer_energy, 'green', 0.075)
             accu_len += len(layer)
         ax.step(range(len(tramp_e)), tramp_e, color='black', alpha=0.9)
-        ax.plot(np.sort(tramp_e+de)[::-1], linestyle='None', marker='o', color='black',
+        new_e = tramp_e+de
+        ax.plot(np.sort(new_e)[::-1], linestyle='None', marker='o', color='black',
                 markersize=1, alpha=0.4, markeredgecolor='black', markeredgewidth=0.1)
-        ax.plot(tramp_e+de, linestyle='None', color='red', marker='o', alpha=0.75,
+        ax.plot(new_e, linestyle='None', color='red', marker='o', alpha=0.75,
                 markersize=1.75, markeredgewidth=0.25)
+        # Find outliers
+        log_out = np.abs(de)/tramp_e >= 0.25
+        outliers_x = np.squeeze(np.where(log_out))
+        outliers_y = new_e[log_out]
+        # Find plotting range to draw circles and avoid ellipses
+        plt_range_x = n_spots-1
+        plt_range_y = new_e.min() - new_e.max()
+        try:
+            for i in range(len(outliers_x)):
+                anno = "S{}".format(outliers_x[i])
+                ax.text(outliers_x[i], outliers_y[i], anno, fontsize=6, color='blue')
+        except TypeError:
+            pass
         ax.set_xlabel('Spot number', fontsize=7)
         ax.set_ylabel('Energy (MeV)', fontsize=7)
         ax.annotate('N. spots = ' + str(len(tramp_e)) + '\nOrig. layers  = ' +
@@ -354,9 +369,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         ax = fig.add_subplot(4, 2, 2)
         color_range = find_range(de)
         if np.abs(color_range[0]) > np.abs(color_range[1]):
-            color_range = (-np.abs(color_range[0]), np.abs(color_range[0]))
+            color_range = [-np.abs(color_range[0]), np.abs(color_range[0])]
         else:
-            color_range = (-np.abs(color_range[1]), np.abs(color_range[1]))
+            color_range = [-np.abs(color_range[1]), np.abs(color_range[1])]
         if color_range[0] == color_range[1]:
             color_range[0] -= 2
             color_range[0] += 2
@@ -373,9 +388,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         cmap = plt.cm.get_cmap('rainbow')
         color_range = find_range(de)
         if np.abs(color_range[0]) > np.abs(color_range[1]):
-            color_range = (-np.abs(color_range[0]), np.abs(color_range[0]))
+            color_range = [-np.abs(color_range[0]), np.abs(color_range[0])]
         else:
-            color_range = (-np.abs(color_range[1]), np.abs(color_range[1]))
+            color_range = [-np.abs(color_range[1]), np.abs(color_range[1])]
         if color_range[0] == color_range[1]:
             color_range[0] -= 2
             color_range[0] += 2
@@ -475,6 +490,19 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
 
         ax = fig.add_subplot(4, 2, 8)
         bp = df.boxplot(ax=ax, meanprops=meanprops, **box_kwargs)
+        # Find outliers
+        spot_ids = sorted(np.append(np.where(dw >= 5), np.where(dw <= 0.1)))
+        outliers_x = layer_id[spot_ids] + 1
+        outliers_y = np.append(dw[dw >= 5], dw[dw <= 0.1])
+        # Find plotting range to draw circles
+        plt_range_x = layer_id[-1]-1
+        plt_range_y = dw.min() - dw.max()
+        for i in range(len(outliers_x)):
+            add_ellipse(ax, outliers_x[i], outliers_y[i], 0.5, 0.5*plt_range_y/plt_range_x, 'red')
+            ax.annotate('S' + str(spot_ids[i]),
+                        xy=(outliers_x[i], outliers_y[i]), fontsize=6,
+                        xytext=(outliers_x[i], outliers_y[i]))
+
         ax.set_xlabel("Energy layer", fontsize=7)
         ax.set_ylabel(r'$w/w_{0}$', fontsize=7)
         ax.grid(False)
