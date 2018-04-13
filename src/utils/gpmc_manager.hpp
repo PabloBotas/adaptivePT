@@ -56,6 +56,7 @@ private:
     bool to_ct_grid;
     std::vector<std::string> masks;
     std::string trampdir;
+    bool supress_std;
 
     uint nfractions = 30;
 

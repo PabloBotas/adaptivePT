@@ -33,9 +33,11 @@ Gpmc_manager::Gpmc_manager(Patient_Parameters_t plan, std::string patient_,
     if (scorer.compare("dosedij") == 0) {
         input_file = out_directory + "/gpmc_dij.in";
         launcher_file = out_directory + "/run_gpmc_dij.sh";
+        supress_std = false;
     } else if (scorer.compare("dose") == 0) {
         input_file = out_directory + "/gpmc_dose.in";
         launcher_file = out_directory + "/run_gpmc_dose.sh";
+        supress_std = true;
     } else {
         std::cerr << "Unknown scorer passed to gPMC. This should be a compilation error ";
         std::cerr << ", but life is hard sometimes" << std::endl;
@@ -136,6 +138,7 @@ void Gpmc_manager::write_templates(bool add_mask, bool sum_beams)
     std::map<std::string, std::string> replace_map {
         {"PATIENT_DIRECTORY", patient},
         {"SCORER", scorer},
+        {"SUPRESS_STD", std::to_string(supress_std)},
         {"SPOT_FACTOR", std::to_string(spot_factor)},
         {"MACHINE_TO_USE", machine},
         {"CT_VOLUME_FILE", ct_volume},
@@ -195,11 +198,13 @@ void Gpmc_manager::write_templates(bool add_mask, bool sum_beams)
         txt += "outdir=" + out_directory + "\n";
         txt += "spotfactor=" + std::to_string(spot_factor) + "\n";
         txt += "/opt/gpmc-tools/1.0/sumDoses ${outdir}/total.dose ${outdir}/DoseFrac*.dose\n";
-        txt += "/opt/gpmc-tools/1.0/sumDosesStd ${outdir}/total.dose_std ${outdir}/DoseFrac*_std\n";
+        if (!supress_std) {
+            txt += "/opt/gpmc-tools/1.0/sumDosesStd ${outdir}/total.dose_std ${outdir}/DoseFrac*_std\n";
+        }
         txt += "nx=$(grep \"nVoxelsX\" ${outdir}/geometry.dat | awk '{print $2}')\n";
         txt += "ny=$(grep \"nVoxelsY\" ${outdir}/geometry.dat | awk '{print $2}')\n";
         txt += "nz=$(grep \"nVoxelsZ\" ${outdir}/geometry.dat | awk '{print $2}')\n";
-        txt += "for f in $(ls ${outdir}/DoseFrac* ${outdir}/total.dose*); do\n";
+        txt += "for f in $(ls ${outdir}/total.dose); do\n";
         txt += "    name=$(basename $f)\n";
         txt += "    /opt/gpmc-tools/1.0/gpmc2xio ";
         txt += "${outdir}/ast_${name} ${f} ${nx} ${ny} ${nz} ${spotfactor} ${fractions}\n";
