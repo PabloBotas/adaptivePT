@@ -43,10 +43,19 @@ __global__ void raytrace_plan_kernel(const ushort num,
             if (step == max_step) {
                 next_vox = vox;
                 changeVoxel(next_vox, voxUpdater, voxStepper);
+                // if(thread == 5) {
+                //     printf("%f %f %f %f %f %d %d\n",
+                //         ray.get_energy(), ray.get_wepl(), de, step, step_water, vox.w, next_vox.w);
+                // }
                 if (next_vox.w == -1) {
                     break;
                 }
-            }
+            } //else {
+            //     if(thread == 5) {
+            //         printf("%f %f %f %f %f %d %d\n",
+            //             ray.get_energy(), ray.get_wepl(), de, step, step_water, vox.w, next_vox.w);
+            //     }
+            // }
             ray.move(step, step_water, de);
             if (masking_vf) {
                 if (vox.w != -1) {
@@ -76,7 +85,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
             // sample_wepl = ray.get_wepl();
 
             if (traces && (!masking_vf || length(sample_pos - ray.get_position()) < 0.001)) {
-                score_traces(thread, traces, vox.w, !ray.is_alive());
+                score_traces(thread, traces, vox.w, false);
             }
 
             vox = next_vox;
@@ -88,7 +97,7 @@ __global__ void raytrace_plan_kernel(const ushort num,
             sample_vox = vox.w;
             sample_wepl = ray.get_wepl();
         }
-        if (traces) {
+        if (traces && !if_correct_energy) {
             score_traces(thread, traces, sample_vox, true);
         }
         pos_scorer[ind].x = sample_pos.x;
@@ -175,7 +184,7 @@ __device__ void score_traces(int thread, float *traces, int voxnum, bool last)
         atomicCAS((int*)&traces[abs(voxnum)],
                   __float_as_int(float(thread+1)), __float_as_int(0.0f));
     } else {
-        float val = last ? 100000.f : float(thread+1);
+        float val = last ? float(thread+1+100000) : float(thread+1);
         atomicExch(&traces[voxnum], val);
     }
 }
