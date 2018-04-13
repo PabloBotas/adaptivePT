@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <string>
 #include <limits>
+#include <boost/timer.hpp>
 
 #include "command_line_parser.hpp"
 #include "cold_spots_fixer.hpp"
@@ -80,6 +81,13 @@ void generate_report(const std::string& vf_report_file,
 
 int main(int argc, char** argv)
 {
+    // Timer -----------------------------------------------------------------
+    boost::timer timer;
+    float time_ct_tracing{}, time_cbct_tracing{};
+    float time_geometric_sim{}, time_opt4d{}, time_opt4d_validation{};
+    timer.restart();
+
+    // Read input parameters -------------------------------------------------
     Parser parser(argc, argv);
     parser.print_inputs();
 
@@ -107,15 +115,6 @@ int main(int argc, char** argv)
     warper.print_vf();
 
     // Adaptive steps --------------------------------------------------------
-    // Initialize influence manager
-
-
-    // Array4<float> influence_ct(pat.total_spots*pat.total_spots);
-    // Array4<float> influence_cbct(pat.total_spots*pat.total_spots);
-    // uint nprobes = std::numeric_limits<uint>::max();
-    // uint nprobes = pat.total_spots;
-    // structure_sampler (parser.ct_mask_file, percentage, pat.total_spots, warper, pat.ct,
-                       // influence_ct, influence_cbct);
 
     // 1: Load CT
     Volume_t ct(pat.planning_ct_file, Volume_t::Source_type::CTVOLUME);
@@ -125,36 +124,44 @@ int main(int argc, char** argv)
                    warper,                            // outputs
                    endpoints, initpos,                // outputs
                    warped_endpoints, warped_initpos); // outputs
-    // 3: Get influence in CT: I need the vf average and that is calculated in compute_in_ct
-    // Influence_manager influences(parser, pat, warper, ct.getMetadata());
-    // influences.get_dose_at_plan();
     // 4: Unload CT (I could destroy the object, but that could raise problems)
     ct.freeMemory();
+
+    time_ct_tracing = timer.elapsed();
+    timer.restart();
 
     // Stop process for debug purposes
     if (parser.skip_cbct)
         exit(EXIT_SUCCESS);
 
     // 5: Load CBCT
-    Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
-    // pat.update_geometry(cbct);
-    // 6: Get endpoints and corrections in CBCT
-    Array3<float> traces_data;
-    compute_in_cbct (pat, parser, cbct,                // inputs
-                     warped_endpoints, warped_initpos, // inputs
-                     new_energies, cbct_endpoints, traces_data); // outputs
-    // 7: constrain energy shifts and export geometric adaptation (weight_scaling = [1 .. 1])
-    calculate_range_shifter(parser.rshifter_steps, parser.adapt_constraints, new_energies,
-                            pat.range_shifters, pat.machine, pat.isocenter_to_beam_distance,
-                            pat.source_energies, pat.spots_per_field);
+    if (parser.adapt_constraints != Adapt_constraints_t::FIXED) {
+        Volume_t cbct(parser.cbct_file, Volume_t::Source_type::MHA);
+        // pat.update_geometry(cbct);
+        // 6: Get endpoints and corrections in CBCT
+        Array3<float> traces_data;
+        compute_in_cbct (pat, parser, cbct,                // inputs
+                         warped_endpoints, warped_initpos, // inputs
+                         new_energies, cbct_endpoints, traces_data); // outputs
+        // 8: Unload CBCT (I could destroy the object, but that could raise problems)
+        cbct.freeMemory();
+        // 7: constrain energy shifts and export geometric adaptation (weight_scaling = [1 .. 1])
+        calculate_range_shifter(parser.rshifter_steps, parser.adapt_constraints, new_energies,
+                                pat.range_shifters, pat.machine, pat.isocenter_to_beam_distance,
+                                pat.source_energies, pat.spots_per_field);
+    } else {
+        new_energies = pat.source_energies;
+        std::transform(new_energies.begin(), new_energies.end(), new_energies.begin(),
+            std::bind1st(std::multiplies<float>(), 1e6));
+    }
+
+    time_cbct_tracing = timer.elapsed();
+    timer.restart();
+
     export_adapted (pat, parser.work_dir, parser.data_shifts_file,
                     new_energies, weight_scaling,
                     warped_initpos, warped_endpoints, warper,
                     pat.geometric_tramp_names);
-    // 7: Get influence in CBCT
-    // influences.get_dij_at_frac (new_energies);
-    // 8: Unload CBCT (I could destroy the object, but that could raise problems)
-    cbct.freeMemory();
 
     // 9: Free memory in device
     freeCTMemory();
@@ -163,15 +170,6 @@ int main(int argc, char** argv)
         generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
                         parser.out_plan, pat.tramp_files);
     }
-
-    // 10: Correct weights
-    // if (parser.launch_opt4D) {
-    //     Opt4D_manager opt4d(parser.work_dir);
-    //     opt4d.populate_directory(influences.n_spots, influences.n_voxels,
-    //                              influences.matrix_at_plan, influences.matrix_at_frac);
-    //     opt4d.launch_optimization();
-    //     weight_scaling = opt4d.get_weight_scaling();
-    // }
 
     // 10: Output files for gPMC simulation
     if (parser.adapt_method == Adapt_methods_t::GEOMETRIC) {
@@ -186,6 +184,9 @@ int main(int argc, char** argv)
         check_adaptation_from_dose(gpmc.get_total_dose_file(), target_mask, oars_mask,
                                    parser.dose_prescription, gpmc.get_to_Gy_factor());
 
+        time_geometric_sim = timer.elapsed();
+        timer.restart();
+
     } else if (parser.adapt_method == Adapt_methods_t::GPMC_DOSE) {
         Gpmc_manager gpmc_dij(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
                               parser.out_plan, parser.work_dir, pat.adapted_tramp_names, warper.vf_ave);
@@ -193,6 +194,9 @@ int main(int argc, char** argv)
                                  utils::join_vectors(parser.target_mask_files, parser.oars_files,
                                                      parser.target_rim_files));
         gpmc_dij.launch();
+
+        time_geometric_sim = timer.elapsed();
+        timer.restart();
 
         // Explicit control of the scope to reduce memory usage
         {
@@ -204,14 +208,12 @@ int main(int argc, char** argv)
             {
                 std::valarray<float> adapt_dose;
                 std::valarray<float> adapt_dose_in_target;
-                std::vector<std::valarray<float>> adapt_field_dose;
-                std::valarray<float> underdose_mask;
-                check_adaptation(gpmc_dij.get_field_dij_files(),
-                                 parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
-                                 pat.spots_per_field, adapt_field_dij,
-                                 adapt_dose, adapt_field_dose, underdose_mask,
-                                 target_mask, target_rim_mask, oars_mask,
-                                 adapt_dose_in_mask, adapt_dose_in_target);
+                check_geometric_adapt (gpmc_dij.get_field_dij_files(),
+                                       parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
+                                       pat.spots_per_field, adapt_field_dij,
+                                       adapt_dose,
+                                       target_mask, target_rim_mask, oars_mask,
+                                       adapt_dose_in_mask, adapt_dose_in_target);
                 // output_debug_doses (parser.work_dir, underdose_mask, target_mask,
                 //                     parser.field_dose_plan_files,
                 //                     adapt_dose, adapt_field_dose,
@@ -225,6 +227,8 @@ int main(int argc, char** argv)
                               parser.work_dir, pat.spots_per_field,
                               pat.source_weights,
                               weight_scaling);
+            time_opt4d = timer.elapsed();
+            timer.restart();
 
             if (!parser.vf_report_file.empty()) {
                 generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
@@ -245,8 +249,19 @@ int main(int argc, char** argv)
         gpmc_dose.write_dose_files(parser.spot_factor_dose);
         if (parser.launch_adapt_simulation) {
             gpmc_dose.launch();
+            time_opt4d_validation = timer.elapsed();
+            timer.restart();
         }
     }
+
+    // Report time ------------------------------------------------------------
+    std::cout << std::endl;
+    std::cout << "Total time:" << std::endl;
+    std::cout << "    CT tracing:     " << time_ct_tracing << std::endl;
+    std::cout << "    CBCT tracing:   " << time_cbct_tracing << std::endl;
+    std::cout << "    gPMC geometric: " << time_geometric_sim << std::endl;
+    std::cout << "    Opt4D:          " << time_opt4d << std::endl;
+    std::cout << "    Opt validation: " << time_opt4d_validation << std::endl;
 
     // Stop device
     stop_device(start);

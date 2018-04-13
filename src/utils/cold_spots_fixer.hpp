@@ -44,18 +44,16 @@ void check_adaptation_from_dose (std::string adapt_total_dose_file,
                                  const Volume_t& target_mask, const Volume_t& oars_mask,
                                  float dose_prescription, float conv_factor);
 
-void check_adaptation (std::vector<std::string> adapt_dij_per_field_files,
-                       float dose_prescription, float conv_factor,
-                       const std::vector<short>& spots_per_field,
-                       std::vector<Array>& field_dij,
-                       Array& dose,
-                       std::vector<Array>& adapt_field_dose,
-                       Array& underdose_mask,                      
-                       const Volume_t& target_mask,
-                       const Volume_t& target_rim_mask,
-                       const Volume_t& oars_mask,
-                       Array& dose_in_mask,
-                       Array& dose_in_target);
+void check_geometric_adapt (std::vector<std::string> adapt_dij_per_field_files,
+                            float dose_prescription, float conv_factor,
+                            const std::vector<short>& spots_per_field,
+                            std::vector<Array>& field_dij,
+                            Array& dose,
+                            const Volume_t& target_mask,
+                            const Volume_t& target_rim_mask,
+                            const Volume_t& oars_mask,
+                            Array& dose_in_mask,
+                            Array& dose_in_target);
 
 void check_adaptation(const std::vector<Array>& adapt_field_dij,
                       float dose_prescription, std::vector<short> spots_per_field,
@@ -76,12 +74,12 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
                       std::vector<float> weights,                // spots weights
                       std::vector<float>& weight_scaling);       // spots scaling (all 1)
 
-void output_debug_doses (std::string out_directory, const Array& underdose_mask,
-                         const Volume_t& target_mask,
-                         const std::vector<std::string>& plan_dose_per_field_files,
-                         const Array& adapt_dose,
-                         const std::vector<Array>& adapt_field_dose,
-                         const Array& adapt_dose_in_target,
-                         float dose_prescription);
+// void output_debug_doses (std::string out_directory, const Array& underdose_mask,
+//                          const Volume_t& target_mask,
+//                          const std::vector<std::string>& plan_dose_per_field_files,
+//                          const Array& adapt_dose,
+//                          const std::vector<Array>& adapt_field_dose,
+//                          const Array& adapt_dose_in_target,
+//                          float dose_prescription);
 
 #endif

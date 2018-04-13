@@ -17,6 +17,8 @@ enum class Adapt_constraints_t
     FIELD_ISOCENTER_SHIFT,
     RANGE_SHIFTER,
     V_RANGE_SHIFTER,
+    FIXED_POS,
+    FIXED,
     FREE
 };
 

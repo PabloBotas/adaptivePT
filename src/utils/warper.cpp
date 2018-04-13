@@ -8,6 +8,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <sstream>
 #include <sys/stat.h>
@@ -44,15 +45,25 @@ void Warper_t::apply_to_plan (Array4<float>& endpoints,
                               const std::vector<short>& spots_per_field,
                               const Adapt_constraints_t options)
 {
-    probe_plastimatch (endpoints, ct);
-    set_average();
-    apply_position_options(options, spots_per_field);
-    if (exp_file)
-        write_to_file (endpoints, spots_per_field, angles);
+    if (options != Adapt_constraints_t::FIXED &&
+        options != Adapt_constraints_t::FIXED_POS) {
+        // Normal execution of the adaptation!!
+        probe_plastimatch (endpoints, ct);
+        set_average();
+        apply_position_options(options, spots_per_field);
+        if (exp_file)
+            write_to_file (endpoints, spots_per_field, angles);
 
-    warp_points (endpoints);
-    warp_init_points (init_pos, treatment_plane, spots_per_field, angles);
-    // print_vf();
+        warp_points (endpoints);
+        warp_init_points (init_pos, treatment_plane, spots_per_field, angles);
+        // print_vf();
+    } else {
+        // No shifts are allowed!!
+        vf = Array3<float>(endpoints.size(), Vector3_t<float>(0,0,0));
+        set_average();
+        if (exp_file)
+            write_to_file (endpoints, spots_per_field, angles);
+    }
 }
 
 Array4<float> Warper_t::apply_to_points (const Array4<float>& pos,
@@ -136,14 +147,24 @@ void Warper_t::set_vf_origins()
 
     if (!str.empty()) {
         while(std::getline(ss_per_line, line, '\n')) {
-            if (line.find("Origin") == std::string::npos)
-                continue;
-            std::istringstream ss_per_space(line);
-            while (ss_per_space) {
+            if (line.find("Origin") != std::string::npos) {
+                std::istringstream ss_per_space(line);
                 std::string dummy;
                 ss_per_space >> dummy >> dummy;
                 ss_per_space >> origins.x >> origins.y >> origins.z;
+            } else if (line.find("Size") != std::string::npos) {
+                std::istringstream ss_per_space(line);
+                std::string dummy;
+                ss_per_space >> dummy >> dummy;
+                ss_per_space >> vf_dim_n.x >> vf_dim_n.y >> vf_dim_n.z;
+            } else if (line.find("Spacing") != std::string::npos) {
+                std::istringstream ss_per_space(line);
+                std::string dummy;
+                ss_per_space >> dummy >> dummy;
+                ss_per_space >> vf_dim_d.x >> vf_dim_d.y >> vf_dim_d.z;
+                vf_dim_d /= 10;
             }
+            
         }
     }
     // Correct units
@@ -174,10 +195,12 @@ void Warper_t::warp_init_points (Array4<float>& init_pos,
      */
 
     std::cout << "Working warp_init_points " << std::endl;
-    project_vf_on_plane (pln, spots_per_field);
+    std::vector<short> accu(spots_per_field.size());
+    std::partial_sum(spots_per_field.begin(), spots_per_field.end(), accu.begin());
+    project_vf_on_plane (pln, spots_per_field, accu);
 
     for (size_t i = 0, ibeam = 0; i < vf_planes.size(); i++) {
-        if (i == (size_t)spots_per_field.at(ibeam))
+        if (i == (size_t)accu.at(ibeam))
             ibeam += 1;
 
         // Vector3_t<float> a = pln.p.at(ibeam); // has not been raytraced to CT volume
@@ -236,12 +259,14 @@ void Warper_t::warp_init_points (Array4<float>& init_pos,
 
 
 void Warper_t::project_vf_on_plane (const Planes_t& pln,
-                                    const std::vector<short>& spots_per_field)
+                                    const std::vector<short>& spots_per_field,
+                                    const std::vector<short>& accu)
 {
     vf_planes.resize(vf.size());
     vf_ave_planes.resize(spots_per_field.size());
+
     for (size_t i = 0, ibeam = 0; i < vf.size(); i++) {
-        if (i == (size_t)spots_per_field.at(ibeam))
+        if (i == (size_t)accu.at(ibeam))
             ibeam += 1;
         float inner = vf.at(i).x*pln.dir.at(ibeam).x +
                        vf.at(i).y*pln.dir.at(ibeam).y +
@@ -343,6 +368,18 @@ void Warper_t::probe_plastimatch (const Array4<float>& p, const CT_Dims_t& ct)
         std::cout << temp << std::endl;
     }
 
+    // Verify VF binning
+    if (vf_dim_n.z != ct.n.x || vf_dim_n.y != ct.n.y || vf_dim_n.x != ct.n.z) {
+        std::cerr << "ERROR! Wrong VF binning in file: " << file << std::endl;
+        std::cerr << "VF.x " << vf_dim_n.x << " CT.x " << ct.n.x << std::endl;
+        std::cerr << "VF.y " << vf_dim_n.y << " CT.y " << ct.n.y << std::endl;
+        std::cerr << "VF.z " << vf_dim_n.z << " CT.z " << ct.n.z << std::endl << std::endl;
+        std::cerr << "The current (bad) implementation probes the VF with voxel indexes. Either "
+                     "change the implementation to do it by absolute position or change the VF "
+                     "binning" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // plastimatch probe --location "0 0 0; 0.5 0.5 0.5; 1 1 1" infile.nrrd
     // Build command
     // TODO: this approach works if VF and CT share dimensions and binning
@@ -397,7 +434,7 @@ void Warper_t::probe_plastimatch (const Array4<float>& p, const CT_Dims_t& ct)
             // printf("%f %f %f || ", v.x, v.y, v.z);
             vf.push_back(v);
         }
-        printf("\n");
+        // printf("\n");
     }
 }
 

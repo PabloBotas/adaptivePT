@@ -66,6 +66,8 @@ private:
     std::string adapt_method_cold_spots_str = "cold_spots";
     std::vector<std::string> constraint_vec;
     std::string adapt_constraint_free_str      = "free";
+    std::string adapt_constraint_fixed_str     = "fixed";
+    std::string adapt_constraint_fixed_pos_str = "fixed_pos";
     std::string adapt_constraint_v_rs_str      = "virt_range_shifter";
     std::string adapt_constraint_rs_str        = "range_shifter";
     std::string adapt_constraint_iso_str       = "iso_shift";

@@ -46,7 +46,8 @@ private:
                            const std::vector<short>& spots_per_field,
                            const std::vector<BeamAngles_t>& angles);
     void project_vf_on_plane (const Planes_t& pln,
-                              const std::vector<short>& spots_per_field);
+                              const std::vector<short>& spots_per_field,
+                              const std::vector<short>& accu_spots_per_field);
 
     // Utils
     void flip_positions_X (Array4<float>& vec, const CT_Dims_t dims);
@@ -59,6 +60,8 @@ private:
     std::string file;
     std::string output;
     Vector3_t<float> origins;
+    Vector3_t<float> vf_dim_d;
+    Vector3_t<uint> vf_dim_n;
     Array3<float> vf;
     Array3<float> vf_planes;
     Array3<float> probes;

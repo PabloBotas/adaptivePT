@@ -230,6 +230,10 @@ void Parser::process_command_line(int argc, char** argv)
                             "Choices:\n"
                             "  -\"free\": Default choice. Spots are moved freely in position and "
                             "energy.\n"
+                            "  -\"fixed\": Spot positions and energies are not adjusted to the new "
+                            "geometry.\n"
+                            "  -\"fixed_pos\": Spots are not moved but their energy is adjusted to "
+                            "the new geometry.\n"
                             "  -\"range_shifter\": A field-specific range shifter is calculated as "
                             "the average energy shift of the deepest layers in the field. The "
                             "deepest layers are defined as those that have at least the average "
@@ -391,6 +395,8 @@ void Parser::process_command_line(int argc, char** argv)
        
         // ADAPT METHOD CONSTRAINTS
         bool free = true;
+        bool fixed = false;
+        bool fixed_pos = false;
         bool v_range_shifter = false;
         bool range_shifter = false;
         bool iso_shift = false;
@@ -399,6 +405,10 @@ void Parser::process_command_line(int argc, char** argv)
             str = utils::toLower(str);
             if (str == adapt_constraint_free_str) {
                 free = true;
+            } else if (str == adapt_constraint_fixed_str) {
+                fixed = true;
+            } else if (str == adapt_constraint_fixed_pos_str) {
+                fixed_pos = true;
             } else if (str == adapt_constraint_rs_str) {
                 range_shifter = true;
             } else if (str == adapt_constraint_v_rs_str) {
@@ -427,6 +437,10 @@ void Parser::process_command_line(int argc, char** argv)
             adapt_constraints = Adapt_constraints_t::FIELD_ISOCENTER_SHIFT_V_RANGE_SHIFTER;
         else if (v_range_shifter)
             adapt_constraints = Adapt_constraints_t::V_RANGE_SHIFTER;
+        else if (fixed_pos)
+            adapt_constraints = Adapt_constraints_t::FIXED_POS;
+        else if (fixed)
+            adapt_constraints = Adapt_constraints_t::FIXED;
         else if (free)
             adapt_constraints = Adapt_constraints_t::FREE;
 
@@ -457,7 +471,7 @@ void Parser::process_command_line(int argc, char** argv)
                                         "could not be deduced from \""+temp+"\"");
         }
 
-        // PARSE PASSED TARGET MASKS AND VERIFY THEY EXIST
+        // PARSE PASSED TARGET MASKS AND VF AND VERIFY THEY EXIST
         target_expanded_files.reserve(target_mask_files.size() + target_rim_files.size());
         for (auto& str: target_mask_files) {
             if (std::ifstream(str)) {
@@ -487,6 +501,11 @@ void Parser::process_command_line(int argc, char** argv)
         }
 
         // PARSE VF MASKS
+        if (std::ifstream(vf_file)) {
+            vf_file = utils::get_full_path(vf_file);
+        } else {
+            std::cerr << "VF file not accessible: \""+vf_file+"\"!" << std::endl;
+        }
         if (v_field_mask_files.size() != 0) {
             for (auto& str: v_field_mask_files) {
                 if (std::ifstream(str)) {
