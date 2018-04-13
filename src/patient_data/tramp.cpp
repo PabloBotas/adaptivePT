@@ -122,7 +122,7 @@ void Tramp_t::read_()
         std::cerr << "spots in header (" << nspots_header << ") != ";
         std::cerr << "spots (" << nspots << ")" << std::endl;
     }
-    if ( int(1000.*gigaprotons) != int(1000.*gigaprotons_header) ) {
+    if ( int(100.*gigaprotons) != int(100.*gigaprotons_header) ) {
         std::cerr << "Warning! Inconsistent tramp. ";
         std::cerr << "GP in header (" << gigaprotons_header << ") != ";
         std::cerr << "GP (" << gigaprotons << ")" << std::endl;

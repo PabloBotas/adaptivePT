@@ -44,8 +44,8 @@ bool outside_machine_energies (std::vector<float>& below_thres,
         machine == "topas_a5_smallSpots" ||
         machine == "topasmediumspots"    ||
         machine == "topas_a5_mediumspots") {
-        min_e = 59.769*1e6;
-        max_e = 230.527*1e6;
+        min_e = 59.77*1e6;
+        max_e = 230.52*1e6;
     } else if (machine == "topasmghr4" ||
                machine == "topasmghr5") {
         min_e = 91.015*1e6;

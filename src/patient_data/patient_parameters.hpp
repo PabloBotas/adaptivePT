@@ -36,7 +36,7 @@ public:
     std::vector<std::vector<short>> energy_layers;
     std::vector<float> source_energies;
     std::vector<float> source_weights;
-     std::vector<uint> n_fractions;
+    std::vector<uint> n_fractions;
 
     CT_Dims_t ct;
     CT_Dims_t original_ct;
