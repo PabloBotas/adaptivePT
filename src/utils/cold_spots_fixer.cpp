@@ -334,13 +334,13 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
 
     std::cout << "Adjusting: " << std::endl;
     std::cout << "    Selected # - Spot frac - Weight frac" << std::endl;
-    std::cout << "Final " << selected_t << "\t" << 100*selected_t/float(total_spots);
+    std::cout << "    Final " << selected_t << "\t" << 100*selected_t/float(total_spots);
     std::cout << "\t" << 100*mod_weights.at(selected_t)/total_w << std::endl;
-    std::cout << "Min.  " << selected_min << "\t" << 100*selected_min/float(total_spots);
+    std::cout << "    Min.  " << selected_min << "\t" << 100*selected_min/float(total_spots);
     std::cout << "\t" << 100*mod_weights.at(selected_min)/total_w << std::endl;
-    std::cout << "Prev. " << selected_w << "\t" << 100*selected_w/float(total_spots);
+    std::cout << "    Prev. " << selected_w << "\t" << 100*selected_w/float(total_spots);
     std::cout << "\t" << 100*mod_weights.at(selected_w)/total_w << std::endl;
-    std::cout << "Spots per field: ";
+    std::cout << "    Spots per field: ";
     for (uint i = 0; i < selected_spots_per_field.size(); ++i) {
         std::cout << " " << selected_spots_per_field.at(i);
     }
@@ -374,6 +374,8 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
     // that from the prescription. That will be the dose the spots subset have to provide.
     std::cout << "Calculating target dose..." << std::endl;
     Array target_dose = adapt_dose_in_mask;
+    Array subset_dose;
+    subset_dose.resize(target_mask.nElements);
     float zero = 0;
     for (size_t i = 0, idij = 0;
          i < target_mask.nElements && idij < dij_nvox;
@@ -383,7 +385,9 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
                 for (size_t f = 0; f < nbeams; ++f) {
                     Array temp = subset_dij[f][
                         std::slice(idij, selected_spots_per_field.at(f), dij_nvox)];
-                    target_dose[idij] -= temp.sum();
+                    float s = temp.sum();
+                    subset_dose[i] = s;
+                    target_dose[idij] -= s;
                     target_dose[idij] = std::max(zero, target_dose[idij]);
                 }
                 target_dose[idij] = dose_prescription - target_dose[idij];
@@ -392,21 +396,26 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
         }
     }
 
-    // Array target_dose_vol;
-    // target_dose_vol.resize(target_mask.nElements);
-    // for (size_t i = 0, idij = 0;
-    //      i < target_mask.nElements && idij < dij_nvox;
-    //      ++i) {
-    //     if (total_mask.at(i) > 0.5) {
-    //         if (target_mask.data.at(i) > 0.5) {
-    //             target_dose_vol[i] = target_dose[idij];
-    //         }
-    //         idij++;
-    //     }
-    // }
-    // std::ofstream ofs(out_directory+"/dose_mask_opt4D.dat", std::ios::binary);
-    // ofs.write((char*)&target_dose[0], target_dose.size()*sizeof(float));
-    // ofs.close();
+    Array target_dose_vol;
+    target_dose_vol.resize(target_mask.nElements);
+    for (size_t i = 0, idij = 0;
+         i < target_mask.nElements && idij < dij_nvox;
+         ++i) {
+        if (total_mask.at(i) > 0.5) {
+            if (target_mask.data.at(i) > 0.5) {
+                target_dose_vol[i] = target_dose[idij];
+            }
+            idij++;
+        }
+    }
+    
+    Volume_t temp_vol1(target_mask.getMetadata());
+    std::copy(std::begin(target_dose_vol), std::end(target_dose_vol), temp_vol1.data.begin());
+    temp_vol1.output(out_directory+"/dose_mask_opt4D.mhd");
+
+    Volume_t temp_vol2(target_mask.getMetadata());
+    std::copy(std::begin(subset_dose), std::end(subset_dose), temp_vol2.data.begin());
+    temp_vol2.output(out_directory+"/dose_in_subset_dij.mhd");
 
     // 5: Prepare and launch Opt4D and get the weigth scaling
     Opt4D_manager opt4d(out_directory);
@@ -414,6 +423,7 @@ void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
                              total_mask, target_mask, rim_mask, oars_mask,
                              target_dose, subset_dij);
     opt4d.launch_optimization();
+
     std::vector<float> subset_weight_scaling = opt4d.get_weight_scaling();
 
     // 6: Apply weight scaling and set in referenced vector
