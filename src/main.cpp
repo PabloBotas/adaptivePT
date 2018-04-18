@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <string>
 #include <limits>
-#include <boost/timer.hpp>
+#include <boost/timer/timer.hpp>
 
 #include "command_line_parser.hpp"
 #include "cold_spots_fixer.hpp"
@@ -82,10 +82,9 @@ void generate_report(const std::string& vf_report_file,
 int main(int argc, char** argv)
 {
     // Timer -----------------------------------------------------------------
-    boost::timer timer;
-    float time_ct_tracing{}, time_cbct_tracing{};
-    float time_geometric_sim{}, time_opt4d{}, time_opt4d_validation{};
-    timer.restart();
+    boost::timer::cpu_times time_ct_tracing, time_cbct_tracing;
+    boost::timer::cpu_times time_geometric_sim, time_opt4d, time_opt4d_validation;
+    boost::timer::cpu_timer timer;
 
     // Read input parameters -------------------------------------------------
     Parser parser(argc, argv);
@@ -128,7 +127,7 @@ int main(int argc, char** argv)
     ct.freeMemory();
 
     time_ct_tracing = timer.elapsed();
-    timer.restart();
+    timer.start();
 
     // Stop process for debug purposes
     if (parser.skip_cbct)
@@ -156,7 +155,7 @@ int main(int argc, char** argv)
     }
 
     time_cbct_tracing = timer.elapsed();
-    timer.restart();
+    timer.start();
 
     export_adapted (pat, parser.work_dir, parser.data_shifts_file,
                     new_energies, weight_scaling,
@@ -185,7 +184,7 @@ int main(int argc, char** argv)
                                    parser.dose_prescription, gpmc.get_to_Gy_factor());
 
         time_geometric_sim = timer.elapsed();
-        timer.restart();
+        timer.start();
 
     } else if (parser.adapt_method == Adapt_methods_t::GPMC_DOSE) {
         Gpmc_manager gpmc_dij(pat, parser.new_patient, parser.dij_frac_file, "dosedij",
@@ -196,7 +195,7 @@ int main(int argc, char** argv)
         gpmc_dij.launch();
 
         time_geometric_sim = timer.elapsed();
-        timer.restart();
+        timer.start();
 
         // Explicit control of the scope to reduce memory usage
         {
@@ -228,7 +227,7 @@ int main(int argc, char** argv)
                               pat.source_weights,
                               weight_scaling);
             time_opt4d = timer.elapsed();
-            timer.restart();
+            timer.start();
 
             if (!parser.vf_report_file.empty()) {
                 generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
@@ -250,18 +249,18 @@ int main(int argc, char** argv)
         if (parser.launch_adapt_simulation) {
             gpmc_dose.launch();
             time_opt4d_validation = timer.elapsed();
-            timer.restart();
+            timer.start();
         }
     }
 
     // Report time ------------------------------------------------------------
     std::cout << std::endl;
     std::cout << "Total time:" << std::endl;
-    std::cout << "    CT tracing:     " << time_ct_tracing << std::endl;
-    std::cout << "    CBCT tracing:   " << time_cbct_tracing << std::endl;
-    std::cout << "    gPMC geometric: " << time_geometric_sim << std::endl;
-    std::cout << "    Opt4D:          " << time_opt4d << std::endl;
-    std::cout << "    Opt validation: " << time_opt4d_validation << std::endl;
+    std::cout << "    CT tracing:     " << time_ct_tracing.wall << std::endl;
+    std::cout << "    CBCT tracing:   " << time_cbct_tracing.wall << std::endl;
+    std::cout << "    gPMC geometric: " << time_geometric_sim.wall << std::endl;
+    std::cout << "    Opt4D:          " << time_opt4d.wall << std::endl;
+    std::cout << "    Opt validation: " << time_opt4d_validation.wall << std::endl;
 
     // Stop device
     stop_device(start);

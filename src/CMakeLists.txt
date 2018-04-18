@@ -49,7 +49,7 @@ cuda_add_executable (${TARGET_NAME} ${cuda_sources} ${cpp_sources})
 # add_executable (${TARGET_NAME} ${cpp_sources} ${cpp_headers} ${cuda_obj})
 
 # Boost------------------------------------------------------
-find_package (Boost COMPONENTS program_options system REQUIRED)
+find_package (Boost COMPONENTS program_options system timer REQUIRED)
 include_directories ("${Boost_INCLUDE_DIRS}")
 target_link_libraries (${TARGET_NAME} ${Boost_LIBRARIES})
 
