@@ -164,6 +164,9 @@ def analize_vf(vf_file, pp):
     cm = plt.cm.get_cmap('rainbow')
     hist_colors = [cm(((i-bins_x.min())/(bins_x.max()-bins_x.min()))) for i in bins_x]
     ax1.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1]-bins_x[0], alpha=0.75)
+    ax1.axvline(x=np.percentile(d, 25), alpha = 0.5, color = 'black')
+    ax1.axvline(x=np.percentile(d, 50), alpha = 0.5, color = 'black')
+    ax1.axvline(x=np.percentile(d, 75), alpha = 0.5, color = 'black')
     ax1.set_xlabel('Vector size (cm)', fontsize=8)
 
     # FIGURE 1, POLAR PLOT 1 --------------------------------
@@ -380,6 +383,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
         hist_colors = [cm((i - color_range[0]) / (color_range[1] - color_range[0])) for i in bins_x]
         ax.bar(bins_x[:-1], bins_y, color=hist_colors, width=bins_x[1] - bins_x[0], alpha=0.75, linewidth=0)
         ax.axvline(x=0, color='k', linewidth=1)
+        ax.axvline(x=np.percentile(de, 25), alpha = 0.5)
+        ax.axvline(x=np.percentile(de, 50), alpha = 0.5)
+        ax.axvline(x=np.percentile(de, 75), alpha = 0.5)
         ax.set_xlim(find_range(de, 5.))
         ax.set_xlabel('Energy shift (MeV)', fontsize=7)
 
@@ -413,6 +419,9 @@ def analize_tramp(shifts_file, tramp_files, spots_layer, pp):
             ax.hist(d, bins=optimal_n_bins(d), range=(d.min()-0.05, d.max()+0.05))
         else:
             ax.hist(d, bins=optimal_n_bins(d))
+            ax.axvline(x=np.percentile(d, 25), alpha = 0.5, color = 'black')
+            ax.axvline(x=np.percentile(d, 50), alpha = 0.5, color = 'black')
+            ax.axvline(x=np.percentile(d, 75), alpha = 0.5, color = 'black')
         ax.set_xlabel('Shift size (mm)', fontsize=7)
 
         # FIGURE 1, PLOT 5 --------------------------------
