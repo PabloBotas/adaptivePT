@@ -1,18 +1,7 @@
-build/*
-adaptSpotEnergies
-adaptSpotEnergies.sublime-workspace
-test/adapt*
-test/energy*
-test/P*
-test/range*
-test/report*
-test/vector*
-test/vf_*
+test/*
 test
-\.Rhistory
 
 src/extra/\.idea/
 src/extra/__pycache__/
 \.cproject
-
 \.settings/
