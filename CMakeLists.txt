@@ -13,8 +13,6 @@ message ( STATUS "CMAKE_INSTALL_PREFIX: " ${CMAKE_INSTALL_PREFIX} )
 message ( STATUS "OUTPUT_DIRECTORY:     " ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} )
 
 #-C++ compiler-------------------------------------------------------
-set (CMAKE_C_COMPILER "/usr/bin/gcc")
-set (CMAKE_CXX_COMPILER "/usr/bin/g++")
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-variadic-macros")
 
