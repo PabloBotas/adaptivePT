@@ -5,7 +5,8 @@
 #include <boost/timer/timer.hpp>
 
 #include "command_line_parser.hpp"
-#include "cold_spots_fixer.hpp"
+#include "weight_adaptation.hpp"
+#include "plan_check.hpp"
 #include "influence_manager.hpp"
 #include "initialize_rays.cuh"
 #include "enviroment.hpp"
@@ -21,19 +22,6 @@
 #include "utils.hpp"
 #include "volume.hpp"
 #include "warper.hpp"
-
-// DONE Read CT
-// DONE Raytrace endpoints on CT
-// DONE Apply VF to endpoints -> updated endpoints
-// DONE Apply VF to starting points -> updated starting points
-// DONE Projection onto treatment plane
-// DONE Read CBCT
-// DONE Raytrace vf_start_points in CBCT
-// DONE Get energy distance to updated endpoints
-// DONE Convert data back to tramp file
-// DONE Fix mha output's offset to visualize in Slicer
-// DONE Verify that VF probing is correctly done. How?
-// Done Verify CBCT offsets are correctly updated
 
 void compute_in_ct(const Patient_Parameters_t& pat,
                    const Parser& parser,
