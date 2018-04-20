@@ -51,6 +51,7 @@ public:
     void output(std::string outfile, const CT_Dims_t& dims);
     void mha_to_int_coordinates();
     void int_to_mha_coordinates();
+    uint count_above_thres(float thres);
     Volume_metadata_t getMetadata() const;
 
     Volume_t::Source_type source_type;

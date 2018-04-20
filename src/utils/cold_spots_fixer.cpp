@@ -112,145 +112,32 @@ void check_adaptation_from_dose (std::string adapt_total_dose_file,
 }
 
 
-void check_geometric_adapt (std::vector<std::string> adapt_dij_per_field_files,
-                            float dose_prescription, float conv_factor,
-                            const std::vector<short>& spots_per_field,
-                            std::vector<Array>& field_dij,
-                            Array& dose,
-                            const Volume_t& target_mask,
-                            const Volume_t& target_rim_mask,
-                            const Volume_t& oars_mask,
-                            Array& dose_in_mask,
-                            Array& dose_in_target)
+void check_adaptation (const Array& dose,
+                       float dose_prescription,
+                       uint target_nvox, uint oars_nvox, uint dij_nvox,
+                       const std::vector<float>& total_mask,
+                       const Volume_t& target_mask,
+                       const Volume_t& oars_mask,
+                       std::string out_directory)
 {
-    std::cout << "Assessing the adaptation!!" << std::endl;
-    // Select underdose areas of total dose in target and get underdosage percentage
-    auto glambda = [](const float& i){return i > 0.5;};
-    uint target_nvox = std::count_if(target_mask.data.begin(), target_mask.data.end(), glambda);
-    // uint target_rim_nvox = std::count_if(target_rim_mask.data.begin(),
-                                        // target_rim_mask.data.end(), glambda);
-    uint oars_nvox = std::count_if(oars_mask.data.begin(), oars_mask.data.end(), glambda);
-    // There are overlaps, so the total size is not the sum of the individuals
-    std::vector<float> total_mask = utils::or_vectors(target_mask.data, target_rim_mask.data,
-                                                      oars_mask.data);
-    uint dij_nvox = std::count_if(total_mask.begin(), total_mask.end(), glambda);
-    uint volume_vox = target_mask.nElements;
-    uint nbeams = adapt_dij_per_field_files.size();
-
-    // Fill total dose, dose per beam, dose in target
-    dose.resize(volume_vox, 0);
-    dose_in_target.resize(target_nvox);
-    dose_in_mask.resize(dij_nvox);
-
-    // Read dijs inside masked region
-    // clock_t start = clock();
-    field_dij.resize(nbeams);
-    std::cout << "Read and transpose dijs inside target:" << std::endl;
-    for (size_t i = 0; i < nbeams; ++i) {
-        // Read Dij file
-        std::string& f = adapt_dij_per_field_files.at(i);
-        std::cout << "\t- " << f << std::endl;
-        std::ifstream ifs(f, std::ios::binary);
-        utils::check_fs(ifs, f, " to read Dij during plan assessment");
-        Array temp(spots_per_field.at(i)*dij_nvox);
-        ifs.read(reinterpret_cast<char*>(&temp[0]),
-                                         spots_per_field.at(i)*dij_nvox*sizeof(float));
-        temp *= conv_factor;
-        // Transpose temp Dij and store
-        field_dij.at(i).resize(spots_per_field.at(i)*dij_nvox);
-        #pragma omp parallel for
-        for (size_t j = 0; j < dij_nvox; ++j)
-            field_dij.at(i)[std::slice(j*spots_per_field.at(i), spots_per_field.at(i), 1)] =
-                                    temp[std::slice(j, spots_per_field.at(i), dij_nvox)];
-    }
-    // clock_t end = clock();
-    // std::cout << "Time taken: " << ((double)(end-start)/(double)CLOCKS_PER_SEC) << " s" << std::endl;
-
-    DoseStatsTarget target_stats(target_nvox, dose_prescription);
-    DoseStatsOARs oar_stats(oars_nvox);
-    // Iterate over volume voxels
-    std::cout << "Collecting DVH data ..." << std::endl;
-    Array d_per_spot;
-    d_per_spot.resize(dij_nvox);
-    for (size_t i = 0, idij = 0, itarget = 0; i < volume_vox; ++i) {
-        // Check if in a ROI
-        if (total_mask.at(i) > 0.5) {
-            for (size_t f = 0; f < nbeams; ++f) {
-                // Get dose in voxel per spot
-                Array& Dij = field_dij.at(f);
-                auto p = std::begin(Dij)+idij*spots_per_field.at(f);
-                float d = std::accumulate(p, p+spots_per_field.at(f), 0.0);
-                dose[i] += d;
-                dose_in_mask[idij] += d;
-            }
-            idij++;
-            if (target_mask.data.at(i) > 0.5) {
-                dose_in_target[itarget] = dose[i];
-                target_stats.add_voxel_dose(dose[i]);
-                itarget++;
-            }
-            if (oars_mask.data.at(i) > 0.5) {
-                oar_stats.add_voxel_dose(dose[i]);
-            }
-        }
-    }
-
-    // for (size_t ibeam = 0; ibeam < nbeams; ++ibeam) {
-    //     for (short ispot = 0; ispot < spots_per_field.at(ibeam); ++ispot) {
-    //         Array d = field_dij.at(ibeam)[
-    //                                                 std::slice(ispot*target_nvox, target_nvox, 1)];
-    //         std::cout << "Average dose beam " << ibeam << " spot " << ispot;
-    //         std::cout << std::setprecision(10) << " = " << d.sum()/target_nvox << std::endl;
-    //     }
-    // }
-
-    float res = target_stats.check_plan();
-    oar_stats.check_plan();
-    if (res > 0.98) {
-        std::cout << "This is great!! Shooooooot!!" << std::endl;
-    }
-}
-
-
-void check_adaptation(const std::vector<Array>& adapt_field_dij,
-                      float dose_prescription, std::vector<short> spots_per_field,
-                      uint target_nvox, uint oars_nvox, uint dij_nvox,
-                      const std::vector<float>& total_mask,
-                      const Volume_t& target_mask,
-                      const Volume_t& oars_mask,
-                      std::string out_directory)
-{
-    // Get total dose from new Dij
-    Array adapt_dose_mask(dij_nvox);
-    for (size_t f = 0; f < adapt_field_dij.size(); ++f) {
-        for (size_t i = 0; i < dij_nvox; ++i) {
-            Array d_to_vox_per_spot = adapt_field_dij.at(f)[
-                                    std::slice(i*spots_per_field.at(f), spots_per_field.at(f), 1)];
-            adapt_dose_mask[i] += d_to_vox_per_spot.sum();
-        }
-    }
-
     // Get stats!!
     DoseStatsTarget target_stats(target_nvox, dose_prescription);
     DoseStatsOARs oar_stats(oars_nvox);
-    Array out;
-    out.resize(target_mask.nElements);
-    for (size_t i = 0, imask = 0; i < total_mask.size(); ++i) {
+    for (size_t i = 0, imask = 0; i < total_mask.size() && imask < dij_nvox; ++i) {
         // Check if in a ROI
         if (total_mask.at(i) > 0.5) {
-            out[i] = adapt_dose_mask[imask];
             if (target_mask.data.at(i) > 0.5) {
-                target_stats.add_voxel_dose(adapt_dose_mask[imask]);
+                target_stats.add_voxel_dose(dose[i]);
             }
             if (oars_mask.data.at(i) > 0.5) {
-                oar_stats.add_voxel_dose(adapt_dose_mask[imask]);
+                oar_stats.add_voxel_dose(dose[i]);
             }
             imask++;
         }
     }
 
     std::ofstream ofs(out_directory+"/opt4D_optimized_dose.dat", std::ios::binary);
-    ofs.write((char*)&out[0], out.size()*sizeof(float));
+    ofs.write((char*)&dose[0], dose.size()*sizeof(float));
     ofs.close();
 
     std::cout << std::endl;
@@ -261,187 +148,293 @@ void check_adaptation(const std::vector<Array>& adapt_field_dij,
     }
 }
 
-
-void cold_spots_fixer(const Array& adapt_dose_in_mask,           // total dose
-                      std::vector<Array>& adapt_field_dij,       // dose per spot
-                      const Volume_t& target_mask,               // target region
-                      const Volume_t& rim_mask,                  // target rim region
-                      const Volume_t& oars_mask,                 // OARs region
-                      float dose_prescription,                   // prescription
-                      std::string out_directory,                 // output dir
-                      const std::vector<short>& spots_per_field, // # of spots per field
-                      std::vector<float> weights,                // spots weights
-                      std::vector<float>& weight_scaling)        // spots scaling (all 1)
+void select_spots_by_weight (uint& nspots_subset,
+                             std::vector<std::vector<uint>>& indices,
+                             std::vector<uint>& subset_per_field,
+                             const std::vector<float>& weights,
+                             const std::vector<uint>& accu_spots,
+                             const uint nbeams,
+                             const float weight_frac,
+                             const float spots_frac)
 {
-    std::cout << "Correcting the adaptation ..." << std::endl;
-    // uint volume_vox = target_mask.nElements;
-    uint nbeams = adapt_field_dij.size();
     uint total_spots = weights.size();
-    std::vector<uint> accu_spots(spots_per_field.size());
-    std::partial_sum(spots_per_field.begin(), spots_per_field.end(), accu_spots.begin());
-
-    auto glambda = [](const float& i) {return i > 0.5;};
-    uint target_nvox = std::count_if(target_mask.data.begin(), target_mask.data.end(), glambda);
-    uint oars_nvox = std::count_if(oars_mask.data.begin(), oars_mask.data.end(), glambda);
-    uint rim_nvox = std::count_if(rim_mask.data.begin(), rim_mask.data.end(), glambda);
-
-    std::vector<float> total_mask = utils::or_vectors(target_mask.data, rim_mask.data,
-                                                      oars_mask.data);
-    uint dij_nvox = std::count_if(total_mask.begin(), total_mask.end(), glambda);
-
-    // Select spots for weight adjustment!!
-    // The spots must be well represented in the Dij. I could read the std file and deduce
-    // from there, but that would force me to go vox by vox and do a coparison. Let's try
-    // first with the weight. Let's sort all the spots by weight and select the higher
-    // weighted ones with some statistical method. Which?
-    //  - select the spots accounting for 25% of the total weight? 50%? 75%?
-    //  - From patient 3: 20% of the spots account for 65% of the dose and 58% of the weight
-    //  - Cummulative dose and weight are essentially the same curve for our purposes
-    //  - 50% of the weight corresponds to 15% of the spots. I will start with that, rounding up
-
-    // 1: Create array with weight, index and sort it. Sort will take the first item of the pair
+    // 1: create paired sorted list
     std::vector<std::pair<float, uint>> indexed_w;
     indexed_w.reserve(total_spots);
-    for (uint i = 0; i < weights.size(); ++i)
+    for (uint i = 0; i < total_spots; ++i) {
         indexed_w.push_back(std::make_pair(weights.at(i), i));
+    }
+    // Sort lists. Sorting a pair sorts taking the first field into account
     std::sort(indexed_w.begin(), indexed_w.end(), std::greater<std::pair<float, uint>>());
     std::vector<float> mod_weights = weights;
     std::sort(mod_weights.begin(), mod_weights.end(), std::greater<float>());
 
     float total_w = std::accumulate(mod_weights.begin(), mod_weights.end(), 0.0);
-    // 2: Select spots giving 50% of the weight (Cummulative sum IN PLACE!!)
+    // 2: Select spots giving 50% of the weight
     std::partial_sum(mod_weights.begin(), mod_weights.end(), mod_weights.begin());
-    const float reopt_weight_frac = 0.5;
-    const float reopt_spots_frac = 0.1;
     uint selected_w = std::distance(mod_weights.begin(),
                                     std::upper_bound(mod_weights.begin(), mod_weights.end(),
-                                    reopt_weight_frac*total_w));
-    uint selected_min = uint(reopt_spots_frac*total_spots + 0.5);
-    uint selected_t = std::max(selected_w, selected_min);
-    std::vector<uint> indexes(selected_t);
-    for (uint i = 0; i < selected_t; ++i)
-        indexes.at(i) = indexed_w.at(i).second;
-    // It's convenient to sort them again for clarity
-    std::sort(indexes.begin(), indexes.end());
-    // Count number of selected spots per field
-    std::vector<uint> selected_spots_per_field(nbeams);
-    for (size_t i = 0; i < indexes.size(); ++i) {
+                                    weight_frac*total_w));
+    uint selected_min = uint(spots_frac*total_spots + 0.5);
+    nspots_subset = std::max(selected_w, selected_min);
+    // 3: Fill selected indices
+    indices.resize(nbeams);
+    subset_per_field.resize(nbeams);
+    for (uint i = 0; i < nspots_subset; ++i) {
+        uint abs_spot = indexed_w.at(i).second;
         uint ibeam = std::distance(accu_spots.begin(),
-                                   std::upper_bound(accu_spots.begin(), accu_spots.end(),
-                                                    indexes.at(i)));
-        selected_spots_per_field.at(ibeam)++;
+                                    std::upper_bound(accu_spots.begin(), accu_spots.end(),
+                                    abs_spot));
+        uint ispot;
+        if (ibeam == 0)
+            ispot = abs_spot;
+        else
+            ispot = abs_spot - accu_spots.at(ibeam-1);
+        indices.at(ibeam).push_back(ispot);
+        subset_per_field.at(ibeam)++;
+    }
+    // Sort to have the spots grouped by beam ids
+    for (uint i = 0; i < nbeams; ++i) {
+        std::sort(indices.at(i).begin(), indices.at(i).end());
     }
 
     std::cout << "Adjusting: " << std::endl;
     std::cout << "    Selected # - Spot frac - Weight frac" << std::endl;
-    std::cout << "    Final " << selected_t << "\t" << 100*selected_t/float(total_spots);
-    std::cout << "\t" << 100*mod_weights.at(selected_t)/total_w << std::endl;
+    std::cout << "    Final " << nspots_subset << "\t" << 100*nspots_subset/float(total_spots);
+    std::cout << "\t" << 100*mod_weights.at(nspots_subset)/total_w << std::endl;
     std::cout << "    Min.  " << selected_min << "\t" << 100*selected_min/float(total_spots);
     std::cout << "\t" << 100*mod_weights.at(selected_min)/total_w << std::endl;
     std::cout << "    Prev. " << selected_w << "\t" << 100*selected_w/float(total_spots);
     std::cout << "\t" << 100*mod_weights.at(selected_w)/total_w << std::endl;
     std::cout << "    Spots per field: ";
-    for (uint i = 0; i < selected_spots_per_field.size(); ++i) {
-        std::cout << " " << selected_spots_per_field.at(i);
+    for (uint i = 0; i < indices.size(); ++i) {
+        std::cout << " " << indices.at(i).size();
     }
     std::cout << std::endl;
 
     std::cout << "There is an almost linear relation between spot weight and dose." << std::endl;
+}
 
-    // 3: Subset Dij to pass to Opt4D
-    // Allocate size in advance. Resizing a valarray deallocates all the items in it, erasing them
+Array read_transpose_dij (const std::string& file,
+                          const uint nspots,
+                          const uint nvox,
+                          const float conv_factor)
+{
+    std::cout << "\t- " << file << std::endl;
+    std::ifstream ifs(file, std::ios::binary);
+    utils::check_fs(ifs, file, " to read Dij during plan assessment");
+    Array temp(nspots*nvox);
+    ifs.read(reinterpret_cast<char*>(&temp[0]), nspots*nvox*sizeof(float));
+    temp *= conv_factor;
+    // Transpose temp Dij and return
+    Array dij;
+    dij.resize(nspots*nvox);
+    #pragma omp parallel for
+    for (size_t j = 0; j < nvox; ++j) {
+        dij[std::slice(j*nspots, nspots, 1)] = temp[std::slice(j, nspots, nvox)];
+    }
+    return dij;
+}
+
+void fill_dose_arrays (const Array& dij,
+                       const uint nspots, const uint volume_vox,
+                       const std::vector<float>& mask, const Volume_t& target,
+                       Array& dose, Array& dose_in_target, Array& dose_in_mask)
+{
+    for (size_t i = 0, idij = 0, itarget = 0; i < volume_vox; ++i) {
+        // Check if in a ROI
+        if (mask.at(i) > 0.5) {
+            // Get dose in voxel per spot
+            auto p = std::begin(dij)+idij*nspots;
+            float d = std::accumulate(p, p+nspots, 0.0);
+            dose[i] += d;
+            dose_in_mask[idij] += d;
+            idij++;
+            if (target.data.at(i) > 0.5) {
+                dose_in_target[itarget] = dose[i];
+                itarget++;
+            }
+        }
+    }
+}
+
+void adapt_weights (const std::vector<std::string>& dij_files,         // Dij files
+                    const std::vector<std::string>& target_mask_files, // target region
+                    const std::vector<std::string>& rim_mask_files,    // target rim region
+                    const std::vector<std::string>& oars_mask_files,   // OARs region
+                    const float dose_prescription,                     // prescription
+                    const float conv_factor,                           // factor to Gy
+                    const std::string& out_directory,                  // output dir
+                    const std::vector<short>& spots_per_field,         // # of spots per field
+                    std::vector<float> weights,                        // spots weights
+                    std::vector<float>& weight_scaling)                // spots scaling (all 1)
+{
+    // 1: Definitions --------------------------------------------------------
+    uint nbeams = dij_files.size();
+    // uint total_spots = weights.size();
+    std::vector<uint> accu_spots(spots_per_field.size());
+    std::partial_sum(spots_per_field.begin(), spots_per_field.end(), accu_spots.begin());
+
+    // 2: Select spots -------------------------------------------------------
+    uint nspots_subset;
+    std::vector<std::vector<uint>> indexes;
+    std::vector<uint> subset_per_field;
+    select_spots_by_weight(nspots_subset, indexes, subset_per_field, weights, accu_spots, nbeams);
+
+    // 3: Read masks and get data --------------------------------------------
+    Volume_t target_mask = utils::read_masks (target_mask_files);
+    Volume_t target_rim_mask = utils::read_masks (rim_mask_files);
+    Volume_t oars_mask = utils::read_masks (oars_mask_files);
+    uint target_nvox = target_mask.count_above_thres(0.5);
+    uint rim_nvox = target_rim_mask.count_above_thres(0.5);
+    uint oars_nvox = oars_mask.count_above_thres(0.5);
+    // There are overlaps, so the total size is not the sum of the individuals
+    std::vector<float> total_mask = utils::or_vectors(target_mask.data, target_rim_mask.data,
+                                                      oars_mask.data);
+    auto glambda = [](const float& i){return i > 0.5;};
+    uint dij_nvox = std::count_if(total_mask.begin(), total_mask.end(), glambda);
+    uint volume_vox = target_mask.nElements;
+
+
+    std::cout << "Assessing the adaptation!!" << std::endl;
+    
+    
+
+    // 4: Read Dijs: get total dose and spots subset -------------------------
+
+    // Fill total dose, dose per beam, dose in target
+    Array dose;
+    Array dose_in_target;
+    Array dose_in_mask;
+    dose.resize(volume_vox, 0);
+    dose_in_target.resize(target_nvox, 0);
+    dose_in_mask.resize(dij_nvox, 0);
+
     std::cout << "Preparing to subset Dij..." << std::endl;
     std::vector<Array> subset_dij(nbeams);
-    for (size_t i = 0; i < nbeams; ++i) {
-        subset_dij.at(i).resize(selected_spots_per_field.at(i)*dij_nvox);
-    }
-    // Subset
-    std::cout << "Subsetting Dij..." << std::endl;
-    for (size_t i = 0, j_spot_beam = 0; i < indexes.size(); ++i) {
-        uint ibeam = std::distance(accu_spots.begin(),
-                                   std::upper_bound(accu_spots.begin(), accu_spots.end(),
-                                                    indexes.at(i)));
-        uint ispot = ibeam > 0 ? indexes.at(i) - accu_spots.at(ibeam-1) : indexes.at(i);
-        // Get start position of slice and add it!!
-        subset_dij.at(ibeam)[std::slice(j_spot_beam*dij_nvox, dij_nvox, 1)] = 
-                adapt_field_dij.at(ibeam)[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))];
-        j_spot_beam = j_spot_beam == selected_spots_per_field.at(ibeam)-1 ? 0 : j_spot_beam+1;
+
+    std::cout << "Read and transpose dijs inside target:" << std::endl;
+    for (size_t ibeam = 0; ibeam < nbeams; ++ibeam) {
+        // Read Dij file
+        Array dij = read_transpose_dij(dij_files.at(ibeam), spots_per_field.at(ibeam),
+                                       dij_nvox, conv_factor);
+        // Get selected spots
+        subset_dij.at(ibeam).resize(indexes.at(ibeam).size()*dij_nvox);
+        std::cout << "Subsetting field Dij ..." << std::endl;
+        for (size_t i = 0; i < indexes.at(ibeam).size(); ++i) {
+            uint& ispot = indexes.at(ibeam).at(i);
+            subset_dij.at(ibeam)[std::slice(i*dij_nvox, dij_nvox, 1)] = 
+                    dij[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))];
+        }
+
+        // Iterate over volume voxels and fill dose arrays
+        fill_dose_arrays(dij, spots_per_field.at(ibeam), volume_vox, total_mask, target_mask,
+                         dose, dose_in_target, dose_in_mask);
     }
 
-    // 4: Create target dose distribution
+    // 5: Test geometrical plan quality --------------------------------------
+    check_adaptation(dose, dose_prescription,
+                     target_nvox, oars_nvox, dij_nvox,
+                     total_mask, target_mask, oars_mask,
+                     out_directory);
+
+    // 6: Create target dose distribution ------------------------------------
     // The target dose is the prescribed dose minus the dose by the spots not-included for
     // reoptimization. So, I substract the dose by the included spots to the total and then take
-    // that from the prescription. That will be the dose the spots subset have to provide.
-    std::cout << "Calculating target dose..." << std::endl;
-    Array target_dose = adapt_dose_in_mask;
-    Array subset_dose;
-    subset_dose.resize(target_mask.nElements);
-    float zero = 0;
-    for (size_t i = 0, idij = 0;
-         i < target_mask.nElements && idij < dij_nvox;
-         ++i) {
+    // that from the prescription. That will be the dose the spot subset has to provide.
+    // The dose missing MUST have the same nvoxels as the Dij to keep correspondence within Opt4D
+    // between voxels. The dose missing has zeros outside the target voxels
+    std::cout << "Calculating dose missing..." << std::endl;
+    Array baseline_dose = dose;
+    Array target_dose_missing;
+    target_dose_missing.resize(dij_nvox);
+    Array dose_by_subset;
+    dose_by_subset.resize(volume_vox);
+    for (size_t i = 0, idij = 0; i < volume_vox && idij < dij_nvox; ++i) {
         if (total_mask.at(i) > 0.5) {
+            float d = 0;
+            for (size_t f = 0; f < nbeams; ++f) {
+                Array temp = subset_dij[f][std::slice(idij, indexes.at(f).size(), dij_nvox)];
+                d += temp.sum();
+            }
+            dose_by_subset[i] += d;
+            baseline_dose[i] -= d;
             if (target_mask.data.at(i) > 0.5) {
-                for (size_t f = 0; f < nbeams; ++f) {
-                    Array temp = subset_dij[f][
-                        std::slice(idij, selected_spots_per_field.at(f), dij_nvox)];
-                    float s = temp.sum();
-                    subset_dose[i] = s;
-                    target_dose[idij] -= s;
-                    target_dose[idij] = std::max(zero, target_dose[idij]);
-                }
-                target_dose[idij] = dose_prescription - target_dose[idij];
+                target_dose_missing[idij] = dose_prescription - baseline_dose[i];
             }
             idij++;
         }
     }
 
+    // Output debug volumes
     Array target_dose_vol;
-    target_dose_vol.resize(target_mask.nElements);
-    for (size_t i = 0, idij = 0;
-         i < target_mask.nElements && idij < dij_nvox;
-         ++i) {
+    target_dose_vol.resize(volume_vox);
+    for (size_t i = 0, j = 0; i < volume_vox && j < target_nvox; ++i) {
         if (total_mask.at(i) > 0.5) {
             if (target_mask.data.at(i) > 0.5) {
-                target_dose_vol[i] = target_dose[idij];
+                target_dose_vol[i] = target_dose_missing[j];
             }
-            idij++;
+            j++;
         }
     }
-    
     Volume_t temp_vol1(target_mask.getMetadata());
     std::copy(std::begin(target_dose_vol), std::end(target_dose_vol), temp_vol1.data.begin());
-    temp_vol1.output(out_directory+"/dose_mask_opt4D.mhd");
-
+    temp_vol1.output(out_directory+"/target_dose_missing.mhd");
+    target_dose_vol.resize(0);
     Volume_t temp_vol2(target_mask.getMetadata());
-    std::copy(std::begin(subset_dose), std::end(subset_dose), temp_vol2.data.begin());
+    std::copy(std::begin(dose_by_subset), std::end(dose_by_subset), temp_vol2.data.begin());
     temp_vol2.output(out_directory+"/dose_in_subset_dij.mhd");
+    dose_by_subset.resize(0);
 
-    // 5: Prepare and launch Opt4D and get the weigth scaling
+
+    // 5: Prepare and launch Opt4D and get the weigth scaling ----------------
     Opt4D_manager opt4d(out_directory);
-    opt4d.populate_directory(selected_t, dij_nvox, target_nvox, rim_nvox, oars_nvox,
-                             total_mask, target_mask, rim_mask, oars_mask,
-                             target_dose, subset_dij);
+    opt4d.populate_directory(nspots_subset, dij_nvox, target_nvox, rim_nvox, oars_nvox,
+                             total_mask, target_mask, target_rim_mask, oars_mask,
+                             target_dose_missing, subset_dij);
     opt4d.launch_optimization();
 
+    // 6: Apply weight scaling and set in referenced vector
     std::vector<float> subset_weight_scaling = opt4d.get_weight_scaling();
 
-    // 6: Apply weight scaling and set in referenced vector
-    for (size_t i = 0; i < indexes.size(); ++i) {
-        uint ibeam = std::distance(accu_spots.begin(),
-                                   std::upper_bound(accu_spots.begin(), accu_spots.end(),
-                                                    indexes.at(i)));
-        uint ispot = ibeam > 0 ? indexes.at(i) - accu_spots.at(ibeam-1) : indexes.at(i);
-        // Get start position of slice and add it!!
-        Array temp = adapt_field_dij.at(ibeam)[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))];
-        temp *= subset_weight_scaling.at(i);
-        adapt_field_dij.at(ibeam)[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))] = temp;
-        // Set in referenced vector
-        weight_scaling.at(indexes.at(i)) = subset_weight_scaling.at(i);
+    std::vector<uint> accu_subset_per_field(nbeams);
+    std::partial_sum(subset_per_field.begin(), subset_per_field.end(),
+                     accu_subset_per_field.begin());
+
+    for (size_t ibeam = 0; ibeam < indexes.size(); ++ibeam) {
+        uint base_abs = 0;
+        if (ibeam > 0)
+            base_abs += accu_subset_per_field.at(ibeam-1);
+        for (size_t i = 0; i < indexes.at(ibeam).size(); ++i) {
+            // Set in referenced vector
+            uint abs_spot = indexes.at(ibeam).at(i);
+            if (ibeam > 0)
+                abs_spot += accu_spots.at(ibeam-1);
+            weight_scaling.at(abs_spot) = subset_weight_scaling.at(i);
+            
+            // Scale dij subset dose
+            Array temp = subset_dij.at(ibeam)[std::slice(i*dij_nvox, dij_nvox, 1)];
+            temp *= subset_weight_scaling.at(base_abs+i);
+            subset_dij.at(ibeam)[std::slice(i*dij_nvox, dij_nvox, 1)] = temp;
+        }
+    }
+
+    // Add total dose by subset dij to baseline
+    Array adapted_dose = baseline_dose;
+    for (size_t i = 0, idij = 0; i < volume_vox && idij < dij_nvox; ++i) {
+        if (total_mask.at(i) > 0.5) {
+            float d = 0;
+            for (size_t f = 0; f < nbeams; ++f) {
+                Array temp = subset_dij[f][std::slice(idij, indexes.at(f).size(), dij_nvox)];
+                d += temp.sum();
+            }
+            adapted_dose[i] += d;
+            idij++;
+        }
     }
 
     // 7: Check new plan dose
-    check_adaptation(adapt_field_dij, dose_prescription, spots_per_field,
+    check_adaptation(adapted_dose, dose_prescription,
                      target_nvox, oars_nvox, dij_nvox, total_mask, target_mask, oars_mask,
                      out_directory);
 }

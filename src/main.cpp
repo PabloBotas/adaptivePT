@@ -192,47 +192,23 @@ int main(int argc, char** argv)
         gpmc_dij.write_dij_files(parser.spot_factor_dij, 0, true,
                                  utils::join_vectors(parser.target_mask_files, parser.oars_files,
                                                      parser.target_rim_files));
-        gpmc_dij.launch();
+        // gpmc_dij.launch();
 
         time_geometric_sim = timer.elapsed();
         timer.start();
 
-        // Explicit control of the scope to reduce memory usage
-        {
-            std::vector<std::valarray<float>> adapt_field_dij;
-            std::valarray<float> adapt_dose_in_mask;
-            Volume_t target_mask = utils::read_masks (parser.target_mask_files);
-            Volume_t target_rim_mask = utils::read_masks (parser.target_rim_files);
-            Volume_t oars_mask = utils::read_masks (parser.oars_files);
-            {
-                std::valarray<float> adapt_dose;
-                std::valarray<float> adapt_dose_in_target;
-                check_geometric_adapt (gpmc_dij.get_field_dij_files(),
-                                       parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
-                                       pat.spots_per_field, adapt_field_dij,
-                                       adapt_dose,
-                                       target_mask, target_rim_mask, oars_mask,
-                                       adapt_dose_in_mask, adapt_dose_in_target);
-                // output_debug_doses (parser.work_dir, underdose_mask, target_mask,
-                //                     parser.field_dose_plan_files,
-                //                     adapt_dose, adapt_field_dose,
-                //                     adapt_dose_in_target,
-                //                     parser.dose_prescription);
-            }
-            cold_spots_fixer (adapt_dose_in_mask,
-                              adapt_field_dij, target_mask,
-                              target_rim_mask, oars_mask,
-                              parser.dose_prescription,
-                              parser.work_dir, pat.spots_per_field,
-                              pat.source_weights,
-                              weight_scaling);
-            time_opt4d = timer.elapsed();
-            timer.start();
+        adapt_weights(gpmc_dij.get_field_dij_files(),
+                      parser.target_mask_files, parser.target_rim_files, parser.oars_files,
+                      parser.dose_prescription, gpmc_dij.get_to_Gy_factor(),
+                      parser.work_dir,
+                      pat.spots_per_field,
+                      pat.source_weights, weight_scaling);
+        time_opt4d = timer.elapsed();
+        timer.start();
 
-            if (!parser.vf_report_file.empty()) {
-                generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
-                                parser.out_plan, pat.tramp_files);
-            }
+        if (!parser.vf_report_file.empty()) {
+            generate_report(parser.vf_report_file, parser.data_vf_file, parser.data_shifts_file,
+                            parser.out_plan, pat.tramp_files);
         }
 
         // 11: Export results and report

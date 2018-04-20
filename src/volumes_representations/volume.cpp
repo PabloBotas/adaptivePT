@@ -357,6 +357,13 @@ void Volume_t::setSpacing(float x, float y, float z)
     d.z = z;
 }
 
+uint Volume_t::count_above_thres(float thres)
+{
+    auto glambda = [&thres](const float& i){return i > thres;};
+    return uint(std::count_if(this->data.begin(), this->data.end(), glambda));
+}
+
+
 void Volume_t::interpolate_to_geometry(const CT_Dims_t& pat_ct,
                                        const float extrapolationValue)
 {
