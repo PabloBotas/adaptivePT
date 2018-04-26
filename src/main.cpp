@@ -180,7 +180,7 @@ int main(int argc, char** argv)
         gpmc_dij.write_dij_files(parser.spot_factor_dij, 0, true,
                                  utils::join_vectors(parser.target_mask_files, parser.oars_files,
                                                      parser.target_rim_files));
-        // gpmc_dij.launch();
+        gpmc_dij.launch();
 
         time_geometric_sim = timer.elapsed();
         timer.start();
@@ -220,11 +220,11 @@ int main(int argc, char** argv)
     // Report time ------------------------------------------------------------
     std::cout << std::endl;
     std::cout << "Total time:" << std::endl;
-    std::cout << "    CT tracing:     " << time_ct_tracing.wall << std::endl;
-    std::cout << "    CBCT tracing:   " << time_cbct_tracing.wall << std::endl;
-    std::cout << "    gPMC geometric: " << time_geometric_sim.wall << std::endl;
-    std::cout << "    Opt4D:          " << time_opt4d.wall << std::endl;
-    std::cout << "    Opt validation: " << time_opt4d_validation.wall << std::endl;
+    std::cout << "    CT tracing:     " << boost::timer::format(time_ct_tracing, 3) << std::endl;
+    std::cout << "    CBCT tracing:   " << boost::timer::format(time_cbct_tracing, 3) << std::endl;
+    std::cout << "    gPMC geometric: " << boost::timer::format(time_geometric_sim, 3) << std::endl;
+    std::cout << "    Opt4D:          " << boost::timer::format(time_opt4d, 3) << std::endl;
+    std::cout << "    Opt validation: " << boost::timer::format(time_opt4d_validation, 3) << std::endl;
 
     // Stop device
     stop_device(start);
