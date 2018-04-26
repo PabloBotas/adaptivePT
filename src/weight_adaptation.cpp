@@ -84,20 +84,27 @@ void select_spots_by_weight (uint& nspots_subset,
     std::cout << "There is an almost linear relation between spot weight and dose." << std::endl;
 }
 
+Array read_dij (const std::string& file,
+                const uint nspots,
+                const uint nvox,
+                const float conv_factor)
+{
+    std::ifstream ifs(file, std::ios::binary);
+    utils::check_fs(ifs, file, " to read Dij during plan assessment");
+    Array dij(nspots*nvox);
+    ifs.read(reinterpret_cast<char*>(&dij[0]), nspots*nvox*sizeof(float));
+    dij *= conv_factor;
+    
+    return dij;
+}
+
 Array read_transpose_dij (const std::string& file,
                           const uint nspots,
                           const uint nvox,
                           const float conv_factor)
 {
-    std::cout << "\t- " << file << std::endl;
-    std::ifstream ifs(file, std::ios::binary);
-    utils::check_fs(ifs, file, " to read Dij during plan assessment");
-    Array temp(nspots*nvox);
-    ifs.read(reinterpret_cast<char*>(&temp[0]), nspots*nvox*sizeof(float));
-    temp *= conv_factor;
-    // Transpose temp Dij and return
-    Array dij;
-    dij.resize(nspots*nvox);
+    Array temp = read_dij(file, nspots, nvox, conv_factor);
+    Array dij(nspots*nvox);
     #pragma omp parallel for
     for (size_t j = 0; j < nvox; ++j) {
         dij[std::slice(j*nspots, nspots, 1)] = temp[std::slice(j, nspots, nvox)];
@@ -105,27 +112,64 @@ Array read_transpose_dij (const std::string& file,
     return dij;
 }
 
-void fill_dose_arrays (const Array& dij,
+void fill_dose_arrays (const Array& dij, const uint dij_nvox,
                        const uint nspots, const uint volume_vox,
                        const std::vector<float>& mask, const Volume_t& target,
                        Array& dose, Array& dose_in_target, Array& dose_in_mask)
 {
-    for (size_t i = 0, idij = 0, itarget = 0; i < volume_vox; ++i) {
-        // Check if in a ROI
+    // std::cout << "Creating map!" << std::endl;
+    std::vector<int> dij_mask_map(volume_vox, -1);
+    for (size_t i = 0, idij = 0;
+        i < volume_vox && idij < dij_nvox;
+        ++i) {
         if (mask.at(i) > 0.5) {
-            // Get dose in voxel per spot
-            auto p = std::begin(dij)+idij*nspots;
-            float d = std::accumulate(p, p+nspots, 0.0);
-            dose[i] += d;
-            dose_in_mask[idij] += d;
-            idij++;
-            if (target.data.at(i) > 0.5) {
-                dose_in_target[itarget] = dose[i];
-                itarget++;
-            }
+            dij_mask_map[i] = idij++;
         }
     }
+
+    // uint tot = 0;
+    // std::cout << "Subsetting!" << std::endl;
+    for (size_t i = 0; i < volume_vox; ++i) {
+        // Check if in a ROI
+        if (dij_mask_map[i] > -1) {
+            // Accumulate dose in voxel per spot
+            Array temp = dij[std::slice(dij_mask_map[i], nspots, dij_nvox)];
+            float d = temp.sum();
+            dose[i] += d;
+            dose_in_mask[dij_mask_map[i]] += d;
+            // if (target.data.at(i) > 0.5) {
+            //     dose_in_target[itarget] += d;
+            //     itarget++;
+            // }
+            // tot++;
+        }
+    }
+    // std::cout << "Total vox " << tot << std::endl;
 }
+
+// void fill_dose_arrays (const Array& dij, const uint dij_nvox,
+//                        const uint nspots, const uint volume_vox,
+//                        const std::vector<float>& mask, const Volume_t& target,
+//                        Array& dose, Array& dose_in_target, Array& dose_in_mask)
+// {
+//     for (size_t i = 0, idij = 0, itarget = 0; i < volume_vox; ++i) {
+//         // Check if in a ROI
+//         if (mask.at(i) > 0.5) {
+//             // Get dose in voxel per spot
+//             // auto p = std::begin(dij)+idij*nspots; 
+//             // float d = std::accumulate(p, p+nspots, 0.0);
+//             Array temp = dij[std::slice(idij, nspots, dij_nvox)];
+//             float d = temp.sum();
+//             dose[i] += d;
+//             dose_in_mask[idij] += d;
+//             idij++;
+//             if (target.data.at(i) > 0.5) {
+//                 dose_in_target[itarget] += d;
+//                 itarget++;
+//             }
+//         }
+//     }
+// }
 
 void adapt_weights (const std::vector<std::string>& dij_files,         // Dij files
                     const std::vector<std::string>& target_mask_files, // target region
@@ -165,12 +209,7 @@ void adapt_weights (const std::vector<std::string>& dij_files,         // Dij fi
     uint volume_vox = target_mask.nElements;
 
 
-    std::cout << "Assessing the adaptation!!" << std::endl;
-    
-    
-
     // 4: Read Dijs: get total dose and spots subset -------------------------
-
     // Fill total dose, dose per beam, dose in target
     Array dose;
     Array dose_in_target;
@@ -179,25 +218,28 @@ void adapt_weights (const std::vector<std::string>& dij_files,         // Dij fi
     dose_in_target.resize(target_nvox, 0);
     dose_in_mask.resize(dij_nvox, 0);
 
-    std::cout << "Preparing to subset Dij..." << std::endl;
     std::vector<Array> subset_dij(nbeams);
-
-    std::cout << "Read and transpose dijs inside target:" << std::endl;
+    std::cout << "Reading and subsetting dijs ..." << std::endl;
     for (size_t ibeam = 0; ibeam < nbeams; ++ibeam) {
         // Read Dij file
-        Array dij = read_transpose_dij(dij_files.at(ibeam), spots_per_field.at(ibeam),
-                                       dij_nvox, conv_factor);
+        std::cout << "\t- " << dij_files.at(ibeam);
+        Array dij = read_dij(dij_files.at(ibeam), spots_per_field.at(ibeam),
+                             dij_nvox, conv_factor);
+        std::cout << " ... read!" << std::endl;
         // Get selected spots
         subset_dij.at(ibeam).resize(indexes.at(ibeam).size()*dij_nvox);
-        std::cout << "Subsetting field Dij ..." << std::endl;
+        #pragma omp parallel for
         for (size_t i = 0; i < indexes.at(ibeam).size(); ++i) {
             uint& ispot = indexes.at(ibeam).at(i);
-            subset_dij.at(ibeam)[std::slice(i*dij_nvox, dij_nvox, 1)] = 
-                    dij[std::slice(ispot, dij_nvox, spots_per_field.at(ibeam))];
+            // Copy spot to subset
+            std::copy(std::begin(dij) + dij_nvox*ispot,
+                      std::begin(dij) + dij_nvox*(ispot+1),
+                      std::begin(subset_dij.at(ibeam)) + i*dij_nvox);
         }
 
         // Iterate over volume voxels and fill dose arrays
-        fill_dose_arrays(dij, spots_per_field.at(ibeam), volume_vox, total_mask, target_mask,
+        fill_dose_arrays(dij, dij_nvox, spots_per_field.at(ibeam), volume_vox,
+                         total_mask, target_mask,
                          dose, dose_in_target, dose_in_mask);
     }
 

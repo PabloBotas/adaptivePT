@@ -22,7 +22,7 @@ Array read_transpose_dij (const std::string& file,
                           const uint nvox,
                           const float conv_factor);
 
-void fill_dose_arrays (const Array& dij,
+void fill_dose_arrays (const Array& dij, const uint dij_nvox,
                        const uint nspots, const uint volume_vox,
                        const std::vector<float>& mask, const Volume_t& target,
                        Array& dose, Array& dose_in_target, Array& dose_in_mask);
