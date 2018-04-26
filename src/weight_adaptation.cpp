@@ -321,7 +321,7 @@ void adapt_weights (const std::vector<std::string>& dij_files,         // Dij fi
             uint abs_spot = indexes.at(ibeam).at(i);
             if (ibeam > 0)
                 abs_spot += accu_spots.at(ibeam-1);
-            weight_scaling.at(abs_spot) = subset_weight_scaling.at(i);
+            weight_scaling.at(abs_spot) = subset_weight_scaling.at(base_abs+i);
             
             // Scale dij subset dose
             Array temp = subset_dij.at(ibeam)[std::slice(i*dij_nvox, dij_nvox, 1)];
