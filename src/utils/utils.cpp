@@ -15,6 +15,7 @@
 #include <array>
 #include <regex>
 #include <cerrno>
+#include <omp.h>
 
 template <class T>
 std::vector<T> utils::join_vectors (const std::vector<T>& a, const std::vector<T>& b)
@@ -274,6 +275,7 @@ Volume_t utils::read_masks (const std::vector<std::string>& v, const float thres
         // The masks will be passed as int to the device. To prevent unwanted flooring due to
         // precision, I add 0.5.
         float val = mask_importances.size() ? mask_importances.at(f) : 2*threshold;
+        #pragma omp parallel for
         for (uint i = 0; i < temp.nElements; ++i) {
             if (temp.data.at(i) > threshold && vol.data.at(i) <= threshold) {
                 vol.data.at(i) = val;

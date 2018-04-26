@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <omp.h>
 
 #include "gpu_device_globals.cuh"
 #include "special_types.hpp"
@@ -38,8 +39,7 @@ void gpu_ct_to_device::sendDimensions(const Volume_t& ct)
 void gpu_ct_to_device::sendDensities(const Volume_t &ct)
 //  generate phantom data based on CT volume
 {
-    std::vector<float> densities;
-    densities.reserve(ct.nElements);
+    std::vector<float> densities(ct.nElements);
 
     std::cout << "setDensities: Converting HU to densities ..." << std::endl;
 
@@ -58,10 +58,11 @@ void gpu_ct_to_device::sendDensities(const Volume_t &ct)
 //    gpuErrchk( cudaThreadSynchronize() );
 //    gpuErrchk( cudaMemcpy(&densities[0], gpu_densities, ct.nElements*sizeof(float), cudaMemcpyDeviceToHost) );
 
+    #pragma omp parallel for
     for (size_t i = 0; i < ct.nElements; i++) {
         short  val = std::max(ct.data.at(i), -1000.f);
         size_t ind = std::min(val+1000, (int)density_correction::factor.size()-1);
-        densities.push_back(HU2dens(val)*density_correction::factor.at(ind));
+        densities.at(i) = HU2dens(val)*density_correction::factor.at(ind);
     }
 
     sendVectorToTexture(ct.n.z, ct.n.y, ct.n.x, densities, dens, dens_tex);
@@ -75,6 +76,7 @@ void gpu_ct_to_device::sendMaterialId(const Volume_t &ct,
 
     std::cout << "sendMatID: Converting HU to material ID ..." << std::endl;
 
+    #pragma omp parallel for
     for (size_t i = 0; i < ct.nElements; i++) {
         short val = std::max(ct.data.at(i), -1000.f);
         materialID[i] = HU2matId(val, hu_indexes);

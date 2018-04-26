@@ -154,6 +154,7 @@ void Volume_t::import_from_metaimage(const std::vector<T>& vec)
         std::cerr << std::endl;
         exit(EXIT_FAILURE);
     }
+    #pragma omp parallel for
     for (size_t k = 0; k < n.z; k++) {
         for (size_t j = 0; j < n.y; j++) {
             for (size_t i = 0; i < n.x; i++) {
@@ -178,6 +179,7 @@ void Volume_t::export_binary_metaimage(std::string f,
     ofs.open (f, mode);
     utils::check_fs(ofs, f, "to write results.");
     std::vector<float> temp(nElements);
+    #pragma omp parallel for
     for (size_t k = 0; k < n.z; k++) {
         for (size_t j = 0; j < n.y; j++) {
             for (size_t i = 0; i < n.x; i++) {
@@ -236,22 +238,28 @@ void Volume_t::int_to_mha_coordinates()
 
 void Volume_t::normalize(float ref)
 {
-    if (high_precision)
+    if (high_precision) {
+        #pragma omp parallel for
         for (size_t i = 0; i < nElements; i++)
             long_data.at(i) /= ref;
-    else
+    } else {
+        #pragma omp parallel for
         for (size_t i = 0; i < nElements; i++)
             data.at(i) /= ref;
+    }
 }
 
 void Volume_t::scale(float ref)
 {
-    if (high_precision)
+    if (high_precision) {
+        #pragma omp parallel for
         for (size_t i = 0; i < nElements; i++)
             long_data.at(i) *= ref;
-    else
+    } else {
+        #pragma omp parallel for
         for (size_t i = 0; i < nElements; i++)
             data.at(i) *= ref;
+    }
 }
 
 void Volume_t::setInternalFlag()

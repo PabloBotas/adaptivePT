@@ -73,15 +73,21 @@ void Mha_reader_t::read_header(std::ifstream& stream)
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "MHA file: " << file << std::endl;
-    std::cout << "    - dimensions: ";
-    std::cout << dim.x << ", " << dim.y << ", " << dim.z << " (" << nElements << ")" << std::endl;
-    std::cout << "    - origin:     ";
-    std::cout << origin.x << ", " << origin.y << ", " << origin.z << std::endl;
-    std::cout << "    - spacing:    ";
-    std::cout << spacing.x << ", " << spacing.y << ", " << spacing.z << std::endl;
-    std::cout << "    - data type:  ";
-    std::cout << ElType << " (" << nb << " bytes)" << std::endl;
+    std::string str("MHA file: ");
+    str += file + "\n";
+    str += "    - dimensions: " + std::to_string(dim.x) + ", ";
+    str += std::to_string(dim.y) + ", " + std::to_string(dim.z);
+    str += " (" + std::to_string(nElements) + ")\n";
+
+    str += "    - origin:     " + std::to_string(origin.x) + ", ";
+    str += std::to_string(origin.y) + ", " + std::to_string(origin.z) + "\n";
+
+    str += "    - spacing:    " + std::to_string(spacing.x) + ", ";
+    str += std::to_string(spacing.y) + ", " + std::to_string(spacing.z) + "\n";
+
+    str += "    - data type:  " + ElType + " (" + std::to_string(nb) + ")\n";
+
+    std::cout << str;
 }
 
 
