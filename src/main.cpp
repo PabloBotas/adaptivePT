@@ -220,11 +220,11 @@ int main(int argc, char** argv)
     // Report time ------------------------------------------------------------
     std::cout << std::endl;
     std::cout << "Total time:" << std::endl;
-    std::cout << "    CT tracing:     " << boost::timer::format(time_ct_tracing, 3) << std::endl;
-    std::cout << "    CBCT tracing:   " << boost::timer::format(time_cbct_tracing, 3) << std::endl;
-    std::cout << "    gPMC geometric: " << boost::timer::format(time_geometric_sim, 3) << std::endl;
-    std::cout << "    Opt4D:          " << boost::timer::format(time_opt4d, 3) << std::endl;
-    std::cout << "    Opt validation: " << boost::timer::format(time_opt4d_validation, 3) << std::endl;
+    std::cout << "    CT tracing:     " << boost::timer::format(time_ct_tracing, 3);
+    std::cout << "    CBCT tracing:   " << boost::timer::format(time_cbct_tracing, 3);
+    std::cout << "    gPMC geometric: " << boost::timer::format(time_geometric_sim, 3);
+    std::cout << "    Opt4D:          " << boost::timer::format(time_opt4d, 3);
+    std::cout << "    Opt validation: " << boost::timer::format(time_opt4d_validation, 3);
 
     // Stop device
     stop_device(start);
