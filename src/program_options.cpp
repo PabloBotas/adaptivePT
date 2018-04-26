@@ -67,9 +67,9 @@ bool outside_machine_energies (std::vector<float>& below_thres,
                 energies.at(idx) = max_e;
             }
             if (energies.at(idx) < min_e) {
-                std::cerr << "WARNING! Energy of spot @ beam: " << ispot << " @ " << ibeam;
-                std::cerr << " = " << energies.at(idx)/1e6 << " MeV < " << min_e/1e6;
-                std::cerr << " MeV (gantry min). We will attempt to increase it and add a range "
+                std::cout << "WARNING! Energy of spot @ beam: " << ispot << " @ " << ibeam;
+                std::cout << " = " << energies.at(idx)/1e6 << " MeV < " << min_e/1e6;
+                std::cout << " MeV (gantry min). We will attempt to increase it and add a range "
                              "shifter." << std::endl;
                 below_thres.at(ibeam) = std::min(energies.at(idx), below_thres.at(ibeam));
                 if_need_correction = true;
