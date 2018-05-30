@@ -271,6 +271,11 @@ void adapt_weights (const std::vector<std::string>& dij_files,         // Dij fi
             dose_by_subset[i] += d;
             baseline_dose[i] -= d;
             if (target_mask.data.at(i) > 0.5) {
+                // the result could be negative!! But that would be fine. Negative voxels are set to
+                // zero by Opt4D. The reason not to do it here is that I have allowed Opt4D to add a
+                // constant value to the voxel-dose to control the maximum dose within the target.
+                // This operation needs to know if the voxel is -3 or -10 or whatever value. If
+                // after summing, the value is still negative, it will be set to zero.
                 target_dose_missing[idij] = dose_prescription - baseline_dose[i];
             }
             idij++;

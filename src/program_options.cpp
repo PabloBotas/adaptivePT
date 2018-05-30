@@ -297,8 +297,8 @@ void correct_energy_range (const RShifter_steps_t& rshifter_steps,
                 if (no_errors) {
                     std::copy(temp.begin(), temp.end(), energies.begin() + accu_spots);
                     // Create range shifter to make it deliverable
-                    std::cerr << "New range shifter for beam " << ibeam << " = ";
-                    std::cerr << rshifter << " water cm." << std::endl;
+                    std::cout << "New range shifter for beam " << ibeam << " = ";
+                    std::cout << rshifter << " water cm." << std::endl;
                     if (rs.at(ibeam).exists) {
                         rs.at(ibeam).set_wepl(rshifter);
                     } else {

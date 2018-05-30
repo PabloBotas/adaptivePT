@@ -351,10 +351,8 @@ void Opt4D_manager::set_write_reference_dose(const std::vector<float>& dose)
     std::vector<float> ave_ref_batches(nbatches, 0);
     float ave_ref = 0;
     for(size_t i = 0; i<n_voxels; i++) {
-        if (min_ref > dose.at(i))
-            min_ref = dose.at(i);
-        if (max_ref < dose.at(i))
-            max_ref = dose.at(i);
+        min_ref = std::min(min_ref, dose.at(i));
+        max_ref = std::max(max_ref, dose.at(i));
         ave_ref_batches.at(int(i%nbatches)) += dose.at(i)/n_spots;
     }
     for (uint i = 0; i < nbatches; ++i) {
