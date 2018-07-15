@@ -1,12 +1,11 @@
 # Adaptive Proton Therapy
 
-This code adapts the energy of the spots/layers in an attempt to keep planned dose levels to patients taking the specific geometry of a given fraction into account.
+This code adapts the position, energy and weight of beamlets to keep planned dose levels to patients taking the specific geometry of a given fraction into account.
 
-Patient geometry may change due to positioning or weight loss. Adaptive therapy is then desired to correct these effects in a daily basis. The code reads a patient directory structure as given by MCAuto-Astroid to get the necessary treatment parameters.
+The code reads a patient directory structure as given by MCAuto-Astroid to get the necessary treatment parameters.
 
 ## List of tasks:
-- [ ] Figure out what is messing up the results
-- [ ] Study distribution of changes to spots and collapse them to meaningful clusters
+- [ ] None at the moment
 
 ### Some details about the implementation
 
